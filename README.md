@@ -20,12 +20,23 @@ install side by side.
 | Module | Purpose |
 |---|---|
 | `:app` | UI, modes, settings (Aperture code base) |
-| `:profiles` | Device profiles: lens catalog, zoom stops (pure Kotlin/JVM) |
+| `:profiles` | Device profiles: lens catalog, zoom stops, JSON (pure Kotlin/JVM, unit tested) |
 | `:capture` | Camera session and burst capture (skeleton) |
 | `:pipeline` | Native image pipeline, NDK + CMake (skeleton, JNI `nativeVersion()`) |
 | `:ml` | On-device ML runtime, CPU/GPU only (skeleton) |
 | `:vendor-bridge` | CameraX extensions / vendor tags (skeleton) |
 | `:lens_launcher` | Google Lens launcher shim from Aperture |
+
+## Device profiles
+
+On first launch the app reads Camera2 characteristics (listed ids plus probed ids
+0..15) off the main thread and builds an `auto` profile: duplicate ids are merged,
+low-resolution macro/depth sensors are excluded from zoom stops, and a 2x crop
+stop is added when there is no telephoto. The result is cached per build
+fingerprint in `noBackupFilesDir`. A profile placed at
+`files/device-profile-override.json` wins over everything; bundled profiles from
+the separate `open-camera-profiles` repository (`assets/profiles.bundle.json`)
+win over `auto`. Settings > Export device profile shares the JSON.
 
 ## Build
 

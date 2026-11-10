@@ -19,3 +19,11 @@ kotlin {
         jvmTarget.set(JvmTarget.JVM_17)
     }
 }
+
+dependencies {
+    // Android ships org.json; the JVM build only needs it to compile and test.
+    compileOnly(libs.json)
+    testImplementation(libs.json)
+    testImplementation(libs.junit)
+    testImplementation(kotlin("test-junit"))
+}

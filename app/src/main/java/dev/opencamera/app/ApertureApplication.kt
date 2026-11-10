@@ -10,7 +10,9 @@ import android.app.Application
 import androidx.camera.camera2.internal.CameraCompatibilityFilter
 import com.google.android.material.color.DynamicColors
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import dev.opencamera.app.repositories.CameraRepository
+import dev.opencamera.app.repositories.DeviceProfileRepository
 import dev.opencamera.app.repositories.MediaRepository
 import dev.opencamera.app.repositories.OverlaysRepository
 import dev.opencamera.app.repositories.PreferencesRepository
@@ -22,6 +24,7 @@ class ApertureApplication : Application() {
     val mediaRepository by lazy { MediaRepository(this) }
     val overlaysRepository by lazy { OverlaysRepository(this) }
     val preferencesRepository by lazy { PreferencesRepository(this, coroutineScope) }
+    val deviceProfileRepository by lazy { DeviceProfileRepository(this) }
 
     @SuppressLint("RestrictedApi")
     override fun onCreate() {
@@ -34,5 +37,8 @@ class ApertureApplication : Application() {
         CameraCompatibilityFilter.setBackwardCompatibleCameraIds(
             overlaysRepository.backwardCompatibleCameraIds.asList()
         )
+
+        // Generate and cache the device profile off the main thread on first launch
+        coroutineScope.launch { deviceProfileRepository.profile() }
     }
 }

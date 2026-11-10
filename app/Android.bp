@@ -10,7 +10,10 @@ package {
 android_app {
     name: "OpenCamera",
 
-    srcs: ["src/main/java/**/*.kt"],
+    srcs: [
+        "src/main/java/**/*.kt",
+        ":OpenCamera_profiles_srcs",
+    ],
     resource_dirs: ["src/main/res"],
     manifest: "src/main/AndroidManifest.xml",
 

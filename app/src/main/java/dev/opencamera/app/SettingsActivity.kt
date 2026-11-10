@@ -5,6 +5,7 @@
 
 package dev.opencamera.app
 
+import android.content.Intent
 import android.hardware.input.InputManager
 import android.os.Bundle
 import android.util.Log
@@ -210,6 +211,20 @@ class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
             // Photo capture mode
             photoCaptureMode.onPreferenceChangeListener = photoCaptureModePreferenceChangeListener
             enableZsl.isEnabled = photoCaptureMode.value == "minimize_latency"
+
+            findPreference<Preference>("export_device_profile")?.setOnPreferenceClickListener {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val app = requireContext().applicationContext as ApertureApplication
+                    val json = app.deviceProfileRepository.exportJson()
+                    val send = Intent(Intent.ACTION_SEND).apply {
+                        type = "application/json"
+                        putExtra(Intent.EXTRA_SUBJECT, getString(R.string.export_device_profile_title))
+                        putExtra(Intent.EXTRA_TEXT, json)
+                    }
+                    startActivity(Intent.createChooser(send, null))
+                }
+                true
+            }
         }
     }
 

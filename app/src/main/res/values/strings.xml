@@ -153,6 +153,8 @@
 
     <!-- Advanced Preferences -->
     <string name="processing_title">Processing</string>
+    <string name="export_device_profile_title">Export device profile</string>
+    <string name="export_device_profile_summary">Share the lens profile of this device as JSON (no serial numbers or location)</string>
 
     <!-- Processing Preferences -->
     <string name="processing_info">On photo mode, when ZSL mode is used, only default and off values will be taken into consideration. For video mode, only default, off and fast values will be taken into consideration.</string>
