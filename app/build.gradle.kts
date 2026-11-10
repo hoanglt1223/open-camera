@@ -14,11 +14,11 @@ plugins {
 }
 
 android {
-    namespace = "org.lineageos.aperture"
+    namespace = "dev.opencamera.app"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "org.lineageos.aperture"
+        applicationId = "dev.opencamera.app"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

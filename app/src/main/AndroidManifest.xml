@@ -5,7 +5,7 @@
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="org.lineageos.aperture">
+    package="dev.opencamera.app">
 
     <uses-feature android:name="android.hardware.camera.any" />
     <uses-feature
@@ -29,8 +29,8 @@
     <queries>
         <package android:name="com.google.android.apps.googlecamera.fishfood" />
         <package android:name="com.google.android.googlequicksearchbox" />
-        <package android:name="org.lineageos.aperture.auto_generated_rro_product__" />
-        <package android:name="org.lineageos.aperture.auto_generated_rro_vendor__" />
+        <package android:name="dev.opencamera.app.auto_generated_rro_product__" />
+        <package android:name="dev.opencamera.app.auto_generated_rro_vendor__" />
     </queries>
 
     <application

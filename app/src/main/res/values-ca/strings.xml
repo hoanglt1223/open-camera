@@ -4,7 +4,6 @@
      SPDX-License-Identifier: Apache-2.0
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">Càmera</string>
     <string name="video_camera_label">Càmera de vídeo</string>
     <string name="cancel_button_description">Cancel·la</string>
     <string name="confirm_button_description">Confirma</string>

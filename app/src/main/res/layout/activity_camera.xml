@@ -24,7 +24,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:scaleType="fitCenter" />
 
-    <org.lineageos.aperture.ui.views.PreviewBlurView
+    <dev.opencamera.app.ui.views.PreviewBlurView
         android:id="@+id/previewBlurView"
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -47,7 +47,7 @@
         app:layout_constraintTop_toTopOf="@+id/viewFinder"
         tools:ignore="ContentDescription" />
 
-    <org.lineageos.aperture.ui.views.GridView
+    <dev.opencamera.app.ui.views.GridView
         android:id="@+id/gridView"
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -56,7 +56,7 @@
         app:layout_constraintStart_toStartOf="@+id/viewFinder"
         app:layout_constraintTop_toTopOf="@+id/viewFinder" />
 
-    <org.lineageos.aperture.ui.views.LevelerView
+    <dev.opencamera.app.ui.views.LevelerView
         android:id="@+id/levelerView"
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -65,7 +65,7 @@
         app:layout_constraintStart_toStartOf="@+id/viewFinder"
         app:layout_constraintTop_toTopOf="@+id/viewFinder" />
 
-    <org.lineageos.aperture.ui.views.IslandView
+    <dev.opencamera.app.ui.views.IslandView
         android:id="@+id/islandView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -77,7 +77,7 @@
         app:layout_constraintStart_toStartOf="@+id/viewFinder"
         app:layout_constraintTop_toTopOf="@+id/viewFinder" />
 
-    <org.lineageos.aperture.ui.views.CountDownView
+    <dev.opencamera.app.ui.views.CountDownView
         android:id="@+id/countDownView"
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -87,7 +87,7 @@
         app:layout_constraintStart_toStartOf="@+id/viewFinder"
         app:layout_constraintTop_toTopOf="@+id/viewFinder" />
 
-    <org.lineageos.aperture.ui.views.HorizontalSlider
+    <dev.opencamera.app.ui.views.HorizontalSlider
         android:id="@+id/zoomLevel"
         android:layout_width="250dp"
         android:layout_height="32dp"
@@ -100,7 +100,7 @@
         app:thumbTextSize="10dp"
         app:trackColor="#7FCCCCCC" />
 
-    <org.lineageos.aperture.ui.views.VerticalSlider
+    <dev.opencamera.app.ui.views.VerticalSlider
         android:id="@+id/exposureLevel"
         android:layout_width="32dp"
         android:layout_height="250dp"
@@ -245,7 +245,7 @@
             app:layout_constraintTop_toTopOf="parent"
             app:tint="@android:color/white" />
 
-        <org.lineageos.aperture.ui.views.LensSelectorLayout
+        <dev.opencamera.app.ui.views.LensSelectorLayout
             android:id="@+id/lensSelectorLayout"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -353,7 +353,7 @@
             app:layout_constraintTop_toTopOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <org.lineageos.aperture.ui.views.CameraModeSelectorLayout
+    <dev.opencamera.app.ui.views.CameraModeSelectorLayout
         android:id="@+id/cameraModeSelectorLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"

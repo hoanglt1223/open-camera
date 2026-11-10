@@ -8,7 +8,7 @@ package {
 }
 
 android_app {
-    name: "ApertureLensLauncher",
+    name: "OpenCameraLensLauncher",
 
     srcs: ["src/main/java/**/*.kt"],
     manifest: "src/main/AndroidManifest.xml",

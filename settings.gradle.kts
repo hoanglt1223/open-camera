@@ -27,6 +27,11 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Aperture"
+rootProject.name = "OpenCamera"
 include(":app")
 include(":lens_launcher")
+include(":profiles")
+include(":capture")
+include(":pipeline")
+include(":ml")
+include(":vendor-bridge")

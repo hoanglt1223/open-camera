@@ -2,12 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 version = 1
-SPDX-PackageName = "Aperture"
-SPDX-PackageSupplier = "The LineageOS Project"
-SPDX-PackageDownloadLocation = "https://github.com/LineageOS/android_packages_apps_Aperture"
+SPDX-PackageName = "Open Camera"
+SPDX-PackageSupplier = "Open Camera contributors"
+SPDX-PackageDownloadLocation = "NOASSERTION"
 
 [[annotations]]
-path = [".github/workflows/**", ".gitignore", "app/.gitignore", "lens_launcher/.gitignore"]
+path = [".github/workflows/**", ".gitignore", "app/src/main/res/values-el/strings.xml", "app/.gitignore", "lens_launcher/.gitignore"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "The LineageOS Project"
 SPDX-License-Identifier = "Apache-2.0"
@@ -16,4 +16,10 @@ SPDX-License-Identifier = "Apache-2.0"
 path = "gradle/wrapper/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2007-2023 Gradle, Inc."
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = ["NOTICE", ".github/pull_request_template.md"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Open Camera contributors"
 SPDX-License-Identifier = "Apache-2.0"

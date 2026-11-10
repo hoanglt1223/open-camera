@@ -1,0 +1,17 @@
+//
+// SPDX-FileCopyrightText: Open Camera contributors
+// SPDX-License-Identifier: Apache-2.0
+//
+
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+cc_library_shared {
+    name: "libopencamera_pipeline",
+    srcs: ["src/main/cpp/pipeline_jni.cpp"],
+    shared_libs: ["liblog"],
+    sdk_version: "current",
+    stl: "c++_shared",
+    product_specific: true,
+}

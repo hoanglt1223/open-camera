@@ -1,0 +1,15 @@
+Open Camera (dev.opencamera.app)
+Copyright Open Camera contributors
+
+This product is a fork of Aperture, the camera app of the LineageOS Project:
+https://github.com/LineageOS/android_packages_apps_Aperture (branch lineage-24.0)
+Copyright The LineageOS Project, licensed under the Apache License, Version 2.0.
+
+Files carrying "SPDX-FileCopyrightText: The LineageOS Project" originate from
+Aperture and keep their original copyright notice. Modifications made in this
+fork are licensed under the Apache License, Version 2.0.
+
+This project is not affiliated with, or endorsed by, the LineageOS Project or
+the "Open Camera" app published as net.sourceforge.opencamera.
+
+License texts are in the LICENSES/ directory.
