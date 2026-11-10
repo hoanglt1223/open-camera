@@ -91,6 +91,12 @@ class MultiFrameCaptureController(
         if (!enabled) return null
         val meter = analyzer.lastMeter ?: return null
         val size = analyzer.frameSize ?: return null
+        // Some HALs cannot stream full-resolution YUV next to JPEG; a merged low-resolution
+        // frame would look worse than a single full-resolution capture.
+        if (size.width.toLong() * size.height < MIN_BURST_PIXELS) {
+            Log.w(LOG_TAG, "Analysis stream is only ${size.width}x${size.height}, taking a single frame")
+            return null
+        }
         if (queue.pending.value >= MAX_PENDING_JOBS) {
             Log.w(LOG_TAG, "Processing queue busy, taking a single frame")
             return null
@@ -265,5 +271,6 @@ class MultiFrameCaptureController(
         private const val LOG_TAG = "MultiFrame"
         private const val KEY_SETTING = "multi_frame_setting"
         private const val MAX_PENDING_JOBS = 2
+        private const val MIN_BURST_PIXELS = 6_000_000L
     }
 }
