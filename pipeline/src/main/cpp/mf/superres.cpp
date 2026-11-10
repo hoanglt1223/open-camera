@@ -13,12 +13,20 @@ namespace mf {
 
 namespace {
 
-constexpr float kSigma = 0.55f;  // kernel sigma in half-resolution pixels
+constexpr float kSigma = 0.3f;  // kernel sigma in half-resolution pixels
 constexpr int kLutSize = 256;
 constexpr float kLutMaxDist2 = 8.0f;
 
 int tileFor(float pos, const TileGrid &g, int count) {
-    return std::clamp(int(std::lround((pos - g.origin - g.size * 0.5f) / g.stride)), 0, count - 1);
+    return std::clamp(int(std::lround((float(pos) - g.origin - g.size * 0.5f) / g.stride)), 0, count - 1);
+}
+
+float bilinear(const Gray &g, float x, float y) {
+    const int x0 = int(std::floor(x)), y0 = int(std::floor(y));
+    const float fx = x - x0, fy = y - y0;
+    const float top = g.at(x0, y0) * (1 - fx) + g.at(x0 + 1, y0) * fx;
+    const float bot = g.at(x0, y0 + 1) * (1 - fx) + g.at(x0 + 1, y0 + 1) * fx;
+    return top * (1 - fy) + bot * fy;
 }
 
 }  // namespace
@@ -37,8 +45,8 @@ void superResolveLuma(const std::vector<const Gray *> &half, int ref,
         kernel[i] = std::exp(-d2 / (2 * kSigma * kSigma));
     }
 
-    // Robustness per alternate frame and half-res sample, against the reference at the
-    // integer-displaced position.
+    // Robustness per alternate frame and half-res sample, against the reference interpolated at
+    // the sub-pixel displaced position.
     const float t1 = 2.5f * noiseSigma + 3.0f;
     const float t2 = 6.0f * noiseSigma + 8.0f;
     std::vector<std::vector<uint8_t>> robust(half.size());
@@ -50,8 +58,7 @@ void superResolveLuma(const std::vector<const Gray *> &half, int ref,
             for (int x = 0; x < hw; ++x) {
                 const Displacement d = disp[f][size_t(tileFor(y, grid, grid.rows)) * grid.cols +
                                                tileFor(x, grid, grid.cols)];
-                const float diff = std::fabs(float(ah.px[size_t(y) * hw + x]) -
-                                             float(rh.at(x - int(std::lround(d.dx)), y - int(std::lround(d.dy)))));
+                const float diff = std::fabs(float(ah.px[size_t(y) * hw + x]) - bilinear(rh, x - d.dx, y - d.dy));
                 robust[f][size_t(y) * hw + x] =
                     uint8_t(255.0f * std::clamp((t2 - diff) / (t2 - t1), 0.0f, 1.0f));
             }

@@ -40,14 +40,15 @@ namespace {
 
 constexpr int kHalfTile = 16;  // tile size on the half-resolution grid
 constexpr int kTile = 32;      // tile size on the full-resolution luma grid
+constexpr double kPi = 3.14159265358979323846;
 
 struct Windows {
     float luma[kTile];
     float chroma[kHalfTile];
     Windows() {
-        for (int k = 0; k < kTile; ++k) luma[k] = 0.5f - 0.5f * std::cos(2 * M_PI * (k + 0.5) / kTile);
+        for (int k = 0; k < kTile; ++k) luma[k] = 0.5f - 0.5f * std::cos(2 * kPi * (k + 0.5) / kTile);
         for (int k = 0; k < kHalfTile; ++k) {
-            chroma[k] = 0.5f - 0.5f * std::cos(2 * M_PI * (k + 0.5) / kHalfTile);
+            chroma[k] = 0.5f - 0.5f * std::cos(2 * kPi * (k + 0.5) / kHalfTile);
         }
     }
 };

@@ -106,7 +106,7 @@ bool run(const std::vector<Frame> &frames, const Params &params, Result &result,
             chromaDenoise(vu, 1.5f);
             break;
         case Mode::SuperRes:
-            sharpen(y, 0.6f);
+            sharpen(y, 1.2f);
             chromaDenoise(vu, 0.5f);
             break;
     }
