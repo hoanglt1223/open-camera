@@ -92,6 +92,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.guava)
     implementation(libs.zxing.core)
     implementation(libs.zxing.cpp.android)
+
+    testImplementation(libs.junit)
 }
 
 configure<GenerateBpPluginExtension> {
