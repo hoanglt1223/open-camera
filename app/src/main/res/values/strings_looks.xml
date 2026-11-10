@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="look_none">Original</string>
+    <string name="look_button">Look</string>
+    <string name="looks_header">Looks and frames</string>
+    <string name="look_intensity_title">Look strength</string>
+    <string name="look_intensity_summary">How strongly the selected look is applied to preview and photos</string>
+    <string name="watermark_template_title">Frame</string>
+    <string name="watermark_none">None</string>
+    <string name="watermark_film_border">Film border</string>
+    <string name="watermark_exif_strip">EXIF strip</string>
+    <string name="processing_channel_name">Photo processing</string>
+    <string name="processing_notification_title">Applying looks</string>
+    <plurals name="processing_notification_text">
+        <item quantity="one">%d photo left</item>
+        <item quantity="other">%d photos left</item>
+    </plurals>
+
+    <string-array name="watermark_template_entries" translatable="false">
+        <item>@string/watermark_none</item>
+        <item>@string/watermark_film_border</item>
+        <item>@string/watermark_exif_strip</item>
+    </string-array>
+    <string-array name="watermark_template_values" translatable="false">
+        <item>none</item>
+        <item>film_border</item>
+        <item>exif_strip</item>
+    </string-array>
+</resources>

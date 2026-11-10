@@ -128,6 +128,9 @@ import dev.opencamera.app.ui.views.CountDownView
 import dev.opencamera.app.ui.views.GridView
 import dev.opencamera.app.ui.views.HorizontalSlider
 import dev.opencamera.app.ui.views.IslandView
+import dev.opencamera.app.processing.LookPreferences
+import dev.opencamera.app.processing.ProcessingService
+import dev.opencamera.app.ui.looks.LookPickerView
 import dev.opencamera.app.ui.views.LensSelectorLayout
 import dev.opencamera.app.ui.views.LevelerView
 import dev.opencamera.app.ui.views.PreviewBlurView
@@ -174,6 +177,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     private val screenFlashView by lazy { findViewById<ScreenFlashView>(R.id.screenFlashView) }
     private val secondaryBottomBarLayout by lazy { findViewById<ConstraintLayout>(R.id.secondaryBottomBarLayout) }
     private val secondaryTopBarLayout by lazy { findViewById<HorizontalScrollView>(R.id.secondaryTopBarLayout) }
+    private val lookButton by lazy { findViewById<Button>(R.id.lookButton) }
+    private val lookPickerView by lazy { findViewById<LookPickerView>(R.id.lookPickerView) }
     private val settingsButton by lazy { findViewById<Button>(R.id.settingsButton) }
     private val shutterButton by lazy { findViewById<ImageButton>(R.id.shutterButton) }
     private val timerButton by lazy { findViewById<Button>(R.id.timerButton) }
@@ -439,6 +444,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         timerButton.setOnClickListener { viewModel.toggleTimerMode() }
         micButton.setOnClickListener { viewModel.toggleVideoMicrophoneEnabled() }
         settingsButton.setOnClickListener { openSettings() }
+        setupLookPicker()
 
         // Set secondary bottom bar button callbacks
         proButton.setOnClickListener {
@@ -1390,6 +1396,10 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             if (permissionState == PermissionState.GRANTED && !initialized) {
                 // Attach CameraController to PreviewView
                 viewFinder.controller = viewModel.cameraController
+                viewModel.lookController.refresh()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    ProcessingService.resumeIfPending(this)
+                }
 
                 // Attach CameraController to ScreenFlashView
                 screenFlashView.setController(viewModel.cameraController)
@@ -1872,6 +1882,27 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         })
 
         finish()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Picks up strength changes made in settings.
+        if (viewFinder.controller != null) viewModel.lookController.refresh()
+    }
+
+    private fun setupLookPicker() {
+        val looks = viewModel.lookController
+        val items = listOf(LookPreferences.NONE to getString(R.string.look_none)) +
+                looks.repository.descriptors.map { it.id to it.name }
+        lookPickerView.setLooks(items, looks.lookId.value)
+        lookPickerView.onLookSelected = { looks.select(it) }
+        lookButton.setOnClickListener { lookPickerView.isVisible = !lookPickerView.isVisible }
+        lifecycleScope.launch {
+            looks.lookId.collectLatest { id ->
+                lookPickerView.setSelected(id)
+                lookButton.text = looks.repository.descriptor(id)?.name ?: getString(R.string.look_button)
+            }
+        }
     }
 
     private fun openSettings() {

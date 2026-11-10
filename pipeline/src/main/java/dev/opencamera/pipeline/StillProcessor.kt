@@ -87,7 +87,7 @@ class StillProcessor(private val resolver: ContentResolver) {
             ExifInterface.TAG_IMAGE_WIDTH, ExifInterface.TAG_IMAGE_LENGTH,
             ExifInterface.TAG_JPEG_INTERCHANGE_FORMAT, ExifInterface.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH,
             ExifInterface.TAG_THUMBNAIL_IMAGE_WIDTH, ExifInterface.TAG_THUMBNAIL_IMAGE_LENGTH,
-            ExifInterface.TAG_THUMBNAIL_ORIENTATION, ExifInterface.TAG_STRIP_OFFSETS,
+            "ThumbnailOrientation", ExifInterface.TAG_STRIP_OFFSETS,
             ExifInterface.TAG_STRIP_BYTE_COUNTS, ExifInterface.TAG_COMPRESSION,
         )
 

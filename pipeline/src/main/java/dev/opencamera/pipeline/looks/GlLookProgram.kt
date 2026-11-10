@@ -16,8 +16,14 @@ import java.nio.FloatBuffer
  * The fragment shader is a line-by-line port of [LookMath]. Must be used on the
  * thread that owns the GL context.
  */
-internal class GlLookProgram {
-    private val program = link(VERTEX, FRAGMENT)
+internal class GlLookProgram(externalInput: Boolean = true) {
+    private val inputTarget = if (externalInput) GLES11Ext.GL_TEXTURE_EXTERNAL_OES else GLES30.GL_TEXTURE_2D
+    private val program = link(
+        VERTEX,
+        if (externalInput) FRAGMENT else FRAGMENT
+            .replace("#extension GL_OES_EGL_image_external_essl3 : require\n", "")
+            .replace("samplerExternalOES", "sampler2D"),
+    )
     private val aPos = GLES30.glGetAttribLocation(program, "aPos")
     private val uTexMatrix = GLES30.glGetUniformLocation(program, "uTexMatrix")
     private val uInput = GLES30.glGetUniformLocation(program, "uInput")
@@ -58,10 +64,10 @@ internal class GlLookProgram {
         )
     }
 
-    fun draw(oesTexture: Int, texMatrix: FloatArray, width: Int, height: Int) {
+    fun draw(inputTexture: Int, texMatrix: FloatArray, width: Int, height: Int) {
         GLES30.glUseProgram(program)
         GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
-        GLES30.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, oesTexture)
+        GLES30.glBindTexture(inputTarget, inputTexture)
         GLES30.glUniform1i(uInput, 0)
         GLES30.glUniformMatrix4fv(uTexMatrix, 1, false, texMatrix, 0)
         GLES30.glUniform2f(uSize, width.toFloat(), height.toFloat())

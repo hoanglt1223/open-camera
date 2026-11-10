@@ -154,6 +154,12 @@
                 android:drawableTop="@drawable/ic_blur_off"
                 android:text="@string/effect_none" />
 
+            <Button
+                android:id="@+id/lookButton"
+                style="@style/Theme.Aperture.Camera.SecondaryTopBarButton"
+                android:drawableTop="@drawable/ic_image"
+                android:text="@string/look_button" />
+
             <!-- Video mode specific settings -->
             <Button
                 android:id="@+id/videoQualityButton"
@@ -206,6 +212,15 @@
         </LinearLayout>
 
     </HorizontalScrollView>
+
+    <dev.opencamera.app.ui.looks.LookPickerView
+        android:id="@+id/lookPickerView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@+id/secondaryTopBarLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/secondaryBottomBarLayout"
