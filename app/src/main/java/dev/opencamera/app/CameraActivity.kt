@@ -45,6 +45,7 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.core.MirrorMode
 import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.extensions.ExtensionMode
 import androidx.camera.video.Quality
 import androidx.camera.video.QualitySelector
@@ -64,7 +65,9 @@ import androidx.core.view.children
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
+import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import coil3.load
@@ -73,9 +76,11 @@ import coil3.request.error
 import coil3.request.fallback
 import coil3.size.Scale
 import coil3.video.VideoFrameDecoder
+import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.guava.await
@@ -137,6 +142,7 @@ import dev.opencamera.app.utils.GoogleLensUtils
 import dev.opencamera.app.utils.PermissionsManager
 import dev.opencamera.app.utils.ShortcutsUtils
 import dev.opencamera.app.viewmodels.CameraViewModel
+import dev.opencamera.capture.MultiFrameSetting
 import java.io.ByteArrayInputStream
 import java.io.FileNotFoundException
 import java.io.InputStream
@@ -169,6 +175,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     private val levelerView by lazy { findViewById<LevelerView>(R.id.levelerView) }
     private val mainLayout by lazy { findViewById<ConstraintLayout>(R.id.mainLayout) }
     private val micButton by lazy { findViewById<Button>(R.id.micButton) }
+    private val multiFrameButton by lazy { findViewById<Button>(R.id.multiFrameButton) }
+    private val multiFrameProgress by lazy { findViewById<LinearProgressIndicator>(R.id.multiFrameProgress) }
     private val previewBlurView by lazy { findViewById<PreviewBlurView>(R.id.previewBlurView) }
     private val proButton by lazy { findViewById<ImageButton>(R.id.proButton) }
     private val screenFlashView by lazy { findViewById<ScreenFlashView>(R.id.screenFlashView) }
@@ -437,6 +445,11 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         effectButton.setOnClickListener { viewModel.cycleExtensionMode() }
         gridButton.setOnClickListener { viewModel.cycleGridMode() }
         timerButton.setOnClickListener { viewModel.toggleTimerMode() }
+        multiFrameButton.setOnClickListener { viewModel.multiFrame.cycleSetting() }
+        lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onResume(owner: LifecycleOwner) = viewModel.multiFrame.motionMeter.start()
+            override fun onPause(owner: LifecycleOwner) = viewModel.multiFrame.motionMeter.stop()
+        })
         micButton.setOnClickListener { viewModel.toggleVideoMicrophoneEnabled() }
         settingsButton.setOnClickListener { openSettings() }
 
@@ -1005,8 +1018,70 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         }
 
         launch {
-            viewModel.timerMode.collectLatest { timerMode ->
-                // Update secondary bar buttons
+            var boundWithMultiFrame: Boolean? = null
+            viewModel.multiFrame.setting.collectLatest { setting ->
+                multiFrameButton.setCompoundDrawablesWithIntrinsicBounds(
+                    0,
+                    when (setting) {
+                        MultiFrameSetting.OFF -> R.drawable.ic_hdr_off
+                        MultiFrameSetting.HDR_AUTO -> R.drawable.ic_hdr_auto
+                        MultiFrameSetting.HDR_ON -> R.drawable.ic_hdr_on
+                        MultiFrameSetting.NIGHT -> R.drawable.ic_clear_night
+                        MultiFrameSetting.ASTRO -> R.drawable.ic_astro
+                    },
+                    0,
+                    0
+                )
+                multiFrameButton.setText(
+                    when (setting) {
+                        MultiFrameSetting.OFF -> R.string.multi_frame_off
+                        MultiFrameSetting.HDR_AUTO -> R.string.multi_frame_hdr_auto
+                        MultiFrameSetting.HDR_ON -> R.string.multi_frame_hdr_on
+                        MultiFrameSetting.NIGHT -> R.string.multi_frame_night
+                        MultiFrameSetting.ASTRO -> R.string.multi_frame_astro
+                    }
+                )
+
+                // The analysis stream is only bound while a multi-frame setting is active
+                val enabled = setting != MultiFrameSetting.OFF
+                val previous = boundWithMultiFrame
+                boundWithMultiFrame = enabled
+                if (previous != null && previous != enabled &&
+                    viewModel.cameraState.value == CameraState.IDLE
+                ) {
+                    viewModel.cameraConfiguration.replayCache.lastOrNull()?.let {
+                        bindCameraUseCases(it)
+                    }
+                }
+            }
+        }
+
+        launch {
+            viewModel.multiFrame.progress.collectLatest { progress ->
+                multiFrameProgress.isVisible = progress != null
+                progress?.let { multiFrameProgress.setProgressCompat((it * 100).toInt(), true) }
+            }
+        }
+
+        launch {
+            var astroOffered = false
+            while (true) {
+                delay(1000)
+                if (astroOffered || viewModel.cameraMode.value != CameraMode.PHOTO) continue
+                val setting = viewModel.multiFrame.setting.value
+                if (setting == MultiFrameSetting.ASTRO || setting == MultiFrameSetting.OFF) continue
+                if (!viewModel.multiFrame.astroSuggested()) continue
+                astroOffered = true
+                Snackbar.make(mainLayout, R.string.multi_frame_astro_suggestion, Snackbar.LENGTH_LONG)
+                    .setAction(R.string.multi_frame_astro) {
+                        viewModel.multiFrame.setSetting(MultiFrameSetting.ASTRO)
+                    }
+                    .show()
+            }
+        }
+
+        launch {
+            viewModel.timerMode.collectLatest { timerMode ->                // Update secondary bar buttons
                 timerButton.setCompoundDrawablesWithIntrinsicBounds(
                     0,
                     when (timerMode) {
@@ -1538,7 +1613,29 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                         )
                         .build()
 
-                CameraController.IMAGE_CAPTURE
+                viewModel.multiFrame.analyzer.resetStream()
+                if (viewModel.multiFrame.enabled &&
+                    cameraConfiguration.extensionMode == ExtensionMode.NONE &&
+                    cameraConfiguration.camera.cameraFacing != CameraFacing.FRONT
+                ) {
+                    // Full resolution YUV stream for multi-frame bursts
+                    viewModel.cameraController.imageAnalysisResolutionSelector =
+                        ResolutionSelector.Builder()
+                            .setAspectRatioStrategy(
+                                AspectRatioStrategy(
+                                    cameraConfiguration.photoAspectRatio,
+                                    AspectRatioStrategy.FALLBACK_RULE_AUTO,
+                                )
+                            )
+                            .setResolutionStrategy(ResolutionStrategy.HIGHEST_AVAILABLE_STRATEGY)
+                            .build()
+                    viewModel.cameraController.setImageAnalysisAnalyzer(
+                        viewModel.multiFrame.analysisExecutor, viewModel.multiFrame.analyzer
+                    )
+                    CameraController.IMAGE_CAPTURE or CameraController.IMAGE_ANALYSIS
+                } else {
+                    CameraController.IMAGE_CAPTURE
+                }
             }
 
             is CameraConfiguration.Video -> {

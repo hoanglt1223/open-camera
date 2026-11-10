@@ -65,9 +65,11 @@ android {
 }
 
 dependencies {
-    // gradle-generatebp cannot resolve project dependencies; Soong gets :profiles via a filegroup.
+    // gradle-generatebp cannot resolve project dependencies; Soong gets them via filegroups.
     if (gradle.startParameter.taskNames.none { it.endsWith("generateBp") }) {
         implementation(project(":profiles"))
+        implementation(project(":capture"))
+        implementation(project(":pipeline"))
     }
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.appcompat)

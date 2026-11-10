@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="multi_frame_off">HDR off</string>
+    <string name="multi_frame_hdr_auto">HDR auto</string>
+    <string name="multi_frame_hdr_on">HDR on</string>
+    <string name="multi_frame_night">Night</string>
+    <string name="multi_frame_astro">Astro</string>
+    <string name="multi_frame_astro_suggestion">Phone is steady and the scene is dark</string>
+</resources>
