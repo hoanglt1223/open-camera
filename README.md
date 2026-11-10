@@ -34,9 +34,18 @@ On first launch the app reads Camera2 characteristics (listed ids plus probed id
 low-resolution macro/depth sensors are excluded from zoom stops, and a 2x crop
 stop is added when there is no telephoto. The result is cached per build
 fingerprint in `noBackupFilesDir`. A profile placed at
-`files/device-profile-override.json` wins over everything; bundled profiles from
-the separate `open-camera-profiles` repository (`assets/profiles.bundle.json`)
-win over `auto`. Settings > Export device profile shares the JSON.
+`files/device-profile-override.json` wins over everything, then the profile pinned in
+Settings > Device profile (a bundled profile, "scanned only" or "off" for the plain
+camera list), then the best bundled match from the separate `open-camera-profiles`
+repository: measured profiles replace the scan, spec catalog profiles keep the scanned
+cameras and supply the published roles and stop labels. The zoom chips are these stops,
+mapped onto camera ids CameraX can open (hidden ids fall back to a duplicate id or a
+logical camera, otherwise the chip is left out). Settings > Export device profile shares
+the JSON.
+
+`gradle/bundle-profiles.gradle` writes `assets/profiles.bundle.json` at build time from a
+local checkout (`openCamera.profiles.dir=<path>` in `local.properties` or `-P`) or else the
+release tag pinned by `openCamera.profiles.version` in `gradle.properties`.
 
 ## Build
 

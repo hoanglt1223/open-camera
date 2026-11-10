@@ -32,6 +32,7 @@ import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.MaterialToolbar
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import dev.opencamera.app.ext.setOffset
 import dev.opencamera.app.models.HardwareKey
@@ -42,6 +43,8 @@ import dev.opencamera.app.repositories.PreferencesRepository.Companion.sharedPre
 import dev.opencamera.app.repositories.PreferencesRepository.Companion.toPreferenceString
 import dev.opencamera.app.utils.CameraSoundsUtils
 import dev.opencamera.app.utils.PermissionsManager
+import dev.opencamera.app.repositories.DeviceProfileRepository
+import dev.opencamera.profiles.ProfileResolver
 
 class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
     // Views
@@ -211,6 +214,10 @@ class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
             // Photo capture mode
             photoCaptureMode.onPreferenceChangeListener = photoCaptureModePreferenceChangeListener
             enableZsl.isEnabled = photoCaptureMode.value == "minimize_latency"
+
+            findPreference<ListPreference>(DeviceProfileRepository.PINNED_PROFILE_KEY)?.let {
+                setUpDeviceProfilePreference(it)
+            }
 
             findPreference<Preference>("export_device_profile")?.setOnPreferenceClickListener {
                 viewLifecycleOwner.lifecycleScope.launch {
@@ -393,5 +400,35 @@ class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
 
     companion object {
         private val LOG_TAG = SettingsActivity::class.simpleName!!
+    }
+}
+
+/**
+ * Lists the bundled profiles (matching ones first) so the user can pin one, keep the best
+ * match, use only the scanned profile, or turn profiles off. The choice is stored locally.
+ */
+private fun PreferenceFragmentCompat.setUpDeviceProfilePreference(preference: ListPreference) {
+    val repository = (requireContext().applicationContext as ApertureApplication)
+        .deviceProfileRepository
+    preference.isEnabled = false
+    lifecycleScope.launch {
+        val current = repository.profile()
+        val profiles = repository.bundledProfiles()
+            .sortedWith(compareBy({ it.id != current.id }, { it.name ?: it.id }))
+        preference.entries = (listOf(
+            getString(R.string.device_profile_best_match),
+            getString(R.string.device_profile_auto),
+            getString(R.string.device_profile_off),
+        ) + profiles.map { it.name?.let { name -> "$name (${it.id})" } ?: it.id }).toTypedArray()
+        preference.entryValues = (listOf(
+            "", ProfileResolver.AUTO_ID, DeviceProfileRepository.PINNED_OFF,
+        ) + profiles.map { it.id }).toTypedArray()
+        preference.summaryProvider = ListPreference.SimpleSummaryProvider.getInstance()
+        preference.isEnabled = true
+        preference.setOnPreferenceChangeListener { _, _ ->
+            // Stored first by the preference; resolve again on the next main-thread turn.
+            lifecycleScope.launch(Dispatchers.Main) { repository.refresh() }
+            true
+        }
     }
 }

@@ -64,6 +64,11 @@ android {
     }
 }
 
+// Device profile database: writes build/generated/profiles-assets/profiles.bundle.json.
+apply(from = "../gradle/bundle-profiles.gradle")
+android.sourceSets.getByName("main").assets.srcDir("build/generated/profiles-assets")
+tasks.named("preBuild").configure { dependsOn("bundleDeviceProfiles") }
+
 dependencies {
     // gradle-generatebp cannot resolve project dependencies; Soong gets :profiles via a filegroup.
     if (gradle.startParameter.taskNames.none { it.endsWith("generateBp") }) {

@@ -4,6 +4,7 @@
  */
 
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
@@ -26,4 +27,13 @@ dependencies {
     testImplementation(libs.json)
     testImplementation(libs.junit)
     testImplementation(kotlin("test-junit"))
+}
+
+// BundledProfilesTest reads the profiles checkout named by openCamera.profiles.dir, if any.
+tasks.test {
+    val local = Properties().apply {
+        rootProject.file("local.properties").takeIf { it.exists() }?.reader()?.use(::load)
+    }
+    ((findProperty("openCamera.profiles.dir") as String?) ?: local.getProperty("openCamera.profiles.dir"))
+        ?.let { systemProperty("openCamera.profiles.dir", rootProject.file(it).absolutePath) }
 }

@@ -58,6 +58,13 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.withTimeoutOrNull
+import androidx.camera.camera2.interop.Camera2CameraInfo
+import androidx.camera.camera2.interop.ExperimentalCamera2Interop
+import dev.opencamera.app.ApertureApplication
+import dev.opencamera.profiles.LensChip
+import dev.opencamera.profiles.LensPlan
 import dev.opencamera.app.ext.applicationContext
 import dev.opencamera.app.ext.broadcastReceiverFlow
 import dev.opencamera.app.ext.flashMode
@@ -274,6 +281,54 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
             started = SharingStarted.WhileSubscribed(),
             initialValue = null to listOf(),
         )
+
+    private val deviceProfileRepository =
+        getApplication<ApertureApplication>().deviceProfileRepository
+
+    /**
+     * Zoom selector chips from the device profile for the active camera's facing, each with the
+     * CameraX camera it opens. Empty when the profile has no usable stops (front camera,
+     * profiles turned off, 1x not openable): the UI then shows the plain camera list.
+     */
+    val lensChips = combine(lenses, deviceProfileRepository.resolved) { (camera, available), profile ->
+        if (camera == null || profile == null || camera.cameraFacing != CameraFacing.BACK) {
+            return@combine emptyList()
+        }
+        val byId = available.associateBy { it.cameraId }
+        LensPlan.from(profile).chips(byId.keys).map { it to byId.getValue(it.cameraId) }
+    }
+        .flowOn(Dispatchers.Default)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(),
+            initialValue = listOf<Pair<LensChip, Camera>>(),
+        )
+
+    private var lensChipZoomJob: Job? = null
+
+    /**
+     * Opens the chip's camera if needed, then applies the chip's zoom ratio once that camera
+     * is bound.
+     */
+    @androidx.annotation.OptIn(ExperimentalCamera2Interop::class)
+    fun selectLensChip(chip: LensChip, camera: Camera) {
+        lensChipZoomJob?.cancel()
+        if (_cameraConfiguration.value?.camera == camera) {
+            smoothZoom(chip.zoomRatio)
+            return
+        }
+        if (!selectCamera(camera)) return
+        if (chip.zoomRatio == 1f) return
+        lensChipZoomJob = viewModelScope.launch {
+            withTimeoutOrNull(LENS_CHIP_ZOOM_TIMEOUT_MS) {
+                zoomState.filterNotNull().first {
+                    cameraController.cameraInfo?.let { info ->
+                        Camera2CameraInfo.from(info).cameraId
+                    } == camera.cameraId
+                }
+            }?.let { cameraController.setZoomRatio(chip.zoomRatio.coerceIn(it.minZoomRatio, it.maxZoomRatio)) }
+        }
+    }
 
     /**
      * CameraX's state of the current camera.
@@ -1867,6 +1922,8 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         private val LOG_TAG = CameraViewModel::class.simpleName!!
 
         private const val SINGLE_CAPTURE_PHOTO_BUFFER_INITIAL_SIZE_BYTES = 8 * 1024 * 1024 // 8 MiB
+
+        private const val LENS_CHIP_ZOOM_TIMEOUT_MS = 3000L
 
         private val cameraFacingComparator = Comparator.comparingInt<CameraFacing> {
             when (it) {

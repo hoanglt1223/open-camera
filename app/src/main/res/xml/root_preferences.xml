@@ -126,6 +126,12 @@
             app:iconSpaceReserved="false"
             app:title="@string/processing_title" />
 
+        <ListPreference
+            app:defaultValue=""
+            app:iconSpaceReserved="false"
+            app:key="device_profile"
+            app:title="@string/device_profile_title" />
+
         <Preference
             app:iconSpaceReserved="false"
             app:key="export_device_profile"

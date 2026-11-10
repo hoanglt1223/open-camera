@@ -72,17 +72,37 @@ data class ZoomStop(
     val label: String,
 )
 
+/**
+ * A lens as published by the manufacturer. Null values were not published and come from
+ * Camera2 metadata at runtime. [official] marks a [ratio] printed by the manufacturer
+ * (a UI label) rather than derived from focal lengths.
+ */
+data class CatalogLens(
+    val role: LensRole,
+    val equivFocalMm: Float? = null,
+    val ratio: Float? = null,
+    val official: Boolean = false,
+)
+
+/**
+ * Either measured ([cameras] + [zoomStops]) or a spec catalog entry ([lenses]) that
+ * [ProfileMerger] combines with the scanned `auto` profile.
+ */
 data class DeviceProfile(
     val id: String,
     val match: ProfileMatch,
-    val cameras: List<CameraEntry>,
-    val zoomStops: List<ZoomStop>,
+    val cameras: List<CameraEntry> = emptyList(),
+    val zoomStops: List<ZoomStop> = emptyList(),
+    val name: String? = null,
+    val lenses: List<CatalogLens> = emptyList(),
     val quirks: Set<Quirk> = emptySet(),
     val source: ProfileSource = ProfileSource.AUTO,
     val testedBuilds: List<String> = emptyList(),
     val knownBugs: List<String> = emptyList(),
     val vendorTags: Map<String, String> = emptyMap(),
 ) {
+    val isMeasured get() = cameras.isNotEmpty() && zoomStops.isNotEmpty()
+
     companion object {
         const val SCHEMA_VERSION = 1
     }

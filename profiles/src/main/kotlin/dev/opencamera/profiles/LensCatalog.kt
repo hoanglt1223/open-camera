@@ -22,6 +22,9 @@ object LensCatalog {
     private const val MAIN_RATIO_TOLERANCE = 0.05f
     private const val CROP_STOP_RATIO = 2f
 
+    /** Roles that can become zoom stops; macro, depth and mono never do. */
+    val STOP_ROLES = setOf(LensRole.MAIN, LensRole.ULTRA, LensRole.TELE)
+
     fun equivalentFocalMm(spec: CameraSpec): Float {
         val focal = spec.focalLengthsMm.minOrNull() ?: return 0f
         val diagonal = hypot(spec.sensorWidthMm, spec.sensorHeightMm)
@@ -98,24 +101,69 @@ object LensCatalog {
                 hidden = spec.hidden,
             )
         }
+        if (entries.any { it.hidden && it.facing == Facing.BACK && it.role in STOP_ROLES }) {
+            quirks += Quirk.HIDDEN_PHYSICAL_IDS
+        }
+        val logical = logicalZoomCamera(entries, quirks)
+        if (logical != null) quirks += Quirk.USE_LOGICAL_ZOOM
         return entries to quirks
     }
 
-    fun zoomStops(cameras: List<CameraEntry>): List<ZoomStop> {
+    /**
+     * Stops: one per canonical back main/ultra/tele sensor, then crop stops on main for
+     * published teles the scan could not find (or 2x when there is no tele at all).
+     * A non-empty [catalog] limits stops to the published roles and supplies the labels.
+     * With [Quirk.USE_LOGICAL_ZOOM] every stop is a zoom ratio on the logical camera.
+     */
+    fun zoomStops(
+        cameras: List<CameraEntry>,
+        quirks: Set<Quirk> = emptySet(),
+        catalog: List<CatalogLens> = emptyList(),
+    ): List<ZoomStop> {
         val back = cameras.filter { it.facing == Facing.BACK && it.duplicateOf == null }
         val main = back.firstOrNull { it.role == LensRole.MAIN } ?: return emptyList()
-        val stops = back
-            .filter { it.role == LensRole.MAIN || it.role == LensRole.ULTRA || it.role == LensRole.TELE }
-            .map {
-                val ratio = if (it == main) 1f else roundRatio(it.equivFocalMm / main.equivFocalMm)
-                ZoomStop(ratio, it.id, StopMode.PHYSICAL, label(ratio))
+        val published = catalog.map { it.role }.toSet()
+        val mainLabel = catalog.firstOrNull { it.role == LensRole.MAIN }?.ratio ?: 1f
+        val physical = back
+            .filter { it.role in STOP_ROLES && (catalog.isEmpty() || it.role in published || it == main) }
+            .map { cam ->
+                val ratio = if (cam == main) 1f else roundRatio(cam.equivFocalMm / main.equivFocalMm)
+                val lens = catalog.filter { it.role == cam.role }
+                    .minByOrNull { kotlin.math.abs((it.ratio ?: ratio * mainLabel) - ratio * mainLabel) }
+                val label = lens?.takeIf { it.official }?.ratio ?: (ratio * mainLabel)
+                ZoomStop(ratio, cam.id, StopMode.PHYSICAL, label(label))
             }
             .distinctBy { it.ratio }
-            .toMutableList()
-        if (back.none { it.role == LensRole.TELE }) {
-            stops += ZoomStop(CROP_STOP_RATIO, main.id, StopMode.CROP, label(CROP_STOP_RATIO))
+        val teleFound = physical.any { s -> back.first { it.id == s.cameraId }.role == LensRole.TELE }
+        val publishedTele = catalog.filter { it.role == LensRole.TELE }.mapNotNull { it.ratio }
+        val crops = when {
+            teleFound -> emptyList()
+            publishedTele.isNotEmpty() -> publishedTele.map { it / mainLabel to it }
+            else -> listOf(CROP_STOP_RATIO to CROP_STOP_RATIO * mainLabel)
+        }.map { (ratio, shown) -> ZoomStop(ratio, main.id, StopMode.CROP, label(shown)) }
+        val stops = (physical + crops).distinctBy { it.ratio }.sortedBy { it.ratio }
+
+        val logical = logicalZoomCamera(cameras, quirks) ?: return stops
+        return stops.map { it.copy(cameraId = logical.id, mode = StopMode.LOGICAL) }
+    }
+
+    /**
+     * The logical camera to zoom through: forced by [Quirk.USE_LOGICAL_ZOOM], or found when
+     * a listed logical camera contains the main and another stop lens that is itself hidden.
+     */
+    fun logicalZoomCamera(cameras: List<CameraEntry>, quirks: Set<Quirk>): CameraEntry? {
+        val byId = cameras.associateBy { it.id }
+        fun canonical(id: String) = byId[id]?.let { c -> c.duplicateOf?.let(byId::get) ?: c }
+        val logicals = cameras.filter { it.role == LensRole.LOGICAL && it.facing == Facing.BACK }
+        if (Quirk.USE_LOGICAL_ZOOM in quirks) {
+            return logicals.minByOrNull { if (it.hidden) 1 else 0 }
         }
-        return stops.sortedBy { it.ratio }
+        return logicals.firstOrNull { logical ->
+            val members = logical.physicalIds.mapNotNull(::canonical)
+            !logical.hidden && members.any { it.role == LensRole.MAIN } &&
+                members.any { it.role == LensRole.ULTRA || it.role == LensRole.TELE } &&
+                members.all { it.hidden }
+        }
     }
 
     private fun auxiliaryRole(spec: CameraSpec, logicalMembers: Set<String>): LensRole? = when {

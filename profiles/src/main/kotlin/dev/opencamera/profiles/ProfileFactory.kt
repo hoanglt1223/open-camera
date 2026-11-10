@@ -27,7 +27,7 @@ object ProfileFactory {
                 model = listOf(build.model),
             ),
             cameras = cameras,
-            zoomStops = LensCatalog.zoomStops(cameras),
+            zoomStops = LensCatalog.zoomStops(cameras, quirks),
             quirks = quirks,
             source = ProfileSource.AUTO,
             testedBuilds = listOf(build.fingerprint),
