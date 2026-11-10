@@ -1,0 +1,34 @@
+{
+  "id": "silver-mono",
+  "name": "Silver Mono",
+  "description": "Black and white with a green-filter mix and a faint silver-warm tone.",
+  "lut": "lut.cube",
+  "intensity": 1.0,
+  "curve": [
+    [
+      0,
+      0
+    ],
+    [
+      0.25,
+      0.22
+    ],
+    [
+      0.75,
+      0.8
+    ],
+    [
+      1,
+      1
+    ]
+  ],
+  "highlightRolloff": 0.3,
+  "grain": {
+    "amount": 0.12,
+    "size": 1.2
+  },
+  "vignette": {
+    "amount": 0.18,
+    "softness": 0.6
+  }
+}

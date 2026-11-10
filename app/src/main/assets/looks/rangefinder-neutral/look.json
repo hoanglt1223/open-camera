@@ -1,0 +1,30 @@
+{
+  "id": "rangefinder-neutral",
+  "name": "Rangefinder Neutral",
+  "description": "Muted, warm-neutral palette with a long highlight roll-off.",
+  "lut": "lut.cube",
+  "intensity": 1.0,
+  "curve": [
+    [
+      0,
+      0.01
+    ],
+    [
+      0.25,
+      0.24
+    ],
+    [
+      0.75,
+      0.76
+    ],
+    [
+      1,
+      0.99
+    ]
+  ],
+  "highlightRolloff": 0.55,
+  "vignette": {
+    "amount": 0.15,
+    "softness": 0.7
+  }
+}

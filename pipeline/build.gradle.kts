@@ -17,6 +17,7 @@ android {
 
     defaultConfig {
         minSdk = 26
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
                 arguments += "-DANDROID_STL=c++_shared"
@@ -41,4 +42,12 @@ android {
             jvmTarget.set(JvmTarget.JVM_17)
         }
     }
+}
+dependencies {
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.exifinterface)
+    testImplementation(libs.junit)
+    testImplementation(libs.json)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
 }

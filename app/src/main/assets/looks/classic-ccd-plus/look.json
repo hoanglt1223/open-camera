@@ -1,0 +1,38 @@
+{
+  "id": "classic-ccd-plus",
+  "name": "Classic CCD Plus",
+  "description": "A richer take on Classic CCD with warm highlights and a darker frame edge.",
+  "lut": "lut.cube",
+  "intensity": 1.0,
+  "curve": [
+    [
+      0,
+      0
+    ],
+    [
+      0.18,
+      0.14
+    ],
+    [
+      0.5,
+      0.5
+    ],
+    [
+      0.82,
+      0.87
+    ],
+    [
+      1,
+      1
+    ]
+  ],
+  "highlightRolloff": 0.15,
+  "vignette": {
+    "amount": 0.28,
+    "softness": 0.55
+  },
+  "grain": {
+    "amount": 0.05,
+    "size": 1.0
+  }
+}

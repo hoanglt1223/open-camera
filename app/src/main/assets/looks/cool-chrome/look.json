@@ -1,0 +1,30 @@
+{
+  "id": "cool-chrome",
+  "name": "Cool Chrome",
+  "description": "Cool, slide-film chrome: deep blues, restrained warmth, hard contrast.",
+  "lut": "lut.cube",
+  "intensity": 1.0,
+  "curve": [
+    [
+      0,
+      0
+    ],
+    [
+      0.22,
+      0.17
+    ],
+    [
+      0.78,
+      0.84
+    ],
+    [
+      1,
+      1
+    ]
+  ],
+  "highlightRolloff": 0.15,
+  "grain": {
+    "amount": 0.06,
+    "size": 1.0
+  }
+}

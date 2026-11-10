@@ -1,0 +1,38 @@
+{
+  "id": "high-contrast-mono",
+  "name": "High Contrast Mono",
+  "description": "Red-filter black and white: dark skies, bright skin, heavy grain.",
+  "lut": "lut.cube",
+  "intensity": 1.0,
+  "curve": [
+    [
+      0,
+      0
+    ],
+    [
+      0.2,
+      0.12
+    ],
+    [
+      0.5,
+      0.5
+    ],
+    [
+      0.8,
+      0.9
+    ],
+    [
+      1,
+      1
+    ]
+  ],
+  "highlightRolloff": 0.1,
+  "grain": {
+    "amount": 0.2,
+    "size": 1.5
+  },
+  "vignette": {
+    "amount": 0.22,
+    "softness": 0.5
+  }
+}
