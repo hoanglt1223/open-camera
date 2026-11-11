@@ -1,0 +1,30 @@
+{
+  "id": "soft-portrait",
+  "name": "Soft Portrait",
+  "description": "Gentle portrait-film palette: warm skin, pastel greens, soft contrast.",
+  "lut": "lut.cube",
+  "intensity": 1.0,
+  "curve": [
+    [
+      0,
+      0.02
+    ],
+    [
+      0.3,
+      0.31
+    ],
+    [
+      0.7,
+      0.71
+    ],
+    [
+      1,
+      0.98
+    ]
+  ],
+  "highlightRolloff": 0.5,
+  "grain": {
+    "amount": 0.06,
+    "size": 1.1
+  }
+}

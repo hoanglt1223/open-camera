@@ -95,6 +95,7 @@ import dev.opencamera.app.models.Rotation
 import dev.opencamera.app.models.ShadingMode
 import dev.opencamera.app.models.ThermalStatus
 import dev.opencamera.app.models.TimerMode
+import dev.opencamera.app.processing.LookController
 import dev.opencamera.app.qr.QrImageAnalyzer
 import dev.opencamera.app.repositories.CameraRepository
 import dev.opencamera.app.utils.CameraSoundsUtils
@@ -147,6 +148,11 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
      * CameraX's [LifecycleCameraController].
      */
     val cameraController = LifecycleCameraController(applicationContext)
+
+    /**
+     * Preview look effect and background rendering of captured photos.
+     */
+    val lookController = LookController(applicationContext, cameraController, viewModelScope)
 
     /**
      * Mutex used to rebind the camera.
@@ -1023,6 +1029,7 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
 
     override fun onCleared() {
         cameraController.unbind()
+        lookController.release()
 
         cameraExecutor.shutdown()
 
@@ -1147,6 +1154,9 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
                 if (!inSingleCaptureMode.value) {
                     output.savedUri?.let {
                         mediaRepository.broadcastNewPicture(it)
+                        if (output.imageFormat !in RAW_FORMATS) {
+                            lookController.onPhotoSaved(it)
+                        }
                     }
                 }
 

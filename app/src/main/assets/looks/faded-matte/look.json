@@ -1,0 +1,26 @@
+{
+  "id": "faded-matte",
+  "name": "Faded Matte",
+  "description": "Low-contrast matte print with soft pastel colour.",
+  "lut": "lut.cube",
+  "intensity": 1.0,
+  "curve": [
+    [
+      0,
+      0.04
+    ],
+    [
+      0.5,
+      0.5
+    ],
+    [
+      1,
+      0.96
+    ]
+  ],
+  "highlightRolloff": 0.35,
+  "grain": {
+    "amount": 0.08,
+    "size": 1.3
+  }
+}

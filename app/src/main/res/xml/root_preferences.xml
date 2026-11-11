@@ -3,7 +3,8 @@
      SPDX-FileCopyrightText: The LineageOS Project
      SPDX-License-Identifier: Apache-2.0
 -->
-<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <PreferenceCategory
         app:iconSpaceReserved="false"
@@ -92,6 +93,30 @@
             app:key="photo_ffc_mirror"
             app:summary="@string/photo_ffc_mirror_summary"
             app:title="@string/photo_ffc_mirror_title" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:title="@string/looks_header">
+
+        <SeekBarPreference
+            android:max="100"
+            app:defaultValue="100"
+            app:iconSpaceReserved="false"
+            app:key="look_intensity"
+            app:showSeekBarValue="true"
+            app:summary="@string/look_intensity_summary"
+            app:title="@string/look_intensity_title" />
+
+        <ListPreference
+            app:defaultValue="none"
+            app:entries="@array/watermark_template_entries"
+            app:entryValues="@array/watermark_template_values"
+            app:iconSpaceReserved="false"
+            app:key="watermark_template"
+            app:title="@string/watermark_template_title"
+            app:useSimpleSummaryProvider="true" />
 
     </PreferenceCategory>
 
