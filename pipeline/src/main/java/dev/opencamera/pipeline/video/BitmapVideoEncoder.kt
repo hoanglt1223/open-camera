@@ -10,7 +10,13 @@ import android.media.MediaCodec
 import android.media.MediaCodecInfo
 import android.media.MediaFormat
 import android.media.MediaMuxer
+import dev.opencamera.pipeline.OpenCv
+import org.opencv.core.CvType
+import org.opencv.core.Mat
+import org.opencv.imgproc.Imgproc
 import java.io.File
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import kotlin.math.max
 
 /**
@@ -79,7 +85,7 @@ class BitmapVideoEncoder(
         val index = dequeueInput()
         val image = codec.getInputImage(index) ?: error("encoder has no input image")
         val planes = image.planes
-        writePlanes(argb, planes)
+        if (!writePlanesFast(argb, planes)) writePlanes(argb, planes)
         val pts = max(ptsUs, lastPtsUs + 1)
         lastPtsUs = pts
         codec.queueInputBuffer(index, 0, width * height * 3 / 2, pts, 0)
@@ -95,34 +101,105 @@ class BitmapVideoEncoder(
         }
     }
 
-    private fun writePlanes(argb: IntArray, planes: Array<android.media.Image.Plane>) {
-        val yPlane = planes[0]
-        val yBuf = yPlane.buffer
-        val yRow = yPlane.rowStride
-        val yPix = yPlane.pixelStride
-        val uPlane = planes[1]
-        val vPlane = planes[2]
-        val uBuf = uPlane.buffer
-        val vBuf = vPlane.buffer
-        val cRow = uPlane.rowStride
-        val cPix = uPlane.pixelStride
-        val vRow = vPlane.rowStride
-        val vPix = vPlane.pixelStride
-        for (row in 0 until height) {
-            for (col in 0 until width) {
-                val p = argb[row * width + col]
-                val r = (p shr 16) and 0xff
-                val g = (p shr 8) and 0xff
-                val b = p and 0xff
-                yBuf.put(row * yRow + col * yPix, Yuv.y(r, g, b).toByte())
-                if (row and 1 == 0 && col and 1 == 0) {
-                    uBuf.put((row / 2) * cRow + (col / 2) * cPix, Yuv.u(r, g, b).toByte())
-                    vBuf.put((row / 2) * vRow + (col / 2) * vPix, Yuv.v(r, g, b).toByte())
-                }
-            }
+    private var argbMat: Mat? = null
+    private var i420Mat: Mat? = null
+    private var i420 = ByteArray(0)
+    private var argbBytes: ByteBuffer? = null
+
+    /** OpenCV (NEON) colour conversion, then plane copies; false when OpenCV is unavailable. */
+    private fun writePlanesFast(argb: IntArray, planes: Array<android.media.Image.Plane>): Boolean {
+        if (!OpenCv.available) return false
+        return try {
+            // Little-endian ARGB ints are B,G,R,A bytes.
+            val bytes = argbBytes ?: ByteBuffer.allocate(argb.size * 4).order(ByteOrder.LITTLE_ENDIAN)
+                .also { argbBytes = it }
+            bytes.clear()
+            bytes.asIntBuffer().put(argb)
+            val bgra = argbMat ?: Mat(height, width, CvType.CV_8UC4).also { argbMat = it }
+            bgra.put(0, 0, bytes.array())
+            val dst = i420Mat ?: Mat().also { i420Mat = it }
+            Imgproc.cvtColor(bgra, dst, Imgproc.COLOR_BGRA2YUV_I420)
+            val size = width * height * 3 / 2
+            if (i420.size != size) i420 = ByteArray(size)
+            dst.get(0, 0, i420)
+            copyPlane(planes[0], i420, 0, width, height)
+            copyPlane(planes[1], i420, width * height, width / 2, height / 2)
+            copyPlane(planes[2], i420, width * height * 5 / 4, width / 2, height / 2)
+            true
+        } catch (e: Throwable) {
+            false
         }
     }
 
+    private fun copyPlane(plane: android.media.Image.Plane, src: ByteArray, offset: Int, w: Int, h: Int) {
+        val buf = plane.buffer
+        val ps = plane.pixelStride
+        val rs = plane.rowStride
+        if (ps == 1) {
+            for (r in 0 until h) {
+                buf.position(r * rs)
+                buf.put(src, offset + r * w, w)
+            }
+            return
+        }
+        for (r in 0 until h) {
+            val base = offset + r * w
+            for (col in 0 until w) buf.put(r * rs + col * ps, src[base + col])
+        }
+    }
+
+    private var yRowBuf = ByteArray(0)
+    private var uRowBuf = ByteArray(0)
+    private var vRowBuf = ByteArray(0)
+
+    /** Row-wise bulk writes; per-pixel absolute puts were ~10x slower at 720p. */
+    private fun writePlanes(argb: IntArray, planes: Array<android.media.Image.Plane>) {
+        val y = planes[0]
+        val u = planes[1]
+        val v = planes[2]
+        val yBuf = y.buffer
+        val uBuf = u.buffer
+        val vBuf = v.buffer
+        val yPix = y.pixelStride
+        val uPix = u.pixelStride
+        val vPix = v.pixelStride
+        val yLen = (width - 1) * yPix + 1
+        val cw = width / 2
+        val uLen = (cw - 1) * uPix + 1
+        val vLen = (cw - 1) * vPix + 1
+        if (yRowBuf.size < yLen) yRowBuf = ByteArray(yLen)
+        if (uRowBuf.size < uLen) uRowBuf = ByteArray(uLen)
+        if (vRowBuf.size < vLen) vRowBuf = ByteArray(vLen)
+        val interleaved = uPix == 2 && vPix == 2
+        for (row in 0 until height) {
+            val base = row * width
+            val chroma = row and 1 == 0
+
+            for (col in 0 until width) {
+                val p = argb[base + col]
+                val r = (p shr 16) and 0xff
+                val g = (p shr 8) and 0xff
+                val b = p and 0xff
+                yRowBuf[col * yPix] = Yuv.y(r, g, b).toByte()
+                if (chroma && col and 1 == 0) {
+                    uRowBuf[(col / 2) * uPix] = Yuv.u(r, g, b).toByte()
+                    vRowBuf[(col / 2) * vPix] = Yuv.v(r, g, b).toByte()
+                }
+            }
+            yBuf.position(row * y.rowStride); yBuf.put(yRowBuf, 0, yLen)
+            if (chroma) {
+                if (interleaved) {
+                    // U and V views overlap by one byte: each write must carry the other's samples.
+                    for (k in 0 until cw - 1) {
+                        uRowBuf[2 * k + 1] = vRowBuf[2 * k]
+                        vRowBuf[2 * k + 1] = uRowBuf[2 * k + 2]
+                    }
+                }
+                uBuf.position((row / 2) * u.rowStride); uBuf.put(uRowBuf, 0, uLen)
+                vBuf.position((row / 2) * v.rowStride); vBuf.put(vRowBuf, 0, vLen)
+            }
+        }
+    }
     private fun drain(endOfStream: Boolean) {
         while (true) {
             val index = codec.dequeueOutputBuffer(info, if (endOfStream) 10_000 else 0)
@@ -171,6 +248,8 @@ class BitmapVideoEncoder(
         muxer = null
         scaled?.recycle()
         scaled = null
+        argbMat?.release(); argbMat = null
+        i420Mat?.release(); i420Mat = null
         if (!muxerStarted) output.delete()
     }
 }

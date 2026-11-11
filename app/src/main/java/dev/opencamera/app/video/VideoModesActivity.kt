@@ -592,7 +592,11 @@ class VideoModesActivity : AppCompatActivity() {
         } else {
             AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY
         }
-        val target = if (wide) Size(1920, 1080) else Size(1440, 1080)
+        val target = when {
+            mode == VideoMode.TIME_FREEZE -> Size(1280, 720)
+            wide -> Size(1920, 1080)
+            else -> Size(1440, 1080)
+        }
         val analysisSelector = ResolutionSelector.Builder()
             .setAspectRatioStrategy(aspect)
             .setResolutionStrategy(
@@ -605,6 +609,8 @@ class VideoModesActivity : AppCompatActivity() {
                 val analysis = ImageAnalysis.Builder()
                     .setResolutionSelector(analysisSelector)
                     .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                    // CameraX rotates natively (libyuv), much faster than a Bitmap matrix copy.
+                    .setOutputImageRotationEnabled(true)
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .build()
                 analysis.setAnalyzer(analysisExecutor, ::analyze)
