@@ -26,7 +26,8 @@ import java.nio.ByteBuffer
  */
 class LooksRepository private constructor(context: Context) {
     private val assets = context.applicationContext.assets
-    private val lutCache = File(context.applicationContext.cacheDir, "luts")
+    // Directory lookups touch the disk; first use is on a background thread.
+    private val lutCache by lazy { File(app.cacheDir, "luts") }
     private val app = context.applicationContext
     private val appVersion by lazy {
         runCatching {
@@ -34,7 +35,7 @@ class LooksRepository private constructor(context: Context) {
         }.getOrDefault(0L)
     }
     private val luts = HashMap<String, Lut3d>()
-    val userLooks = UserLookStore(File(context.applicationContext.filesDir, "looks/user"))
+    val userLooks by lazy { UserLookStore(File(app.filesDir, "looks/user")) }
 
     private val builtIn: List<LookDescriptor> by lazy {
         val index = JSONObject(read("$ROOT/index.json")).getJSONArray("looks")
