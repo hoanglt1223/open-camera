@@ -75,6 +75,7 @@ dependencies {
         implementation(project(":profiles"))
         implementation(project(":capture"))
         implementation(project(":pipeline"))
+        implementation(project(":vendor-bridge"))
     }
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.appcompat)

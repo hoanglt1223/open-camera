@@ -15,6 +15,7 @@ android_app {
         ":OpenCamera_profiles_srcs",
         ":OpenCamera_capture_srcs",
         ":OpenCamera_pipeline_srcs",
+        ":OpenCamera_vendor-bridge_srcs",
     ],
     resource_dirs: ["src/main/res"],
     asset_dirs: ["src/main/assets"],

@@ -31,6 +31,8 @@ import dev.opencamera.capture.MultiFrameSetting
 import dev.opencamera.pipeline.Burst
 import dev.opencamera.pipeline.MultiFrameMode
 import dev.opencamera.pipeline.MultiFrameProcessor
+import dev.opencamera.vendorbridge.ProcessingSource
+import dev.opencamera.vendorbridge.SourcePolicy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -216,7 +218,7 @@ class MultiFrameCaptureController(
                             rotationDegrees = captured.collected.rotationDegrees,
                             captureResult = captured.collected.captureResult,
                             location = location,
-                            description = "${mode.name} ${image.frameCount} frames",
+                            description = SourcePolicy.label(ProcessingSource.OPEN, "${mode.name} ${image.frameCount} frames"),
                         )
                     )
                     val t3 = SystemClock.elapsedRealtime()

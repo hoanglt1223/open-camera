@@ -13,6 +13,18 @@ import android.content.IntentFilter
 import android.graphics.ImageFormat
 import android.location.LocationManager
 import android.net.Uri
+import dev.opencamera.vendorbridge.OemFeature
+import kotlinx.coroutines.withContext
+import dev.opencamera.app.ext.toExtensionMode
+import dev.opencamera.app.ext.oemFeatureOf
+import dev.opencamera.app.ext.oemFeature
+import dev.opencamera.vendorbridge.VendorTagRegistry
+import dev.opencamera.vendorbridge.ProcessingSource
+import dev.opencamera.vendorbridge.ExtensionsProbe
+import dev.opencamera.profiles.ProfileSource
+import dev.opencamera.app.robustness.FeatureGuard
+import androidx.exifinterface.media.ExifInterface
+import android.hardware.camera2.CameraManager
 import android.os.BatteryManager
 import android.os.Build
 import android.os.PowerManager
@@ -174,6 +186,15 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
     val qrImageAnalyzer = QrImageAnalyzer(applicationContext, viewModelScope)
 
     val multiFrame = MultiFrameCaptureController(applicationContext, BurstJobQueue.get(applicationContext))
+
+    val vendorBridge = getApplication<ApertureApplication>().vendorBridge
+
+    private val cameraManager by lazy { applicationContext.getSystemService(CameraManager::class.java) }
+
+
+    /** "OEM Night" while the bound session uses the phone's processing, else null. */
+    @Volatile
+    var oemProcessingLabel: String? = null
 
     /**
      * Do not emit here directly, use [emitEvent].
@@ -1008,6 +1029,16 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
 
     init {
         viewModelScope.launch {
+            launch(Dispatchers.IO) {
+                FeatureGuard.attempt(LOG_TAG, "Vendor bridge probe") {
+                    val cameras = cameraRepository.cameras.first()
+                    vendorBridge.dumpOnce(cameraManager, cameras.associate { camera ->
+                        camera.cameraId to camera.supportedExtensionModes
+                            .mapNotNull(::oemFeatureOf).toSet()
+                    })
+                }
+            }
+
             launch {
                 flashMode.collectLatest { flashMode ->
                     cameraController.flashMode = flashMode
@@ -1184,7 +1215,13 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
                     output.savedUri?.let {
                         mediaRepository.broadcastNewPicture(it)
                         if (output.imageFormat !in RAW_FORMATS) {
-                            lookController.onPhotoSaved(it)
+                            val label = oemProcessingLabel
+                            if (label == null) {
+                                lookController.onPhotoSaved(it)
+                            } else viewModelScope.launch {
+                                withContext(Dispatchers.IO) { tagProcessingSource(it, label) }
+                                lookController.onPhotoSaved(it)
+                            }
                         }
                     }
                 }
@@ -1295,6 +1332,60 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         }
         return true
     }
+
+    /**
+     * Extension to bind: the effect the user picked, else the phone's processing for the
+     * multi-frame setting when the user prefers it and the camera offers it, else none.
+     */
+    @androidx.annotation.OptIn(ExperimentalZeroShutterLag::class)
+    fun resolveExtensionMode(cameraConfiguration: CameraConfiguration): Int {
+        if (cameraConfiguration !is CameraConfiguration.Photo ||
+            cameraConfiguration.extensionMode != ExtensionMode.NONE
+        ) {
+            return cameraConfiguration.extensionMode
+        }
+        if (inSingleCaptureMode.value ||
+            cameraConfiguration.photoOutputFormat != PhotoOutputFormat.JPEG ||
+            cameraConfiguration.photoCaptureMode == ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG
+        ) {
+            return ExtensionMode.NONE
+        }
+        val feature = multiFrame.setting.value.oemFeature() ?: return ExtensionMode.NONE
+        val mode = feature.toExtensionMode()
+        val available = cameraConfiguration.camera.supportsExtensionMode(mode)
+        return when (vendorBridge.resolve(feature, available)) {
+            ProcessingSource.PHONE -> mode
+            ProcessingSource.OPEN -> ExtensionMode.NONE
+        }
+    }
+
+    /** The phone's processing the bridge picked for [cameraConfiguration], if any. */
+    fun bridgedOemFeature(cameraConfiguration: CameraConfiguration): OemFeature? =
+        if (cameraConfiguration.extensionMode == ExtensionMode.NONE) {
+            oemFeatureOf(resolveExtensionMode(cameraConfiguration))
+        } else null
+
+    /** Vendor request tags the device profile enables for [cameraId]. */
+    fun vendorTagsFor(cameraId: String): List<VendorTagRegistry.Tag> {
+        val profile = deviceProfileRepository.resolved.value ?: return emptyList()
+        if (profile.vendorTags.isEmpty()) return emptyList()
+        return vendorBridge.selectTags(
+            profile.vendorTags,
+            profile.source == ProfileSource.VERIFIED,
+            ExtensionsProbe.requestKeyNames(cameraManager, cameraId),
+        )
+    }
+
+    private fun tagProcessingSource(uri: Uri, label: String) =
+        FeatureGuard.attempt(LOG_TAG, "Processing source EXIF") {
+            applicationContext.contentResolver.openFileDescriptor(uri, "rw")?.use { pfd ->
+                ExifInterface(pfd.fileDescriptor).apply {
+                    setAttribute(ExifInterface.TAG_IMAGE_DESCRIPTION, label)
+                    saveAttributes()
+                }
+            }
+        }
+
     fun captureVideo() {
         if (cameraState.value != CameraState.IDLE) {
             if (cameraController.isRecording) {

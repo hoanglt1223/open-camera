@@ -144,6 +144,39 @@
 
     <PreferenceCategory
         app:iconSpaceReserved="false"
+        app:title="@string/vendor_bridge_header">
+
+        <SwitchPreference
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="vendor_bridge_enabled"
+            app:summary="@string/vendor_bridge_enabled_summary"
+            app:title="@string/vendor_bridge_enabled_title" />
+
+        <ListPreference
+            app:defaultValue="phone"
+            app:dependency="vendor_bridge_enabled"
+            app:entries="@array/processing_source_entries"
+            app:entryValues="@array/processing_source_values"
+            app:iconSpaceReserved="false"
+            app:key="processing_source_hdr"
+            app:title="@string/processing_source_hdr_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
+            app:defaultValue="phone"
+            app:dependency="vendor_bridge_enabled"
+            app:entries="@array/processing_source_entries"
+            app:entryValues="@array/processing_source_values"
+            app:iconSpaceReserved="false"
+            app:key="processing_source_night"
+            app:title="@string/processing_source_night_title"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
         app:title="@string/advanced_header">
 
         <Preference
