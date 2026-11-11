@@ -7,6 +7,7 @@ package dev.opencamera.app.multiframe
 
 import android.annotation.SuppressLint
 import android.hardware.camera2.CaptureResult
+import android.util.Log
 import android.util.Size
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
@@ -110,10 +111,16 @@ class BurstAnalyzer : ImageAnalysis.Analyzer {
     }
 
     private fun meter(image: ImageProxy) {
-        val result = captureResult(image) ?: return
-        val exposure = result.get(CaptureResult.SENSOR_EXPOSURE_TIME) ?: return
-        val iso = result.get(CaptureResult.SENSOR_SENSITIVITY) ?: return
-        val aperture = result.get(CaptureResult.LENS_APERTURE) ?: 1.8f
+        // Some CameraX backends (camera-pipe) attach no CaptureResult to analysis frames; meter
+        // from luma with a typical indoor exposure then, so bursts still run as HDR.
+        val result = captureResult(image)
+        if (result == null && !warnedNoResult) {
+            warnedNoResult = true
+            Log.w(LOG_TAG, "No CaptureResult on analysis frames, metering from luma only")
+        }
+        val exposure = result?.get(CaptureResult.SENSOR_EXPOSURE_TIME) ?: FALLBACK_EXPOSURE_NS
+        val iso = result?.get(CaptureResult.SENSOR_SENSITIVITY) ?: FALLBACK_ISO
+        val aperture = result?.get(CaptureResult.LENS_APERTURE) ?: 1.8f
         val plane = image.planes[0]
         val buf = plane.buffer
         val step = 16
@@ -137,7 +144,14 @@ class BurstAnalyzer : ImageAnalysis.Analyzer {
         lastMeter = SceneMeter(exposure, iso, sum.toFloat() / n, clipped.toFloat() / n, aperture)
     }
 
+    @Volatile
+    private var warnedNoResult = false
+
     companion object {
+        private const val LOG_TAG = "BurstAnalyzer"
+        private const val FALLBACK_EXPOSURE_NS = 20_000_000L
+        private const val FALLBACK_ISO = 200
+
         @SuppressLint("RestrictedApi")
         fun captureResult(image: ImageProxy): CaptureResult? = runCatching {
             CameraCaptureResults.retrieveCameraCaptureResult(image.imageInfo)?.captureResult

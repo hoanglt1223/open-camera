@@ -22,7 +22,10 @@ import androidx.camera.core.CameraInfo
 import androidx.camera.core.FocusMeteringAction
 import androidx.camera.view.PreviewView
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -64,7 +67,8 @@ class ProModeUi(
         minHeight = (48 * density).toInt()
         val p = (14 * density).toInt()
         setPadding(p, 0, p, 0)
-        setOnClickListener { setEnabled(!store.enabled) }
+        // Qualified: inside apply, a bare setEnabled() would resolve to View.setEnabled.
+        setOnClickListener { this@ProModeUi.setEnabled(!store.enabled) }
     }
 
     private var caps: ProCapabilities? = null
@@ -97,6 +101,12 @@ class ProModeUi(
             val m = (12 * density).toInt()
             setMargins(m, m, m, m)
         })
+        // The viewfinder starts under the status bar; keep the toggle out of the system gesture area.
+        ViewCompat.setOnApplyWindowInsetsListener(toggle) { v, insets ->
+            val top = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()).top
+            v.updateLayoutParams<ConstraintLayout.LayoutParams> { topMargin = top + (12 * density).toInt() }
+            insets
+        }
         panel.listener = this
 
         activity.lifecycleScope.launch {

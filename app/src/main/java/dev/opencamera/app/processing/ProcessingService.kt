@@ -64,7 +64,11 @@ class ProcessingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startInForeground(pendingCount())
+        if (!startInForeground(pendingCount())) {
+            // Jobs stay queued and resume on the next launch.
+            stopSelf()
+            return START_NOT_STICKY
+        }
         if (worker?.isActive != true) {
             worker = scope.launch { runQueue() }
         }
@@ -218,13 +222,24 @@ class ProcessingService : Service() {
 
     private fun pendingCount() = queue.pendingCount() + BurstJobQueue.get(this).pending.value
 
-    private fun startInForeground(pending: Int) {
+    private fun startInForeground(pending: Int): Boolean {
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING
         } else {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
         }
-        ServiceCompat.startForeground(this, NOTIFICATION_ID, notification(pending), type)
+        // Platform call: ServiceCompat masks out types it does not know on newer releases,
+        // which reaches the system as type none and is rejected.
+        val types = listOf(type, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC).distinct()
+        for (t in types) {
+            try {
+                startForeground(NOTIFICATION_ID, notification(pending), t)
+                return true
+            } catch (e: RuntimeException) {
+                Log.w(TAG, "Foreground start with type $t failed", e)
+            }
+        }
+        return false
     }
 
     private fun updateNotification(pending: Int) {
