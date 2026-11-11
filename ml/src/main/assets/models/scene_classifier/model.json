@@ -1,0 +1,13 @@
+{
+  "id": "scene_classifier",
+  "file": "mobilenet_v3_small.tflite",
+  "format": "tflite",
+  "size": 5163080,
+  "sha256": "3ae6438a31a0493a5d48cb9533eb3e0df9cb3c672564ea0f7b9bf5565577a167",
+  "license": "Apache-2.0",
+  "source": "MobileNetV3-Small ImageNet classifier, Keras Applications weights (Apache-2.0), converted to float16 TFLite by tools/model-export/export_mobilenet_v3_small.py",
+  "url": null,
+  "accelerators": ["CPU","GPU"],
+  "inputShape": [1,224,224,3],
+  "timeoutMs": 500
+}

@@ -23,6 +23,8 @@ zxing = "3.5.3"
 zxing-cpp = "3.1.1"
 generateBp = "+"
 json = "20240303"
+litert = "1.4.2"
+onnxruntime = "1.22.0"
 junit = "4.13.2"
 androidx-test-runner = "1.6.2"
 androidx-test-ext-junit = "1.2.1"
@@ -52,6 +54,10 @@ json = { group = "org.json", name = "json", version.ref = "json" }
 androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidx-test-runner" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidx-test-ext-junit" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+litert = { group = "com.google.ai.edge.litert", name = "litert", version.ref = "litert" }
+litert-gpu = { group = "com.google.ai.edge.litert", name = "litert-gpu", version.ref = "litert" }
+litert-gpu-api = { group = "com.google.ai.edge.litert", name = "litert-gpu-api", version.ref = "litert" }
+onnxruntime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxruntime" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 zxing-cpp-android = { group = "io.github.zxing-cpp", name = "android", version.ref = "zxing-cpp" }

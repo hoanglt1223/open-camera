@@ -9,6 +9,7 @@ package {
 
 android_app {
     name: "OpenCamera",
+    defaults: ["OpenCamera_ml_defaults"],
 
     srcs: [
         "src/main/java/**/*.kt",
@@ -30,6 +31,15 @@ android_app {
     jni_libs: [
         "libopencamera_pipeline",
         "libopencamera_looks",
+        "libopencamera_ai",
+    ],
+    // Models are memory-mapped from the APK.
+    aaptflags: [
+        // DO NOT EDIT THIS SECTION MANUALLY
+        "--version-name",
+        "1.0",
+        "--version-code",
+        "1",
     ],
 
     required: [
@@ -61,8 +71,12 @@ android_app {
         "androidx.preference_preference",
         "androidx.recyclerview_recyclerview",
         "androidx.tracing_tracing",
+        "OpenCamera_com.google.ai.edge.litert_litert",
+        "OpenCamera_com.google.ai.edge.litert_litert-gpu",
+        "OpenCamera_com.google.ai.edge.litert_litert-gpu-api",
         "com.google.android.material_material",
         "OpenCamera_com.google.zxing_core",
+        "OpenCamera_com.microsoft.onnxruntime_onnxruntime-android",
         "OpenCamera_io.coil-kt.coil3_coil",
         "OpenCamera_io.coil-kt.coil3_coil-android",
         "OpenCamera_io.coil-kt.coil3_coil-core-android",

@@ -1,0 +1,13 @@
+{
+  "id": "face_detector",
+  "file": "face_detector.tflite",
+  "format": "tflite",
+  "size": 229746,
+  "sha256": "b4578f35940bf5a1a655214a1cce5cab13eba73c1297cd78e1a04c2380b0152f",
+  "license": "Apache-2.0",
+  "source": "MediaPipe BlazeFace short range, from https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task; model card: MediaPipe BlazeFace Model Card (Short Range)",
+  "url": null,
+  "accelerators": ["CPU","GPU"],
+  "inputShape": [1,128,128,3],
+  "timeoutMs": 500
+}

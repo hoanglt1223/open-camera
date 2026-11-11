@@ -36,6 +36,7 @@ class StillProcessor(private val resolver: ContentResolver) {
         template: WatermarkTemplate,
         fallbackModel: String?,
         output: File,
+        preStage: ((Bitmap, Int) -> Bitmap)? = null,
     ): Timings {
         val exif = resolver.openInputStream(source)?.use { ExifInterface(it) }
             ?: throw IOException("Cannot open $source")
@@ -46,7 +47,7 @@ class StillProcessor(private val resolver: ContentResolver) {
                 inPreferredConfig = Bitmap.Config.ARGB_8888
             })
         } ?: throw IOException("Cannot decode $source")
-        return processBitmap(bitmap, exif, look, template, fallbackModel, output, t0)
+        return processBitmap(bitmap, exif, look, template, fallbackModel, output, t0, preStage)
     }
 
     /** Same as [process] for an already decoded mutable ARGB_8888 bitmap. Recycles [bitmap]. */
@@ -58,8 +59,11 @@ class StillProcessor(private val resolver: ContentResolver) {
         fallbackModel: String?,
         output: File,
         decodeStart: Long = SystemClock.elapsedRealtime(),
+        preStage: ((Bitmap, Int) -> Bitmap)? = null,
     ): Timings {
         val t1 = SystemClock.elapsedRealtime()
+        // ML steps (portrait, beauty, denoise, upscale) see the photo before the look.
+        val bitmap = preStage?.invoke(bitmap, exif?.rotationDegrees ?: 0) ?: bitmap
         if (look != null) NativeLookRenderer.apply(bitmap, look)
         val t2 = SystemClock.elapsedRealtime()
         val framed = WatermarkRenderer.render(

@@ -29,3 +29,27 @@ path = "app/src/main/assets/looks/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "Open Camera contributors"
 SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = ["ml/src/main/assets/models/selfie_segmenter/**", "ml/src/main/assets/models/face_detector/**", "ml/src/main/assets/models/face_landmarks/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Google LLC (MediaPipe models)"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "ml/src/main/assets/models/scene_classifier/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Google LLC (Keras Applications MobileNetV3 weights); ImageNet class names"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = ["ml/src/main/assets/models/selfie_multiclass/**", "ml/src/main/assets/models/nima_mobilenet/**", "ml/src/main/assets/models/u2netp/**", "ml/src/main/assets/models/realesr_general_x4/**", "ml/src/main/assets/models/nafnet_sidd/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Open Camera contributors"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "app/libs/com/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Google LLC (LiteRT); Microsoft Corporation (ONNX Runtime)"
+SPDX-License-Identifier = "Apache-2.0 AND MIT"

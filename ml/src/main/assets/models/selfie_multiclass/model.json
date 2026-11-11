@@ -1,0 +1,13 @@
+{
+  "id": "selfie_multiclass",
+  "file": "selfie_multiclass_256x256.tflite",
+  "format": "tflite",
+  "size": 16371837,
+  "sha256": "c6748b1253a99067ef71f7e26ca71096cd449baefa8f101900ea23016507e0e0",
+  "license": "Apache-2.0",
+  "source": "MediaPipe Selfie Multiclass 256x256 (float32), https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite; model card: Model Card Multiclass Segmentation",
+  "url": "https://github.com/hoanglt1223/open-camera/releases/download/models-v1/selfie_multiclass_256x256.tflite",
+  "accelerators": ["GPU","CPU","NNAPI"],
+  "inputShape": [1,256,256,3],
+  "timeoutMs": 3000
+}

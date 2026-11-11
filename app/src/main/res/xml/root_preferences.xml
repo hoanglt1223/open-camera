@@ -180,6 +180,11 @@
         app:title="@string/advanced_header">
 
         <Preference
+            app:fragment="dev.opencamera.app.ai.AiSettingsFragment"
+            app:iconSpaceReserved="false"
+            app:title="@string/ai_settings_title" />
+
+        <Preference
             app:fragment="dev.opencamera.app.SettingsActivity$ProcessingSettingsFragment"
             app:iconSpaceReserved="false"
             app:title="@string/processing_title" />

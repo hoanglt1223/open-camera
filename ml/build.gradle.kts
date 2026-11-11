@@ -28,4 +28,23 @@ android {
             jvmTarget.set(JvmTarget.JVM_17)
         }
     }
+
+    // Models are memory-mapped from the APK; compression would force a copy.
+    androidResources {
+        noCompress += listOf("tflite", "onnx")
+    }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+}
+
+dependencies {
+    implementation(libs.androidx.preference)
+    implementation(libs.litert)
+    implementation(libs.litert.gpu)
+    implementation(libs.litert.gpu.api)
+    implementation(libs.onnxruntime.android)
+    testImplementation(libs.junit)
+    testImplementation(libs.json)
 }

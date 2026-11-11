@@ -1,0 +1,13 @@
+{
+  "id": "u2netp",
+  "file": "u2netp.onnx",
+  "format": "onnx",
+  "size": 4574861,
+  "sha256": "309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8",
+  "license": "Apache-2.0",
+  "source": "U-2-Net small (u2netp) salient object detection, xuebinqin/U-2-Net weights, ONNX as distributed in danielgatis/rembg release v0.0.0",
+  "url": "https://github.com/hoanglt1223/open-camera/releases/download/models-v1/u2netp.onnx",
+  "accelerators": ["CPU","NNAPI"],
+  "inputShape": [1,3,320,320],
+  "timeoutMs": 3000
+}

@@ -47,6 +47,45 @@
         app:layout_constraintTop_toTopOf="@+id/viewFinder"
         tools:ignore="ContentDescription" />
 
+    <ImageView
+        android:id="@+id/aiBokehView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:contentDescription="@null"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@+id/viewFinder"
+        app:layout_constraintEnd_toEndOf="@+id/viewFinder"
+        app:layout_constraintStart_toStartOf="@+id/viewFinder"
+        app:layout_constraintTop_toTopOf="@+id/viewFinder" />
+
+    <dev.opencamera.app.ai.CompositionOverlayView
+        android:id="@+id/aiCompositionOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="@+id/viewFinder"
+        app:layout_constraintEnd_toEndOf="@+id/viewFinder"
+        app:layout_constraintStart_toStartOf="@+id/viewFinder"
+        app:layout_constraintTop_toTopOf="@+id/viewFinder" />
+
+    <TextView
+        android:id="@+id/aiSceneChip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/ai_scene_chip_background"
+        android:minHeight="48dp"
+        android:gravity="center"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:textColor="@android:color/white"
+        android:textSize="13sp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@+id/viewFinder"
+        app:layout_constraintEnd_toEndOf="@+id/viewFinder"
+        app:layout_constraintStart_toStartOf="@+id/viewFinder" />
+
     <dev.opencamera.app.ui.views.GridView
         android:id="@+id/gridView"
         android:layout_width="0dp"
@@ -191,6 +230,12 @@
                 style="@style/Theme.Aperture.Camera.SecondaryTopBarButton"
                 android:drawableTop="@drawable/ic_timer_off"
                 android:text="@string/timer_off" />
+
+            <Button
+                android:id="@+id/aiPortraitButton"
+                style="@style/Theme.Aperture.Camera.SecondaryTopBarButton"
+                android:drawableTop="@drawable/ic_ai_portrait"
+                android:text="@string/ai_portrait_off" />
 
             <Button
                 android:id="@+id/multiFrameButton"

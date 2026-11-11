@@ -10,6 +10,7 @@ import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.camera.view.CameraController
+import dev.opencamera.pipeline.ai.AiOps
 import dev.opencamera.pipeline.looks.LookEffect
 import dev.opencamera.pipeline.looks.LookParams
 import dev.opencamera.pipeline.looks.LookSurfaceProcessor
@@ -113,13 +114,17 @@ class LookController(
         refresh()
     }
 
-    /** Queues [uri] for background rendering if a look or frame is active. */
+    /** ML steps for the next saved photo (portrait, beauty); set by the capture screen. */
+    var captureOps: () -> AiOps? = { null }
+
+    /** Queues [uri] for background rendering if a look, frame or ML step is active. */
     fun onPhotoSaved(uri: Uri) {
         val look = _lookId.value.takeIf { repository.descriptor(it) != null }
         val frame = prefs.watermark
-        if (look == null && frame == WatermarkTemplate.NONE) return
+        val ops = runCatching { captureOps() }.getOrNull()?.takeUnless { it.isEmpty }
+        if (look == null && frame == WatermarkTemplate.NONE && ops == null) return
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
-        ProcessingService.enqueue(app, uri, look, prefs.intensity, frame.key)
+        ProcessingService.enqueue(app, uri, look, prefs.intensity, frame.key, ops)
     }
 
     /**

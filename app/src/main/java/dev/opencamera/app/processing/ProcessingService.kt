@@ -24,10 +24,13 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import dev.opencamera.app.R
+import android.graphics.Bitmap
 import dev.opencamera.app.multiframe.BurstRecovery
 import dev.opencamera.pipeline.StillProcessor
 import dev.opencamera.pipeline.creative.MotionPhotoFormat
 import dev.opencamera.pipeline.queue.BurstArchive
+import dev.opencamera.pipeline.ai.AiOps
+import dev.opencamera.pipeline.ai.AiStage
 import dev.opencamera.pipeline.queue.Job
 import dev.opencamera.pipeline.queue.JobState
 import dev.opencamera.pipeline.queue.ProcessingQueue
@@ -133,16 +136,24 @@ class ProcessingService : Service() {
         val tmp = File(cacheDir, "processing").apply { mkdirs() }.resolve("job-${job.id}.jpg")
         try {
             val look = LooksRepository.get(this).params(job.lookId, job.intensity)
+            val ops = AiOps.fromJson(job.ops)?.takeUnless { it.isEmpty }
+            val aiReport = ArrayList<String>()
+            var stage: ((Bitmap, Int) -> Bitmap)? = null
+            if (ops != null) {
+                if (ops.portraitAperture != null && !ops.keepSource) PortraitOriginals.keep(this, source, meta.name)
+                val ai = AiStage(this)
+                stage = { bitmap, rotation -> ai.apply(bitmap, rotation, ops, aiReport) }
+            }
             val t = StillProcessor(contentResolver).process(
-                source, look, WatermarkTemplate.fromKey(job.watermark), Build.MODEL, tmp,
+                source, look, WatermarkTemplate.fromKey(job.watermark), Build.MODEL, tmp, stage,
             )
             carryOverMotionPhoto(source, tmp)
             Log.i(
-                TAG, "Job ${job.id} ${t.width}x${t.height} look=${job.lookId} frame=${job.watermark} " +
+                TAG, "Job ${job.id} ${t.width}x${t.height} look=${job.lookId} frame=${job.watermark} ai=[$aiReport] " +
                     "decode=${t.decodeMs} look=${t.lookMs} frame=${t.frameMs} encode=${t.encodeMs} " +
                     "total=${t.totalMs} ms"
             )
-            val pendingName = "${meta.name}$PENDING_SUFFIX${job.id}"
+            val pendingName = "${meta.name}${if (ops?.keepSource == true) EDIT_SUFFIX else ""}$PENDING_SUFFIX${job.id}"
             deleteStalePending(pendingName)
             val values = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, pendingName)
@@ -200,7 +211,8 @@ class ProcessingService : Service() {
         val outMeta = sourceMeta(out) ?: throw IllegalArgumentException("Rendered copy missing for job ${job.id}")
         val finalName = outMeta.name.substringBefore(PENDING_SUFFIX)
         val source = Uri.parse(job.sourceUri)
-        if (sourceMeta(source) != null) {
+        val keepSource = AiOps.fromJson(job.ops)?.keepSource == true
+        if (!keepSource && sourceMeta(source) != null) {
             try {
                 contentResolver.delete(source, null, null)
             } catch (e: SecurityException) {
@@ -210,7 +222,7 @@ class ProcessingService : Service() {
         }
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.IS_PENDING, 0)
-            if (sourceMeta(source) == null) put(MediaStore.MediaColumns.DISPLAY_NAME, finalName)
+            if (keepSource || sourceMeta(source) == null) put(MediaStore.MediaColumns.DISPLAY_NAME, finalName)
         }
         contentResolver.update(out, values, null, null)
         queue.markDone(job.id)
@@ -305,6 +317,7 @@ class ProcessingService : Service() {
         private const val CHANNEL_ID = "processing"
         private const val NOTIFICATION_ID = 0x0c01
         private const val PENDING_SUFFIX = "_oc"
+        private const val EDIT_SUFFIX = "_edit"
         private const val BURST_POLL_MS = 250L
 
         @Volatile
@@ -314,8 +327,8 @@ class ProcessingService : Service() {
             sharedQueue ?: ProcessingQueue(SqliteJobStore(context)).also { sharedQueue = it }
         }
 
-        fun enqueue(context: Context, uri: Uri, lookId: String?, intensity: Float, watermark: String) {
-            queue(context).enqueue(uri.toString(), lookId, intensity, watermark)
+        fun enqueue(context: Context, uri: Uri, lookId: String?, intensity: Float, watermark: String, ops: AiOps? = null) {
+            queue(context).enqueue(uri.toString(), lookId, intensity, watermark, ops?.toJson())
             start(context)
         }
 

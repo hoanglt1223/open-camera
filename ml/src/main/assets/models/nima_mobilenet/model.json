@@ -1,0 +1,13 @@
+{
+  "id": "nima_mobilenet",
+  "file": "nima_mobilenet.tflite",
+  "format": "tflite",
+  "size": 6448632,
+  "sha256": "fe3545478a07fb479f74b2f060cd2b4f27851cd1922fce1888f9ef7965b784aa",
+  "license": "Apache-2.0",
+  "source": "NIMA aesthetic MobileNet, idealo/image-quality-assessment weights_mobilenet_aesthetic_0.07.hdf5, converted by tools/model-export/export_nima.py (float16 weights)",
+  "url": "https://github.com/hoanglt1223/open-camera/releases/download/models-v1/nima_mobilenet.tflite",
+  "accelerators": ["GPU","CPU"],
+  "inputShape": [1,224,224,3],
+  "timeoutMs": 2000
+}

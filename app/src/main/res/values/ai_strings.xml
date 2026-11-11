@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="ai_settings_title">Smart features</string>
+    <string name="ai_capture_category">Capture</string>
+    <string name="ai_runtime_category">Runtime</string>
+    <string name="ai_models_category">Models</string>
+    <string name="ai_models_info">Small models ship with the app. Larger ones are optional downloads, checked against a SHA-256 hash before use. Tap a model to download or delete it.</string>
+    <string name="ai_model_bundled">Built in</string>
+    <string name="ai_model_downloaded">Downloaded. Tap to delete</string>
+    <string name="ai_model_not_downloaded">Not downloaded. Tap to download</string>
+    <string name="ai_model_corrupt">Damaged. Tap to download again</string>
+    <string name="ai_model_downloading">Downloading %1$d%%</string>
+    <string name="ai_model_download_failed">Download failed: %1$s</string>
+    <string name="ai_accelerator_title">Accelerator</string>
+    <string name="ai_benchmark_title">Benchmark models</string>
+    <string name="ai_benchmark_summary">Times every available model on this device</string>
+    <string name="ai_benchmark_running">Running…</string>
+    <string name="ai_feature_disabled">%1$s turned off for this session</string>
+
+    <string name="ai_portrait_on">Portrait</string>
+    <string name="ai_portrait_off">Portrait off</string>
+    <string name="ai_portrait_summary">Blurs the background of photos with people. The aperture and focus can be changed later in the editor.</string>
+    <string name="ai_portrait_aperture_title">Default background blur</string>
+    <string name="ai_live_portrait_title">Live portrait preview</string>
+    <string name="ai_live_portrait_summary">Shows the blur in the viewfinder at reduced resolution</string>
+    <string name="ai_portrait_no_subject">No person found</string>
+    <string name="ai_portrait_status">f/%1$.1f · %2$s · %3$d ms. Tap to choose the focus.</string>
+
+    <string name="ai_scene_title">Scene detection</string>
+    <string name="ai_scene_summary">Shows a chip for food, sky, night, documents, portraits, plants and text. Tap it to use a matching preset.</string>
+    <string name="ai_scene_none">Auto</string>
+    <string name="ai_scene_food">Food</string>
+    <string name="ai_scene_sky">Sky</string>
+    <string name="ai_scene_night">Night</string>
+    <string name="ai_scene_document">Document</string>
+    <string name="ai_scene_portrait">Portrait</string>
+    <string name="ai_scene_plant">Plants</string>
+    <string name="ai_scene_text">Text</string>
+    <string name="ai_preset_night">Night mode on</string>
+    <string name="ai_preset_portrait">Portrait on</string>
+    <string name="ai_preset_vivid">Vivid look applied</string>
+    <string name="ai_preset_document">Natural look applied</string>
+
+    <string name="ai_composition_title">Composition assist</string>
+    <string name="ai_composition_summary">Points the main subject to the nearest rule-of-thirds point and suggests a crop</string>
+
+    <string name="ai_best_shot_title">Best shot</string>
+    <string name="ai_best_shot_summary">Takes a short burst and keeps only the best frame</string>
+    <string name="ai_best_shot_frames_title">Frames per burst</string>
+    <string name="ai_best_shot_failed">Burst failed, taking a single photo</string>
+    <string name="ai_best_shot_done">Kept frame %1$d of %2$d</string>
+
+    <string name="ai_beauty_title">Skin smoothing</string>
+    <string name="ai_beauty_summary">Light smoothing on faces. 0 turns it off.</string>
+
+    <string name="ai_editor_title">Edit photo</string>
+    <string name="ai_editor_no_image">No photo to edit</string>
+    <string name="ai_editor_load_failed">Cannot open this photo</string>
+    <string name="ai_editor_loading">Loading…</string>
+    <string name="ai_editor_working">Working…</string>
+    <string name="ai_editor_saving">Saving…</string>
+    <string name="ai_editor_save">Save copy</string>
+    <string name="ai_editor_saved">Saved a copy (%1$s)</string>
+    <string name="ai_editor_failed">Could not apply this edit</string>
+    <string name="ai_editor_queued">Processing in the background. The result is saved as a new photo.</string>
+    <string name="ai_tool_portrait">Portrait</string>
+    <string name="ai_tool_beauty">Smooth skin</string>
+    <string name="ai_tool_denoise">Denoise</string>
+    <string name="ai_tool_upscale">Upscale 2×</string>
+    <string name="ai_denoise_model">Denoise with the downloaded model. Slider sets the strength.</string>
+    <string name="ai_denoise_classical">Denoise model not downloaded: the classical filter is used.</string>
+    <string name="ai_upscale_model">Upscale 2× with the downloaded model.</string>
+    <string name="ai_upscale_classical">Upscale model not downloaded: smooth resize with sharpening is used.</string>
+
+    <string-array name="ai_best_shot_frames" translatable="false">
+        <item>3</item>
+        <item>5</item>
+        <item>8</item>
+    </string-array>
+    <string-array name="ai_accelerator_entries">
+        <item>Automatic (benchmark)</item>
+        <item>CPU</item>
+        <item>GPU</item>
+        <item>NNAPI</item>
+    </string-array>
+    <string-array name="ai_accelerator_values" translatable="false">
+        <item>AUTO</item>
+        <item>CPU</item>
+        <item>GPU</item>
+        <item>NNAPI</item>
+    </string-array>
+</resources>
