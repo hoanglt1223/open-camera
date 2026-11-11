@@ -158,6 +158,13 @@
         </activity>
 
         <activity
+            android:name=".video.VideoModesActivity"
+            android:configChanges="orientation|screenLayout|screenSize|smallestScreenSize|keyboardHidden"
+            android:exported="false"
+            android:screenOrientation="nosensor"
+            android:theme="@style/Theme.Aperture.Camera" />
+
+        <activity
             android:name=".SettingsActivity"
             android:configChanges="orientation|screenLayout|screenSize|smallestScreenSize|keyboardHidden"
             android:exported="false"

@@ -611,6 +611,11 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         cameraModeSelectorLayout.onModeSelectedCallback = {
             viewModel.setCameraMode(it)
         }
+        cameraModeSelectorLayout.onMoreModesCallback = {
+            dismissKeyguardAndRun {
+                startActivity(Intent(this, dev.opencamera.app.video.VideoModesActivity::class.java))
+            }
+        }
 
         // Bind viewfinder and preview blur view
         previewBlurView.previewView = viewFinder

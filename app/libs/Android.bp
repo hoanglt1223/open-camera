@@ -344,6 +344,25 @@ android_library_import {
 }
 
 android_library_import {
+    name: "OpenCamera_androidx.media3_media3-effect",
+    aars: ["androidx/media3/media3-effect/1.10.0/media3-effect-1.10.0.aar"],
+    sdk_version: "36",
+    min_sdk_version: "26",
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    static_libs: [
+        "androidx.annotation_annotation",
+        "androidx.concurrent_concurrent-futures",
+        "OpenCamera_androidx.media3_media3-common",
+        "OpenCamera_androidx.media3_media3-datasource",
+        "kotlin-stdlib",
+        "kotlinx_coroutines_guava",
+    ],
+}
+
+android_library_import {
     name: "OpenCamera_androidx.media3_media3-exoplayer",
     aars: ["androidx/media3/media3-exoplayer/1.10.0/media3-exoplayer-1.10.0.aar"],
     sdk_version: "36",
@@ -395,6 +414,26 @@ android_library_import {
         "androidx.annotation_annotation",
         "OpenCamera_androidx.media3_media3-common",
         "OpenCamera_androidx.media3_media3-container",
+    ],
+}
+
+android_library_import {
+    name: "OpenCamera_androidx.media3_media3-transformer",
+    aars: ["androidx/media3/media3-transformer/1.10.0/media3-transformer-1.10.0.aar"],
+    sdk_version: "36",
+    min_sdk_version: "26",
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    static_libs: [
+        "androidx.annotation_annotation",
+        "androidx.concurrent_concurrent-futures",
+        "OpenCamera_androidx.media3_media3-container",
+        "OpenCamera_androidx.media3_media3-datasource",
+        "OpenCamera_androidx.media3_media3-effect",
+        "OpenCamera_androidx.media3_media3-exoplayer",
+        "OpenCamera_androidx.media3_media3-muxer",
     ],
 }
 
@@ -617,4 +656,19 @@ java_import {
     ],
     static_libs: [
     ],
+}
+
+android_library_import {
+    name: "OpenCamera_org.opencv_opencv",
+    aars: ["org/opencv/opencv/4.14.0/opencv-4.14.0.aar"],
+    sdk_version: "36",
+    min_sdk_version: "26",
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    static_libs: [
+        "kotlin-stdlib-jdk8",
+    ],
+    extract_jni: true,
 }

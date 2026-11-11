@@ -40,6 +40,22 @@ class CameraModeSelectorLayout @JvmOverloads constructor(
 
     var onModeSelectedCallback: (cameraMode: CameraMode) -> Unit = {}
 
+    /** Opens the extra modes (slow-mo, time-lapse, panorama, document, ...). */
+    var onMoreModesCallback: (() -> Unit)? = null
+        set(value) {
+            field = value
+            updateButtons()
+        }
+
+    private val moreButton by lazy {
+        MaterialButton::class.cast(
+            layoutInflater.inflate(R.layout.camera_mode_button, this, false)
+        ).apply {
+            setText(R.string.camera_mode_more)
+            setOnClickListener { onMoreModesCallback?.invoke() }
+        }
+    }
+
     init {
         inflate(context, R.layout.camera_mode_selector_layout, this)
 
@@ -61,6 +77,7 @@ class CameraModeSelectorLayout @JvmOverloads constructor(
                 cameraModeButtonsLinearLayout.addView(it)
             }
         }
+        cameraModeButtonsLinearLayout.addView(moreButton)
     }
 
     fun setCurrentCameraMode(cameraMode: CameraMode) {
@@ -117,5 +134,7 @@ class CameraModeSelectorLayout @JvmOverloads constructor(
         cameraToButton.forEach {
             it.value.isInvisible = cameraState.isRecordingVideo || inSingleCaptureMode
         }
+        moreButton.isVisible = onMoreModesCallback != null &&
+                !cameraState.isRecordingVideo && !inSingleCaptureMode
     }
 }
