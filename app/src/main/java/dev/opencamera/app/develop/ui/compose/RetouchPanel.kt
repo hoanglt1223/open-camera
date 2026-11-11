@@ -104,7 +104,7 @@ private fun runTool(a: DevelopActivity, tool: RetouchTool, params: RetouchParams
     a.ui.busy.value = true
     a.lifecycleScope.launch {
         val t0 = SystemClock.elapsedRealtime()
-        val r = withContext(worker) { runCatching { tool.apply(src.copy(Bitmap.Config.ARGB_8888, true), params) } }
+        val r = withContext(worker) { runCatching { applyOnCopy(tool, src, params) } }
         a.ui.busy.value = false
         r.onSuccess { res ->
             Log.i("EditorRetouch", "${tool.id} ${res.method} ${SystemClock.elapsedRealtime() - t0} ms")
@@ -112,6 +112,29 @@ private fun runTool(a: DevelopActivity, tool: RetouchTool, params: RetouchParams
             a.ui.clearRetouchInput()
             a.toast(a.getString(R.string.retouch_applied, res.method, res.note.orEmpty()))
         }.onFailure { a.toast(reasonOf(a, it)) }
+    }
+}
+
+/** Runs [tool] on a mutable copy of [src]; the copy is recycled when it is not the result. */
+private fun applyOnCopy(tool: RetouchTool, src: Bitmap, params: RetouchParams): RetouchResult {
+    val copy = src.copy(Bitmap.Config.ARGB_8888, true)
+    val result = try {
+        tool.apply(copy, params)
+    } catch (e: Throwable) {
+        copy.recycle()
+        throw e
+    }
+    if (result.bitmap !== copy) copy.recycle()
+    return result
+}
+
+/** Comparison results the user did not keep; recycled once the grid is no longer drawn. */
+private fun recycleAfterFrame(a: DevelopActivity, bitmaps: List<Bitmap>) {
+    if (bitmaps.isEmpty()) return
+    a.lifecycleScope.launch {
+        kotlinx.coroutines.android.awaitFrame()
+        kotlinx.coroutines.android.awaitFrame()
+        bitmaps.forEach { if (!it.isRecycled) it.recycle() }
     }
 }
 
@@ -131,14 +154,19 @@ private fun compare(a: DevelopActivity, tool: RetouchTool, base: RetouchParams, 
         a.commitToolResult(RetouchTools.step(tool.id, r.resolved ?: strict.copy(method = methods[i].id)), label, r.bitmap)
         a.ui.clearRetouchInput()
         a.ui.grid.value = null
-    }, onCancel = { job?.cancel(); a.ui.grid.value = null })
+        recycleAfterFrame(a, resolved.filterIndexed { k, other -> k != i && other != null && other.bitmap !== r.bitmap }.map { it!!.bitmap })
+    }, onCancel = {
+        job?.cancel()
+        a.ui.grid.value = null
+        recycleAfterFrame(a, resolved.mapNotNull { it?.bitmap })
+    })
     a.ui.grid.value = grid
     job = a.lifecycleScope.launch {
         methods.forEachIndexed { i, m ->
             val t0 = SystemClock.elapsedRealtime()
             val r = withContext(worker) {
                 if (!isActive) return@withContext null
-                runCatching { tool.apply(src.copy(Bitmap.Config.ARGB_8888, true), strict.copy(method = m.id)) }
+                runCatching { applyOnCopy(tool, src, strict.copy(method = m.id)) }
             } ?: return@launch
             r.onSuccess {
                 resolved[i] = it

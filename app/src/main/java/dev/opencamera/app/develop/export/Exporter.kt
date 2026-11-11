@@ -102,7 +102,11 @@ class Exporter(private val context: Context) {
         var full = loader.loadFull(info, MAX_PIXELS)
         if (stack.tools.isNotEmpty()) {
             val skipped = ArrayList<String>()
-            full = ToolRegistry.applyAll(full, stack.tools, 1f, File(context.filesDir, "edits/assets-${info.ref.hash}"), skipped)
+            val result = ToolRegistry.applyAll(full, stack.tools, 1f, File(context.filesDir, "edits/assets-${info.ref.hash}"), skipped)
+            if (result !== full) full.recycle()
+            full = result
+            // The develop pass below needs the memory more than the retouch models do.
+            runCatching { dev.opencamera.ml.MlRuntime.get(context).releaseAll() }
             if (skipped.isNotEmpty()) notes += "tools skipped: ${skipped.distinct().joinToString()}"
         }
         // Global statistics and masks come from a proxy so preview and export agree.

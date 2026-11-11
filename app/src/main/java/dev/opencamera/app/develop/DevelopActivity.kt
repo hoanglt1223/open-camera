@@ -94,6 +94,7 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
     internal val looks by lazy { LooksRepository.get(this) }
     internal val presets by lazy { PresetRepository(File(filesDir, "develop-presets")) { looks.descriptors } }
     internal val ai by lazy { AiMaskProvider(this) }
+    private val retouchCache by lazy { dev.opencamera.app.develop.io.RetouchCache(File(cacheDir, "retouch")) }
 
     internal var info: SourceLoader.Info? = null
     internal var history = EditHistory(EditStack())
@@ -196,6 +197,8 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
     }
 
     override fun onDestroy() {
+        // Model sessions (inpainting, face models) hold hundreds of MB; the camera does not need them.
+        if (isFinishing) runCatching { dev.opencamera.ml.MlRuntime.get(this).releaseAll() }
         composeHost?.destroy()
         if (::engine.isInitialized) engine.release()
         super.onDestroy()
@@ -381,7 +384,7 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
                     val t0 = SystemClock.elapsedRealtime()
                     // Decode the proxy while the file is hashed.
                     val quick = loader.info(uri, hash = false)
-                    val proxyJob = kotlinx.coroutines.CoroutineScope(Dispatchers.Default).async { runCatching { loader.loadProxy(quick, loader.proxyLongSide()) } }
+                    val proxyJob = lifecycleScope.async(Dispatchers.Default) { runCatching { loader.loadProxy(quick, loader.proxyLongSide()) } }
                     var i = loader.withHash(quick)
                     val t1 = SystemClock.elapsedRealtime()
                     var embedded: EditStack? = null
@@ -478,19 +481,30 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
             val skipped = ArrayList<String>()
             val out = withContext(Dispatchers.Default) {
                 runCatching {
+                    val key = dev.opencamera.app.develop.io.RetouchCache.key(i.ref.hash, base.width, base.height, steps)
+                    retouchCache.get(key, base.width, base.height)?.let {
+                        Log.i(TAG, "Retouch result from cache (${steps.size} steps)")
+                        return@runCatching it
+                    }
                     val incremental = prev != null && prevBitmap != null && steps.size > prev.size && steps.subList(0, prev.size) == prev
                     val src = if (incremental) prevBitmap!! else base
                     val todo = if (incremental) steps.drop(prev!!.size) else steps
-                    dev.opencamera.app.develop.tools.ToolRegistry.applyAll(
+                    val result = dev.opencamera.app.develop.tools.ToolRegistry.applyAll(
                         src.copy(Bitmap.Config.ARGB_8888, true), todo, base.width / max(1f, i.width.toFloat()), store.assetDir(i.ref), skipped,
                     )
+                    if (skipped.isEmpty()) retouchCache.put(key, result)
+                    result
                 }.onFailure { Log.w(TAG, "Retouch replay failed", it) }.getOrNull()
             }
             ui.busy.value = false
             if (stack.tools != steps) return@launch
             if (out == null || skipped.isNotEmpty()) toast(getString(R.string.develop_tools_skipped, skipped.distinct().joinToString().ifEmpty { "retouch" }))
             toolProxy = out
-            engine.open(out ?: base) { then() }
+            engine.open(out ?: base) {
+                // The engine has switched to the new proxy, so the previous result is unused.
+                if (prevBitmap != null && prevBitmap !== out && prevBitmap !== base && prevBitmap !== toolProxy) prevBitmap.recycle()
+                then()
+            }
         }
     }
 
@@ -502,6 +516,12 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
         toolKey = steps
         toolProxy = result
         ui.busy.value = false
+        val i = info
+        val base = baseProxy
+        if (i != null && base != null && result.width == base.width && result.height == base.height) {
+            val key = dev.opencamera.app.develop.io.RetouchCache.key(i.ref.hash, base.width, base.height, steps)
+            lifecycleScope.launch(Dispatchers.IO) { retouchCache.put(key, result) }
+        }
         seal()
         engine.open(result) { render() }
     }
@@ -624,7 +644,8 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
             firstFrame = false
             Log.i(TAG, "Open to first frame ${SystemClock.elapsedRealtime() - openedAt} ms (${stats.outWidth}x${stats.outHeight}, gpu=${stats.gpu})")
         }
-        status.text = getString(R.string.develop_render_stats, stats.outWidth, stats.outHeight, stats.ms.toInt(), if (stats.gpu) "GPU" else "CPU")
+        // The status line feeds editor state; updating it per draft frame recomposes during a drag.
+        if (!stats.draft) status.text = getString(R.string.develop_render_stats, stats.outWidth, stats.outHeight, stats.ms.toInt(), if (stats.gpu) "GPU" else "CPU")
         updateOverlay()
     }
 
