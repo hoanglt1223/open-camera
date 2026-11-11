@@ -27,6 +27,10 @@ android {
 
     buildTypes {
         release {
+            // Phones only: OpenCV, ONNX Runtime and LiteRT ship ~60 MB of native code per ABI.
+            ndk {
+                abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+            }
             // Enables code shrinking, obfuscation, and optimization.
             isMinifyEnabled = true
 

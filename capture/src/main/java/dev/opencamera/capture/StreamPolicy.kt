@@ -15,7 +15,10 @@ package dev.opencamera.capture
  */
 enum class StreamConfig { STANDARD, FULL_RES_YUV, FULL_RES_RAW }
 
-/** User choice of burst source; AUTO uses RAW for Night/Astro when the camera has RAW. */
+/**
+ * User choice of burst source; AUTO uses RAW for Night/Astro when the camera has RAW, and for every
+ * burst when RAW frames are larger than the biggest YUV stream next to preview.
+ */
 enum class BurstSource { AUTO, YUV, RAW }
 
 object StreamPolicy {
@@ -30,6 +33,8 @@ object StreamPolicy {
         val manualExposure: Boolean,
         val rawCapable: Boolean,
         val source: BurstSource,
+        /** RAW_SENSOR has more pixels than the largest YUV size the HAL streams. */
+        val rawLarger: Boolean = false,
     )
 
     fun choose(i: Inputs): StreamConfig {
@@ -42,7 +47,8 @@ object StreamPolicy {
         val rawWanted = when (i.source) {
             BurstSource.RAW -> true
             BurstSource.YUV -> false
-            BurstSource.AUTO -> i.setting == MultiFrameSetting.NIGHT || i.setting == MultiFrameSetting.ASTRO
+            BurstSource.AUTO -> i.rawLarger ||
+                i.setting == MultiFrameSetting.NIGHT || i.setting == MultiFrameSetting.ASTRO
         }
         return if (rawWanted && i.rawCapable) StreamConfig.FULL_RES_RAW else StreamConfig.FULL_RES_YUV
     }

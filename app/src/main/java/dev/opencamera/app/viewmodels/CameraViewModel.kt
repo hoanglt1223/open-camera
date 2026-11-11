@@ -230,9 +230,25 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
                 manualExposure = multiFrame.manualExposureActive,
                 rawCapable = PhotoOutputFormat.RAW in cfg.camera.supportedPhotoOutputFormats,
                 source = multiFrame.source,
+                rawLarger = rawLargerThanYuv(cfg.camera.cameraId),
             )
         )
     )
+
+    private val rawLargerCache = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+
+    /** RAW_SENSOR has at least 20% more pixels than the largest YUV output (e.g. 12 MP vs 8 MP). */
+    private fun rawLargerThanYuv(cameraId: String): Boolean = rawLargerCache.getOrPut(cameraId) {
+        FeatureGuard.attempt(LOG_TAG, "RAW vs YUV size") {
+            val map = cameraManager.getCameraCharacteristics(cameraId)
+                .get(android.hardware.camera2.CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+            val px = { f: Int -> map?.getOutputSizes(f)?.maxOfOrNull { it.width.toLong() * it.height } ?: 0L }
+            val raw = px(ImageFormat.RAW_SENSOR)
+            val yuv = px(ImageFormat.YUV_420_888)
+            Log.i(LOG_TAG, "Camera $cameraId RAW $raw px, YUV $yuv px")
+            raw > yuv * 6 / 5
+        } ?: false
+    }
 
     val vendorBridge = getApplication<ApertureApplication>().vendorBridge
 

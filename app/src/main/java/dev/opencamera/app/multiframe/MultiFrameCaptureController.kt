@@ -145,6 +145,9 @@ class MultiFrameCaptureController(
     fun burstSize(): Size? =
         if (streamConfig == StreamConfig.FULL_RES_RAW) rawSize else analyzer.frameSize
 
+    /** Scales the viewfinder by the given factor (1 = none) while Super Res captures at 1x. Main thread. */
+    var previewZoomCompensation: ((Float) -> Unit)? = null
+
     fun plan(cameraInfo: CameraInfo, zoomRatio: Float): BurstPlan? {
         if (!enabled || manualExposureActive) return null
         val meter = analyzer.lastMeter ?: return null
@@ -242,6 +245,8 @@ class MultiFrameCaptureController(
             }
             c2.addCaptureRequestOptions(extra.build()).await()
             if (resetZoom) {
+                // Keep the viewfinder at the user's framing while the HAL streams the full field.
+                previewZoomCompensation?.invoke(zoom)
                 cameraControl.setZoomRatio(1f).await()
                 maxSkip = maxOf(maxSkip, 6)
             }
@@ -276,7 +281,10 @@ class MultiFrameCaptureController(
             if (cameraInfo.exposureState.exposureCompensationIndex != savedEvIndex) {
                 runCatching { cameraControl.setExposureCompensationIndex(savedEvIndex) }
             }
-            if (resetZoom) runCatching { cameraControl.setZoomRatio(zoom) }
+            if (resetZoom) {
+                runCatching { cameraControl.setZoomRatio(zoom).await() }
+                previewZoomCompensation?.invoke(1f)
+            }
         }
     }
 
