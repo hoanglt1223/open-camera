@@ -5,10 +5,14 @@
 
 package dev.opencamera.ml
 
+import ai.onnxruntime.OnnxJavaType
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
+import ai.onnxruntime.TensorInfo
 import android.os.Build
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.nio.FloatBuffer
 
 /** ONNX Runtime Mobile: CPU provider, NNAPI execution provider below Android 15. */
@@ -55,17 +59,38 @@ class OrtBackend(private val threads: Int = 4) : InferenceBackend {
     ) : InferenceSession {
         private val inputNames = session.inputNames.toList()
 
+        // Models with uint8 image inputs (e.g. MI-GAN's pipeline export) get the float tensor
+        // rounded and clamped to 0..255; uint8 outputs come back as floats in the same range.
+        private val uint8Inputs = inputNames.map { name ->
+            (session.inputInfo[name]?.info as? TensorInfo)?.type == OnnxJavaType.UINT8
+        }
+
         override fun run(inputs: List<Tensor>): List<Tensor> {
             require(inputs.size == inputNames.size) { "Model takes ${inputNames.size} inputs, got ${inputs.size}" }
             val tensors = inputs.mapIndexed { i, t ->
-                inputNames[i] to OnnxTensor.createTensor(env, FloatBuffer.wrap(t.data), t.shape.map { it.toLong() }.toLongArray())
+                val shape = t.shape.map { it.toLong() }.toLongArray()
+                inputNames[i] to if (uint8Inputs[i]) {
+                    val bytes = ByteBuffer.allocateDirect(t.size).order(ByteOrder.nativeOrder())
+                    for (v in t.data) bytes.put((v + 0.5f).toInt().coerceIn(0, 255).toByte())
+                    bytes.rewind()
+                    OnnxTensor.createTensor(env, bytes, shape, OnnxJavaType.UINT8)
+                } else {
+                    OnnxTensor.createTensor(env, FloatBuffer.wrap(t.data), shape)
+                }
             }.toMap()
             try {
                 session.run(tensors).use { result ->
                     return result.map { (_, value) ->
                         val ot = value as OnnxTensor
                         val shape = ot.info.shape.map { it.toInt() }.toIntArray()
-                        Tensor(shape).also { ot.floatBuffer.get(it.data) }
+                        Tensor(shape).also { out ->
+                            if (ot.info.type == OnnxJavaType.UINT8) {
+                                val b = ot.byteBuffer
+                                for (k in out.data.indices) out.data[k] = (b.get(k).toInt() and 0xff).toFloat()
+                            } else {
+                                ot.floatBuffer.get(out.data)
+                            }
+                        }
                     }
                 }
             } finally {

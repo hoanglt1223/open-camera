@@ -18,6 +18,8 @@ SHA-256 match. Each process re-checks the hash before first use.
 |---|---|---|---|---|---|---|
 | `face_detector` | `face_detector.tflite` | 0.2 MB | bundled | Apache-2.0 | `b4578f35940bf5a1a655214a1cce5cab13eba73c1297cd78e1a04c2380b0152f` | MediaPipe BlazeFace short range, from https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task; model card: MediaPipe BlazeFace Model Card (Short Range) |
 | `face_landmarks` | `face_landmarks_detector.tflite` | 2.4 MB | bundled | Apache-2.0 | `c7d54204ce0448474c7f3fa9af494787c0965cbdd6f20fc72867e43046bd43d5` | MediaPipe Face Mesh V2 (478 points), from https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task; model card: Model Card MediaPipe Face Mesh V2 |
+| `lama` | `lama_fp32.onnx` | 198.4 MB | download (asked first) | Apache-2.0 | `1faef5301d78db7dda502fe59966957ec4b79dd64e16f03ed96913c7a4eb68d6` | big-lama (advimman/lama, Apache-2.0, Samsung AI Center), ONNX opset 17 512x512 export by Carve, https://huggingface.co/Carve/LaMa-ONNX (Apache-2.0), file `lama_fp32.onnx` unchanged |
+| `migan` | `migan_pipeline_v2.onnx` | 26.8 MB | bundled | MIT | `6f1f3530a1a2324b19752018ce756088b07973cda8d7d890034ace5c8a48c40b` | MI-GAN (Picsart AI Research, ICCV 2023) ONNX pipeline v2, https://huggingface.co/andraniksargsyan/migan (MIT), file unchanged. The repo's LICENSE-WEIGHTS is MIT text for "the Software"; recheck before each release |
 | `nafnet_sidd` | `nafnet_sidd_w32_256.onnx` | 111.7 MB | download | MIT | `02616adecc933871f256eae6bb95f09bc50a99c4fe10004211b171e0e83346e0` | NAFNet SIDD width32 denoiser, megvii-research/NAFNet (MIT), exported 256x256 by tools/model-export/export_torch_models.py |
 | `nima_mobilenet` | `nima_mobilenet.tflite` | 6.1 MB | download | Apache-2.0 | `fe3545478a07fb479f74b2f060cd2b4f27851cd1922fce1888f9ef7965b784aa` | NIMA aesthetic MobileNet, idealo/image-quality-assessment weights_mobilenet_aesthetic_0.07.hdf5, converted by tools/model-export/export_nima.py (float16 weights) |
 | `realesr_general_x4` | `realesr_general_x4v3_128.onnx` | 4.6 MB | download | BSD-3-Clause | `a978abb8cac46480c429909e0de3d5c976b9937a70c0ebc014cfa82a58d2c754` | Real-ESRGAN realesr-general-x4v3 (SRVGGNetCompact), xinntao/Real-ESRGAN release v0.2.5.0, exported 128x128 by tools/model-export/export_torch_models.py |
@@ -36,6 +38,8 @@ SHA-256 match. Each process re-checks the hash before first use.
 | CodeFormer | NTU S-Lab License 1.0, non-commercial |
 | Deep White Balance | research only |
 | GFPGAN weights | StyleGAN2 / FFHQ provenance unclear |
+| Any face restoration model | No model with clean weights licence found (CodeFormer non-commercial, GFPGAN/RestoreFormer trained on FFHQ, CC BY-NC-SA images); the retouch editor has no face restoration |
+| HDRNet, FFCC trained parameters | No openly licensed training data / published parameters to ship; the editor uses statistical white balance (gray world, white patch, shades of gray, gray edge) |
 
 ## Re-exporting
 

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="retouch_title">Retouch</string>
+    <string name="retouch_tool_erase">Remove</string>
+    <string name="retouch_tool_blemish">Spots</string>
+    <string name="retouch_tool_skin">Smooth skin</string>
+    <string name="retouch_tool_redeye">Red eye</string>
+    <string name="retouch_tool_teeth">Teeth</string>
+    <string name="retouch_tool_eyes">Eyes</string>
+    <string name="retouch_tool_wb">White balance</string>
+    <string name="retouch_tool_geometry">Straighten</string>
+    <string name="retouch_tool_reshape">Reshape</string>
+    <string name="retouch_undo">Undo</string>
+    <string name="retouch_redo">Redo</string>
+    <string name="retouch_hold_original">Hold: original</string>
+    <string name="retouch_apply">Apply</string>
+    <string name="retouch_auto">Auto</string>
+    <string name="retouch_compare">Compare</string>
+    <string name="retouch_cancel">Cancel</string>
+    <string name="retouch_back_to_grid">Back</string>
+    <string name="retouch_use_this">Use %1$s</string>
+    <string name="retouch_compare_hint">Tap a result to compare it with the original. Drag to move the divider, double tap to zoom.</string>
+    <string name="retouch_strength">Strength</string>
+    <string name="retouch_spot_size">Spot size</string>
+    <string name="retouch_brush_size">Brush size</string>
+    <string name="retouch_brush">Brush</string>
+    <string name="retouch_brush_erase">Unbrush</string>
+    <string name="retouch_select_tap">Tap to select</string>
+    <string name="retouch_remove">Remove</string>
+    <string name="retouch_hq">High quality</string>
+    <string name="retouch_selected">%1$d object(s) selected</string>
+    <string name="retouch_angle">Rotate</string>
+    <string name="retouch_vertical">Vertical perspective</string>
+    <string name="retouch_horizontal">Horizontal perspective</string>
+    <string name="retouch_lens_profile">Lens correction (camera data)</string>
+    <string name="retouch_lens_manual">Lens distortion</string>
+    <string name="retouch_slim_face">Slimmer face (max 8%)</string>
+    <string name="retouch_bigger_eyes">Bigger eyes (max 10%)</string>
+    <string name="retouch_slim_nose">Slimmer nose (max 8%)</string>
+    <string name="retouch_liquify_push">Push</string>
+    <string name="retouch_liquify_bloat">Bloat</string>
+    <string name="retouch_liquify_pinch">Pinch</string>
+    <string name="retouch_reshape_notice">Changes the shape of faces or bodies. Saved photos are marked as reshaped in their metadata.</string>
+    <string name="retouch_hint_tap">Tap the photo</string>
+    <string name="retouch_hint_brush">Paint over what to remove, or tap a person or object</string>
+    <string name="retouch_hint_slider">Move the slider, then Apply</string>
+    <string name="retouch_hint_liquify">Drag on the photo, then Apply</string>
+    <string name="retouch_unavailable">Not available: %1$s</string>
+    <string name="retouch_preview_status">Preview: %1$s, %2$d ms</string>
+    <string name="retouch_applied">Applied: %1$s %2$s</string>
+    <string name="retouch_nothing">Nothing to do</string>
+    <string name="retouch_lama_title">Download high quality removal?</string>
+    <string name="retouch_lama_message">The big-lama model is %1$s. It is downloaded once from %2$s (license %3$s) and runs on the phone. Without it, removal uses the built-in model.</string>
+    <string name="retouch_download">Download</string>
+    <string name="retouch_use_migan">Use built-in</string>
+    <string name="retouch_downloading">Downloading %1$d%% (long press the photo to cancel)</string>
+    <string name="retouch_download_failed">Download failed; the built-in model is still available</string>
+    <bool name="retouch_enabled">true</bool>
+</resources>

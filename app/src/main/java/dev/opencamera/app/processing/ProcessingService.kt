@@ -29,8 +29,10 @@ import dev.opencamera.app.multiframe.BurstRecovery
 import dev.opencamera.pipeline.StillProcessor
 import dev.opencamera.pipeline.creative.MotionPhotoFormat
 import dev.opencamera.pipeline.queue.BurstArchive
+import androidx.exifinterface.media.ExifInterface
 import dev.opencamera.pipeline.ai.AiOps
 import dev.opencamera.pipeline.ai.AiStage
+import dev.opencamera.pipeline.retouch.RetouchExif
 import dev.opencamera.pipeline.queue.Job
 import dev.opencamera.pipeline.queue.JobState
 import dev.opencamera.pipeline.queue.ProcessingQueue
@@ -139,14 +141,22 @@ class ProcessingService : Service() {
             val ops = AiOps.fromJson(job.ops)?.takeUnless { it.isEmpty }
             val aiReport = ArrayList<String>()
             var stage: ((Bitmap, Int) -> Bitmap)? = null
+            var ai: AiStage? = null
             if (ops != null) {
                 if (ops.portraitAperture != null && !ops.keepSource) PortraitOriginals.keep(this, source, meta.name)
-                val ai = AiStage(this)
-                stage = { bitmap, rotation -> ai.apply(bitmap, rotation, ops, aiReport) }
+                val aiStage = AiStage(this).also { ai = it }
+                stage = { bitmap, rotation -> aiStage.apply(bitmap, rotation, ops, aiReport) }
             }
             val t = StillProcessor(contentResolver).process(
                 source, look, WatermarkTemplate.fromKey(job.watermark), Build.MODEL, tmp, stage,
             )
+            ai?.retouchTags?.takeIf { it.isNotEmpty() }?.let { tags ->
+                runCatching {
+                    val exif = ExifInterface(tmp)
+                    RetouchExif.write(exif, tags, exif.getAttribute(ExifInterface.TAG_SOFTWARE) ?: "Open Camera")
+                    exif.saveAttributes()
+                }.onFailure { Log.w(TAG, "Retouch tags not written for job ${job.id}", it) }
+            }
             carryOverMotionPhoto(source, tmp)
             Log.i(
                 TAG, "Job ${job.id} ${t.width}x${t.height} look=${job.lookId} frame=${job.watermark} ai=[$aiReport] " +

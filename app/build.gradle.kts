@@ -47,9 +47,15 @@ android {
         }
 
         debug {
-            // Append .dev to package name so we won't conflict with AOSP build.
-            applicationIdSuffix = ".dev"
+            // Append .dev to package name so we won't conflict with AOSP build. Test builds of
+            // parallel branches can pick their own suffix (-PopenCamera.debugSuffix=.p11).
+            applicationIdSuffix = (findProperty("openCamera.debugSuffix") as String?) ?: ".dev"
         }
+    }
+
+    // Bundled ONNX models (MI-GAN) are memory-mapped from the APK; compression would force a copy.
+    androidResources {
+        noCompress += listOf("onnx", "tflite")
     }
 
     compileOptions {
