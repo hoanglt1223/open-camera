@@ -1,0 +1,13 @@
+{
+  "id": "migan",
+  "file": "migan_pipeline_v2.onnx",
+  "format": "onnx",
+  "size": 28079181,
+  "sha256": "6f1f3530a1a2324b19752018ce756088b07973cda8d7d890034ace5c8a48c40b",
+  "license": "MIT",
+  "source": "MI-GAN (Picsart AI Research, ICCV 2023) ONNX pipeline v2 with pre/post-processing, https://huggingface.co/andraniksargsyan/migan/resolve/main/migan_pipeline_v2.onnx; code and weights under the MIT LICENSE of github.com/Picsart-AI-Research/MI-GAN. Inputs uint8 image [1,3,H,W] and mask [1,1,H,W] (255 = keep, 0 = fill)",
+  "url": null,
+  "accelerators": ["CPU"],
+  "inputShape": [1,3,512,512],
+  "timeoutMs": 15000
+}

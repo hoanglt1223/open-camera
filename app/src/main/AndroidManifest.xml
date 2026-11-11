@@ -245,6 +245,14 @@
             </intent-filter>
         </activity>
 
+        <!-- Standalone retouch screen, kept only as a fallback route from the editor. -->
+        <activity
+            android:name=".retouch.RetouchActivity"
+            android:enabled="@bool/retouch_enabled"
+            android:exported="false"
+            android:label="@string/retouch_title"
+            android:theme="@style/Theme.SettingsLib" />
+
     </application>
 
 </manifest>

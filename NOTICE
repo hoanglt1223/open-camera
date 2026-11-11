@@ -23,6 +23,9 @@ Machine learning runtimes and models (details, hashes and sources in docs/models
 - U-2-Net (u2netp) weights, Copyright Xuebin Qin, Apache License 2.0.
 - Real-ESRGAN realesr-general-x4v3 weights, Copyright 2021 Xintao Wang, BSD 3-Clause License.
 - NAFNet SIDD width-32 weights, Copyright 2022 megvii-model, MIT License.
+- MI-GAN ONNX pipeline (code and weights), Copyright 2024 Picsart AI Research (PAIR), MIT License.
+- big-lama weights (optional download), Copyright Samsung AI Center (advimman/lama), Apache License 2.0;
+  ONNX export by Carve (huggingface.co/Carve/LaMa-ONNX), Apache License 2.0.
 
 Third-party libraries added for the extra capture modes (all Apache License 2.0):
 - OpenCV 4.14.0 (org.opencv:opencv, Maven Central), https://opencv.org - Apache-2.0 since 4.5.0.

@@ -44,6 +44,19 @@ else()
     target_compile_options(opencamera_ai PRIVATE -O3 -ffast-math -Wall)
     target_link_libraries(opencamera_ai jnigraphics)
     target_link_options(opencamera_ai PRIVATE "-Wl,-z,max-page-size=16384")
+    # Editor retouch ops (inpainting, healing, skin, face colour, warp); shares the guided filter.
+    add_library(opencamera_retouch SHARED
+        retouch/retouch_jni.cpp
+        retouch/patchmatch.cpp
+        retouch/poisson_blend.cpp
+        retouch/freq_sep.cpp
+        retouch/face_color.cpp
+        retouch/mls_warp.cpp
+        ai/ai_core.cpp
+    )
+    target_compile_options(opencamera_retouch PRIVATE -O3 -ffast-math -Wall)
+    target_link_libraries(opencamera_retouch jnigraphics)
+    target_link_options(opencamera_retouch PRIVATE "-Wl,-z,max-page-size=16384")
     # 16 KB page devices (Android 15+) refuse 4 KB-aligned LOAD segments.
     target_link_options(opencamera_pipeline PRIVATE "-Wl,-z,max-page-size=16384")
     target_link_options(opencamera_looks PRIVATE "-Wl,-z,max-page-size=16384")

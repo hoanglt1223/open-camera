@@ -49,6 +49,18 @@ SPDX-FileCopyrightText = "Open Camera contributors"
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
+path = "ml/src/main/assets/models/migan/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2024 Picsart AI Research (PAIR)"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "ml/src/main/assets/models/lama/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Samsung AI Center (big-lama weights); Carve (ONNX export)"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
 path = "app/libs/com/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "Google LLC (LiteRT); Microsoft Corporation (ONNX Runtime)"

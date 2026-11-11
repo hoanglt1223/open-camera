@@ -11,6 +11,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.InputStream
 import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.nio.channels.FileChannel
 import java.security.MessageDigest
 
@@ -49,12 +50,17 @@ class ModelRegistry(context: Context) {
     @Synchronized
     fun open(spec: ModelSpec): ModelSource? {
         if (spec.bundled) {
+            val path = "models/${spec.id}/${spec.file}"
             return runCatching {
-                app.assets.openFd("models/${spec.id}/${spec.file}").use { fd ->
+                app.assets.openFd(path).use { fd ->
                     FileInputStream(fd.fileDescriptor).channel.use {
                         ModelSource.Buffer(it.map(FileChannel.MapMode.READ_ONLY, fd.startOffset, fd.declaredLength))
                     }
                 }
+            }.recoverCatching {
+                // Compressed in the APK (a build without noCompress for this extension): copy out.
+                val bytes = app.assets.open(path).use { it.readBytes() }
+                ModelSource.Buffer(ByteBuffer.allocateDirect(bytes.size).order(ByteOrder.nativeOrder()).put(bytes).apply { rewind() })
             }.onFailure { Log.e(TAG, "Bundled model ${spec.id} unreadable", it) }.getOrNull()
         }
         val f = downloadedFile(spec)
