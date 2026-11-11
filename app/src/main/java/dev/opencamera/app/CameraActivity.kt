@@ -717,6 +717,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
         // Bind viewfinder and preview blur view
         previewBlurView.previewView = viewFinder
+        onBackPressedDispatcher.addCallback(this, creativeBack)
 
         // Observe QR dialog dismiss
         qrBottomSheetDialog.setOnDismissListener {
@@ -1196,6 +1197,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
         launch {
             viewModel.creative.mode.collectLatest { mode ->
+                creativeBack.isEnabled = mode != CreativeMode.OFF
                 creativeButton.setText(mode.label)
                 creativeButton.isActivated = mode != CreativeMode.OFF
                 rebindIfAnalysisChanged()
@@ -1273,7 +1275,16 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                 astroOffered = true
                 Snackbar.make(mainLayout, R.string.multi_frame_astro_suggestion, Snackbar.LENGTH_LONG)
                     .setAction(R.string.multi_frame_astro) {
+                        // One shot only: a minutes-long Astro capture must not stay on by accident.
+                        val previous = setting
                         viewModel.multiFrame.setSetting(MultiFrameSetting.ASTRO)
+                        lifecycleScope.launch {
+                            viewModel.cameraState.first { it == CameraState.TAKING_PHOTO }
+                            viewModel.cameraState.first { it == CameraState.IDLE }
+                            if (viewModel.multiFrame.setting.value == MultiFrameSetting.ASTRO) {
+                                viewModel.multiFrame.setSetting(previous)
+                            }
+                        }
                     }
                     .show()
             }
@@ -2829,6 +2840,13 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     private val overlayBack = object : OnBackPressedCallback(false) {
         override fun handleOnBackPressed() {
             overlay?.ui?.back()
+        }
+    }
+
+    /** Back leaves a creative mode instead of closing (and later cold-starting) the camera. */
+    private val creativeBack = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() {
+            viewModel.creative.setMode(CreativeMode.OFF)
         }
     }
 
