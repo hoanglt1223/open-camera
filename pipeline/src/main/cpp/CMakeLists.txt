@@ -14,6 +14,7 @@ add_library(opencamera_mf STATIC
     mf/finish.cpp
     mf/merge.cpp
     mf/pipeline.cpp
+    mf/raw.cpp
     mf/superres.cpp
     stack/stack.cpp
 )

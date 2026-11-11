@@ -15,6 +15,7 @@ cc_library_shared {
         "src/main/cpp/mf/finish.cpp",
         "src/main/cpp/mf/merge.cpp",
         "src/main/cpp/mf/pipeline.cpp",
+        "src/main/cpp/mf/raw.cpp",
         "src/main/cpp/mf/superres.cpp",
         "src/main/cpp/stack/stack.cpp",
     ],

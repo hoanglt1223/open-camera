@@ -32,8 +32,19 @@ MergeParams mergeParamsFor(Mode mode) {
     }
 }
 
+Frame cropFrame(const Frame &f, int x0, int y0, int w, int h) {
+    Frame c(w, h);
+    for (int r = 0; r < h; ++r) {
+        std::copy_n(&f.y[size_t(y0 + r) * f.width + x0], w, &c.y[size_t(r) * w]);
+    }
+    for (int r = 0; r < h / 2; ++r) {
+        std::copy_n(&f.vu[size_t(y0 / 2 + r) * f.width + x0], w, &c.vu[size_t(r) * w]);
+    }
+    return c;
+}
+
 bool run(const std::vector<Frame> &frames, const Params &params, Result &result,
-         const std::function<void(float)> &progress, std::string *error) {
+         const std::function<void(float)> &progress, std::string *error, int outW = 0, int outH = 0) {
     if (frames.empty()) {
         if (error) *error = "no frames";
         return false;
@@ -84,7 +95,26 @@ bool run(const std::vector<Frame> &frames, const Params &params, Result &result,
     GrayF y, vu;
     MergeStats stats;
     mergeFrames(fp, hp, ref, disp, grid, mergeParamsFor(params.mode), y, vu, &stats);
-    if (params.mode == Mode::SuperRes && n > 1) {
+    const bool scaled = outW > 0 && outH > 0 && (outW != W || outH != H);
+    if (scaled) {
+        if (params.mode == Mode::SuperRes && n > 1) {
+            std::vector<Gray> full(n);
+            std::vector<const Gray *> fullp(n);
+            for (int i = 0; i < n; ++i) {
+                full[i] = Gray(W, H);
+                full[i].px = frames[i].y;
+                fullp[i] = &full[i];
+            }
+            superResolveCrop(fullp, ref, disp, grid, stats.noiseSigma, float(outW) / W, outW, outH, y);
+        } else {
+            GrayF up;
+            resizeBilinear(y, 1, outW, outH, up);
+            y = std::move(up);
+        }
+        GrayF vuUp;
+        resizeBilinear(vu, 2, outW / 2, outH / 2, vuUp);
+        vu = std::move(vuUp);
+    } else if (params.mode == Mode::SuperRes && n > 1) {
         superResolveLuma(hp, ref, disp, grid, stats.noiseSigma, y);
     }
     result.msMerge = msSince(t1);
@@ -126,7 +156,26 @@ bool run(const std::vector<Frame> &frames, const Params &params, Result &result,
 bool processBurst(const std::vector<Frame> &frames, const Params &params, Result &result,
                   const std::function<void(float)> &progress, std::string *error) {
     try {
-        return run(frames, params, result, progress, error);
+        if (params.cropW <= 0 || frames.empty()) return run(frames, params, result, progress, error);
+        const int W = frames[0].width, H = frames[0].height;
+        const int x0 = std::clamp(params.cropX, 0, W - 2) & ~1;
+        const int y0 = std::clamp(params.cropY, 0, H - 2) & ~1;
+        const int cw = std::min(params.cropW, W - x0) & ~1;
+        const int ch = std::min(params.cropH, H - y0) & ~1;
+        if (cw < 64 || ch < 64) {
+            if (error) *error = "crop too small";
+            return false;
+        }
+        std::vector<Frame> crops;
+        crops.reserve(frames.size());
+        for (const Frame &f : frames) {
+            if (f.width != W || f.height != H) {
+                if (error) *error = "inconsistent frame sizes";
+                return false;
+            }
+            crops.push_back(cropFrame(f, x0, y0, cw, ch));
+        }
+        return run(crops, params, result, progress, error, W, H);
     } catch (const std::bad_alloc &) {
         if (error) *error = "out of memory";
     } catch (const std::exception &e) {
