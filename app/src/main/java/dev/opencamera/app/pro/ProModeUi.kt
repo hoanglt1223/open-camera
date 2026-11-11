@@ -190,6 +190,8 @@ class ProModeUi(
     private fun applyOptions() {
         // Only stops multi-frame plans; the session layout stays, so no dial ever rebinds.
         viewModel.multiFrame.manualExposureActive = active && settings.manualExposure
+        viewModel.multiFrame.manualStill =
+            if (active) dev.opencamera.app.multiframe.ManualStill.plan(settings.exposureNs, settings.iso) else null
         val control = control ?: return
         val base = baseOptions ?: return
         val request = settings.copy(peaking = false, zebra = false, histogram = false).takeIf { active }

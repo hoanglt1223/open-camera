@@ -102,10 +102,6 @@ class MultiFrameCaptureController(
     /** True while a Camera2 burst runs; a shutter tap cancels it. */
     val cancellable: StateFlow<Boolean> = _cancellable.asStateFlow()
 
-    /** True when [plan] runs as one Camera2 burst in the bound session. */
-    fun usesCamera2Burst(plan: BurstPlan): Boolean =
-        plan.kind != BurstKind.SINGLE && streamConfig == StreamConfig.FULL_RES_RAW && burstHost != null
-
     val analyzer = BurstAnalyzer()
     val analysisExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     val motionMeter = MotionMeter(context)
@@ -119,6 +115,17 @@ class MultiFrameCaptureController(
     /** Set while Pro mode holds a manual ISO/shutter, which a burst plan would override. */
     @Volatile
     var manualExposureActive = false
+
+    /** Pro manual exposure long enough to be taken as a one-frame Camera2 burst, else null. */
+    @Volatile
+    var manualStill: BurstPlan? = null
+
+    /** Plan to take as a Camera2 burst for a shot planned as [plan], or null for the CameraX path. */
+    fun camera2Plan(plan: BurstPlan): BurstPlan? {
+        val manual = manualStill?.takeIf { plan.kind == BurstKind.SINGLE }
+        val candidate = manual ?: plan.takeIf { it.kind != BurstKind.SINGLE } ?: return null
+        return candidate.takeIf { streamConfig == StreamConfig.FULL_RES_RAW && burstHost != null }
+    }
 
     /** Session layout currently bound; set by the activity after binding. */
     @Volatile
