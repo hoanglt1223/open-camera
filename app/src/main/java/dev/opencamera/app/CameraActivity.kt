@@ -153,6 +153,7 @@ import dev.opencamera.app.models.VideoDynamicRange
 import dev.opencamera.app.models.VideoMirrorMode
 import dev.opencamera.app.models.VideoStabilizationMode
 import dev.opencamera.app.pro.ProModeUi
+import dev.opencamera.app.multiframe.MultiFrameCaptureController
 import dev.opencamera.app.robustness.FeatureGuard
 import dev.opencamera.app.ui.dialogs.LocationPermissionsDialog
 import dev.opencamera.app.ui.dialogs.QrBottomSheetDialog
@@ -717,6 +718,23 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
         // Bind viewfinder and preview blur view
         previewBlurView.previewView = viewFinder
+        viewModel.multiFrame.burstHost = object : MultiFrameCaptureController.BurstHost {
+            override fun pause() {
+                previewBlurView.freeze()
+                previewBlurView.isVisible = true
+                viewModel.cameraController.unbind()
+            }
+
+            override fun resume() {
+                if (lifecycle.currentState == Lifecycle.State.DESTROYED) return
+                FeatureGuard.attempt(LOG_TAG, "Binding after a burst") {
+                    viewModel.cameraController.bindToLifecycle(this@CameraActivity)
+                }
+            }
+        }
+        lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onStop(owner: LifecycleOwner) = viewModel.cancelBurst()
+        })
         onBackPressedDispatcher.addCallback(this, creativeBack)
 
         // Observe QR dialog dismiss
@@ -777,6 +795,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     override fun onDestroy() {
         overlay?.destroy()
         viewModel.multiFrame.previewZoomCompensation = null
+        viewModel.multiFrame.burstHost = null
 
         // Detach CameraController from ScreenFlashView
         screenFlashView.setController(null)

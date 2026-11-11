@@ -1,4 +1,4 @@
-/*
+﻿/*
  * SPDX-FileCopyrightText: Open Camera contributors
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -9,6 +9,7 @@ import android.app.ActivityManager
 import android.content.Context
 import android.graphics.ImageFormat
 import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureResult
 import android.location.Location
@@ -28,6 +29,7 @@ import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import dev.opencamera.capture.BurstKind
 import dev.opencamera.capture.BurstPlan
+import dev.opencamera.capture.BurstSequence
 import dev.opencamera.capture.BurstSource
 import dev.opencamera.capture.ExposureCaps
 import dev.opencamera.capture.ExposurePlanner
@@ -43,7 +45,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.guava.await
@@ -76,9 +80,31 @@ class MultiFrameCaptureController(
     val setting: StateFlow<MultiFrameSetting> = _setting.asStateFlow()
 
     private val _progress = MutableStateFlow<Float?>(null)
+    private val captureProgress = MutableStateFlow<Float?>(null)
 
-    /** Merge progress 0..1 of the job being processed, or null when idle. */
-    val progress: StateFlow<Float?> = _progress.asStateFlow()
+    /** Progress 0..1 of a running Camera2 burst, else of the merge being processed, or null when idle. */
+    val progress: Flow<Float?> = combine(captureProgress, _progress) { capture, merge -> capture ?: merge }
+
+    /**
+     * Lets a Camera2 burst take the camera from CameraX: [pause] freezes the viewfinder and
+     * unbinds, [resume] binds again. Main thread. Null while no activity is attached.
+     */
+    interface BurstHost {
+        fun pause()
+        fun resume()
+    }
+
+    @Volatile
+    var burstHost: BurstHost? = null
+
+    private val _cancellable = MutableStateFlow(false)
+
+    /** True while a Camera2 burst runs; a shutter tap cancels it. */
+    val cancellable: StateFlow<Boolean> = _cancellable.asStateFlow()
+
+    /** True when [plan] runs as one Camera2 burst in the bound session. */
+    fun usesCamera2Burst(plan: BurstPlan): Boolean =
+        plan.kind != BurstKind.SINGLE && streamConfig == StreamConfig.FULL_RES_RAW && burstHost != null
 
     val analyzer = BurstAnalyzer()
     val analysisExecutor: ExecutorService = Executors.newSingleThreadExecutor()
@@ -208,15 +234,8 @@ class MultiFrameCaptureController(
         val savedOptions = c2.getCaptureRequestOptions()
         val savedEvIndex = cameraInfo.exposureState.exposureCompensationIndex
         try {
-            // RAW stills are taken one by one while the repeating request carries the same
-            // exposure, so every still waits behind several long preview frames (minutes per
-            // shot at 1 s). Shorter frames at a higher gain keep the shot and preview responsive.
-            val (manualT, manualIso) = if (raw) {
-                capRawExposure(plan.exposureTimeNs, plan.iso, exposureCaps(cameraInfo).maxIso)
-            } else {
-                plan.exposureTimeNs to plan.iso
-            }
-            if (manualT != plan.exposureTimeNs) Log.i(LOG_TAG, "RAW exposure ${plan.exposureTimeNs} -> $manualT ns, ISO ${plan.iso} -> $manualIso")
+            val manualT = plan.exposureTimeNs
+            val manualIso = plan.iso
             val exposureReady: (CaptureResult?) -> Boolean
             var maxSkip: Int
             val extra = CaptureRequestOptions.Builder()
@@ -367,17 +386,22 @@ class MultiFrameCaptureController(
     }
 
     /** Development parameters from the camera characteristics and the frame's result. */
-    private fun rawParams(cameraInfo: CameraInfo, result: CaptureResult?): RawDevelopParams? {
+    private fun rawParams(cameraInfo: CameraInfo, result: CaptureResult?): RawDevelopParams? =
+        rawParams(cameraCharacteristics(Camera2CameraInfo.from(cameraInfo).cameraId), result)
+
+    private fun cameraCharacteristics(id: String): CameraCharacteristics =
+        context.getSystemService(CameraManager::class.java).getCameraCharacteristics(id)
+
+    private fun rawParams(info: CameraCharacteristics, result: CaptureResult?): RawDevelopParams? {
         result ?: return null
-        val info = Camera2CameraInfo.from(cameraInfo)
-        val cfa = info.getCameraCharacteristic(CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT)
+        val cfa = info.get(CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT)
             ?.takeIf { it in 0..3 } ?: return null
         val black = result.get(CaptureResult.SENSOR_DYNAMIC_BLACK_LEVEL)?.takeIf { it.size == 4 }
-            ?: info.getCameraCharacteristic(CameraCharacteristics.SENSOR_BLACK_LEVEL_PATTERN)?.let { p ->
+            ?: info.get(CameraCharacteristics.SENSOR_BLACK_LEVEL_PATTERN)?.let { p ->
                 FloatArray(4) { p.getOffsetForIndex(it % 2, it / 2).toFloat() }
             } ?: return null
         val white = result.get(CaptureResult.SENSOR_DYNAMIC_WHITE_LEVEL)?.toFloat()
-            ?: info.getCameraCharacteristic(CameraCharacteristics.SENSOR_INFO_WHITE_LEVEL)?.toFloat()
+            ?: info.get(CameraCharacteristics.SENSOR_INFO_WHITE_LEVEL)?.toFloat()
             ?: return null
         val gains = result.get(CaptureResult.COLOR_CORRECTION_GAINS) ?: return null
         val transform = result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM) ?: return null
@@ -399,6 +423,93 @@ class MultiFrameCaptureController(
             lensShadingWidth = lsc?.columnCount ?: 0,
             lensShadingHeight = lsc?.rowCount ?: 0,
         )
+    }
+
+    /**
+     * Captures [plan] as one Camera2 burst (RAW, else full-size YUV) in a short session of its
+     * own: CameraX is unbound meanwhile and bound again before returning. Exposure is manual per
+     * frame, up to the sensor maximum. Throws on failure; the caller falls back.
+     */
+    suspend fun captureCamera2(cameraInfo: CameraInfo, plan: BurstPlan): CapturedBurst {
+        val host = checkNotNull(burstHost) { "No activity to hand the camera over" }
+        val id = Camera2CameraInfo.from(cameraInfo).cameraId
+        val chars = cameraCharacteristics(id)
+        check(Camera2Burst.supportsManual(chars)) { "Camera $id has no manual sensor control" }
+        val outputs = listOfNotNull(
+            Camera2Burst.largest(chars, ImageFormat.RAW_SENSOR)?.let { Camera2Burst.Output(ImageFormat.RAW_SENSOR, it) },
+            Camera2Burst.largest(chars, ImageFormat.YUV_420_888)?.let { Camera2Burst.Output(ImageFormat.YUV_420_888, it) },
+        )
+        check(outputs.isNotEmpty()) { "No still output" }
+        val minFrameNs = outputs.maxOf { Camera2Burst.minFrameDurationNs(chars, it.format, it.size) }
+        val meter = analyzer.lastMeter?.takeIf { it.measured }
+        val frames = BurstSequence.frames(plan, exposureCaps(cameraInfo), meter?.exposureTimeNs, meter?.iso, minFrameNs)
+        check(frames.isNotEmpty()) { "No exposure for a ${plan.kind} burst" }
+        val latest = resultTracker.latest
+        val focusable = (chars.get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE) ?: 0f) > 0f
+        val look = Camera2Burst.Look(
+            latest?.get(CaptureResult.COLOR_CORRECTION_GAINS),
+            latest?.get(CaptureResult.COLOR_CORRECTION_TRANSFORM),
+            latest?.get(CaptureResult.LENS_FOCUS_DISTANCE)?.takeIf { focusable },
+        )
+        val zoom = cameraInfo.zoomState.value?.zoomRatio ?: 1f
+        val rotation = analyzer.lastRotation
+        val timeoutMs = BurstSequence.timeoutMs(frames)
+        Log.i(
+            LOG_TAG, "Camera2 ${plan.kind} burst: ${frames.size} x ${frames[0].exposureTimeNs} ns ISO ${frames[0].iso}, " +
+                "expected ${BurstSequence.expectedMs(frames)} ms, timeout $timeoutMs ms",
+        )
+        val start = SystemClock.elapsedRealtime()
+        var burst: Burst? = null
+        var first: CaptureResult? = null
+        captureProgress.value = 0f
+        _cancellable.value = true
+        host.pause()
+        try {
+            val format = Camera2Burst(context.getSystemService(CameraManager::class.java)).run(
+                id, outputs, frames, look, timeoutMs,
+            ) { index, format, image, result ->
+                val added = withContext(Dispatchers.Default) {
+                    if (index == 0) {
+                        // A RAW attempt that failed part-way leaves frames behind; the YUV retry starts over.
+                        burst?.close()
+                        burst = Burst(image.width, image.height, frames.size)
+                        first = result
+                    }
+                    val b = checkNotNull(burst)
+                    val planes = image.planes
+                    if (format == ImageFormat.RAW_SENSOR) {
+                        val params = checkNotNull(rawParams(chars, result)) { "No RAW metadata" }
+                        b.addRawFrame(planes[0].buffer, planes[0].rowStride, params)
+                    } else {
+                        b.addFrame(
+                            planes[0].buffer, planes[0].rowStride,
+                            planes[1].buffer, planes[2].buffer, planes[1].rowStride, planes[1].pixelStride,
+                        )
+                    }
+                }
+                check(added) { "Frame $index rejected" }
+                Log.i(
+                    LOG_TAG, "Frame $index: t=${result.get(CaptureResult.SENSOR_EXPOSURE_TIME)} " +
+                        "iso=${result.get(CaptureResult.SENSOR_SENSITIVITY)} " +
+                        "fd=${result.get(CaptureResult.SENSOR_FRAME_DURATION)} " +
+                        "at ${SystemClock.elapsedRealtime() - start} ms",
+                )
+                captureProgress.value = (index + 1f) / frames.size
+            }
+            val b = checkNotNull(burst)
+            val crop = if (zoom > 1.05f) MultiFrameProcessor.zoomCrop(b.width, b.height, zoom) else null
+            return CapturedBurst(
+                b, plan, BurstAnalyzer.Collected(rotation, first), SystemClock.elapsedRealtime() - start, crop,
+                if (format == ImageFormat.RAW_SENSOR) "RAW" else "YUV",
+            )
+        } catch (e: Throwable) {
+            burst?.close()
+            throw e
+        } finally {
+            _cancellable.value = false
+            captureProgress.value = null
+            host.resume()
+        }
     }
 
     /**
@@ -474,14 +585,6 @@ class MultiFrameCaptureController(
 
     companion object {
         private const val CONTROL_TIMEOUT_MS = 1000L
-        const val RAW_MAX_EXPOSURE_NS = 250_000_000L
-
-        /** Caps a RAW burst frame at [RAW_MAX_EXPOSURE_NS], raising ISO (up to [maxIso]) to keep the exposure. */
-        internal fun capRawExposure(t: Long?, iso: Int?, maxIso: Int): Pair<Long?, Int?> {
-            if (t == null || iso == null || t <= RAW_MAX_EXPOSURE_NS) return t to iso
-            val gain = t.toDouble() / RAW_MAX_EXPOSURE_NS
-            return RAW_MAX_EXPOSURE_NS to (iso * gain).toInt().coerceIn(iso, maxOf(iso, maxIso))
-        }
         private const val SLOW_FRAME_MS = 500L
         private const val LOG_TAG = "MultiFrame"
         private const val KEY_SETTING = "multi_frame_setting"

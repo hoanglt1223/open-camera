@@ -44,6 +44,11 @@ class BurstAnalyzer : ImageAnalysis.Analyzer {
     var frameSize: Size? = null
         private set
 
+    /** Rotation of the last analysed frame, for frames captured outside CameraX. */
+    @Volatile
+    var lastRotation: Int = 0
+        private set
+
     @Volatile
     private var request: Request? = null
 
@@ -94,6 +99,7 @@ class BurstAnalyzer : ImageAnalysis.Analyzer {
     override fun analyze(image: ImageProxy) {
         try {
             frameSize = Size(image.width, image.height)
+            lastRotation = image.imageInfo.rotationDegrees
             val req = request
             if (req == null) {
                 frameTap?.let { tap ->
