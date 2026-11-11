@@ -1917,6 +1917,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         try {
             bindCameraUseCasesWithFallback(cameraConfiguration)
         } finally {
+            // Video binds too, so a pending stream check after a mode switch does not bind again.
+            boundStreams = boundStreamsKey(cameraConfiguration)
             Log.i(PERF_TAG, "bind $reason ${(SystemClock.elapsedRealtimeNanos() - start) / 1_000_000} ms")
         }
     }
