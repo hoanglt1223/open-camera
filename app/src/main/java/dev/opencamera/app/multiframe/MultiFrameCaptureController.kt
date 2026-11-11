@@ -208,8 +208,15 @@ class MultiFrameCaptureController(
         val savedOptions = c2.getCaptureRequestOptions()
         val savedEvIndex = cameraInfo.exposureState.exposureCompensationIndex
         try {
-            val manualT = plan.exposureTimeNs
-            val manualIso = plan.iso
+            // RAW stills are taken one by one while the repeating request carries the same
+            // exposure, so every still waits behind several long preview frames (minutes per
+            // shot at 1 s). Shorter frames at a higher gain keep the shot and preview responsive.
+            val (manualT, manualIso) = if (raw) {
+                capRawExposure(plan.exposureTimeNs, plan.iso, exposureCaps(cameraInfo).maxIso)
+            } else {
+                plan.exposureTimeNs to plan.iso
+            }
+            if (manualT != plan.exposureTimeNs) Log.i(LOG_TAG, "RAW exposure ${plan.exposureTimeNs} -> $manualT ns, ISO ${plan.iso} -> $manualIso")
             val exposureReady: (CaptureResult?) -> Boolean
             var maxSkip: Int
             val extra = CaptureRequestOptions.Builder()
@@ -466,7 +473,15 @@ class MultiFrameCaptureController(
     }
 
     companion object {
-        private const val CONTROL_TIMEOUT_MS = 3000L
+        private const val CONTROL_TIMEOUT_MS = 1000L
+        const val RAW_MAX_EXPOSURE_NS = 250_000_000L
+
+        /** Caps a RAW burst frame at [RAW_MAX_EXPOSURE_NS], raising ISO (up to [maxIso]) to keep the exposure. */
+        internal fun capRawExposure(t: Long?, iso: Int?, maxIso: Int): Pair<Long?, Int?> {
+            if (t == null || iso == null || t <= RAW_MAX_EXPOSURE_NS) return t to iso
+            val gain = t.toDouble() / RAW_MAX_EXPOSURE_NS
+            return RAW_MAX_EXPOSURE_NS to (iso * gain).toInt().coerceIn(iso, maxOf(iso, maxIso))
+        }
         private const val SLOW_FRAME_MS = 500L
         private const val LOG_TAG = "MultiFrame"
         private const val KEY_SETTING = "multi_frame_setting"
