@@ -219,6 +219,19 @@ class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
                     true
                 }
 
+            findPreference<ListPreference>(dev.opencamera.app.multiframe.ImageQuality.KEY)?.let { pref ->
+                val iq = dev.opencamera.app.multiframe.ImageQuality
+                val manager = requireContext().getSystemService(android.hardware.camera2.CameraManager::class.java)
+                val mp = iq.firstBackCamera(manager)?.let { iq.megapixels(manager, it) }
+                val choices = iq.choices(mp)
+                pref.entries = choices.map { iq.label(requireContext(), it, mp) }.toTypedArray()
+                pref.entryValues = choices.map { it.name }.toTypedArray()
+                if (pref.value !in pref.entryValues) pref.value = choices.first().name
+                pref.summaryProvider = Preference.SummaryProvider<ListPreference> {
+                    "${it.entry}\n${getString(R.string.image_quality_summary)}"
+                }
+            }
+
             // Photo capture mode
             photoCaptureMode.onPreferenceChangeListener = photoCaptureModePreferenceChangeListener
             enableZsl.isEnabled = photoCaptureMode.value == "minimize_latency"

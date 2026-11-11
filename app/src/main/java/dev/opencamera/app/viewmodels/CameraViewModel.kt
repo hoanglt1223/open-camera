@@ -229,8 +229,9 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
                 flashOff = flashMode.value != FlashMode.ON && flashMode.value != FlashMode.SCREEN,
                 rawCapable = PhotoOutputFormat.RAW in cfg.camera.supportedPhotoOutputFormats,
                 source = multiFrame.source,
-                // A RAW session cannot carry the live look, so only trade it for resolution without one.
-                rawLarger = !lookController.hasLook && rawLargerThanYuv(cfg.camera.cameraId),
+                // A RAW session cannot carry a CameraX look effect; our own preview renderer can.
+                rawLarger = (lookController.ownsPreview || !lookController.hasLook) &&
+                    rawLargerThanYuv(cfg.camera.cameraId),
             )
         )
     )

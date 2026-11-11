@@ -133,10 +133,25 @@ class MultiFrameCaptureController(
     /** Highest session layout allowed after failures in this process (fallback chain). */
     val configCap: StateFlow<StreamConfig> = _configCap.asStateFlow()
 
+    private fun readSource() = runCatching { BurstSource.valueOf(prefs.getString(KEY_SOURCE, null) ?: "") }
+        .getOrDefault(BurstSource.AUTO)
+
+    private val _sourceFlow = MutableStateFlow(readSource())
+
+    /** Image quality (burst source); also written by the settings screen. */
+    val sourceFlow: StateFlow<BurstSource> = _sourceFlow.asStateFlow()
+
+    // Held here: SharedPreferences keeps listeners only weakly.
+    private val sourceListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == KEY_SOURCE) _sourceFlow.value = readSource()
+    }.also { prefs.registerOnSharedPreferenceChangeListener(it) }
+
     var source: BurstSource
-        get() = runCatching { BurstSource.valueOf(prefs.getString(KEY_SOURCE, null) ?: "") }
-            .getOrDefault(BurstSource.AUTO)
-        set(value) = prefs.edit { putString(KEY_SOURCE, value.name) }
+        get() = _sourceFlow.value
+        set(value) {
+            prefs.edit { putString(KEY_SOURCE, value.name) }
+            _sourceFlow.value = value
+        }
 
     /** True when shots must come from the app path (no JPEG ImageCapture is bound). */
     val fullRes: Boolean

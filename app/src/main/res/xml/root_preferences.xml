@@ -96,6 +96,12 @@
             app:title="@string/photo_capture_mode_title"
             app:useSimpleSummaryProvider="true" />
 
+        <ListPreference
+            app:defaultValue="AUTO"
+            app:iconSpaceReserved="false"
+            app:key="multi_frame_source"
+            app:title="@string/image_quality_title" />
+
         <SwitchPreference
             app:defaultValue="false"
             app:iconSpaceReserved="false"

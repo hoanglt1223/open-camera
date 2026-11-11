@@ -40,7 +40,16 @@ class LookSurfaceProcessor : SurfaceProcessor {
     private var pbuffer: EGLSurface = EGL14.EGL_NO_SURFACE
     private lateinit var program: GlLookProgram
     private var oesTexture = 0
-    private val outputs = LinkedHashMap<SurfaceOutput, EGLSurface>()
+    private class Output(
+        val egl: EGLSurface,
+        val width: Int,
+        val height: Int,
+        val matrix: (FloatArray, FloatArray) -> Unit,
+        /** Camera timestamps are in the sensor timebase; a view surface must show frames at once. */
+        val stampFrames: Boolean = true,
+    )
+
+    private val outputs = LinkedHashMap<Any, Output>()
     private val texMatrix = FloatArray(16)
     private val outMatrix = FloatArray(16)
     private var released = false
@@ -66,7 +75,7 @@ class LookSurfaceProcessor : SurfaceProcessor {
         handler.post {
             if (released) return@post
             released = true
-            outputs.forEach { (out, s) -> EGL14.eglDestroySurface(display, s); out.close() }
+            outputs.forEach { (key, out) -> EGL14.eglDestroySurface(display, out.egl); (key as? SurfaceOutput)?.close() }
             outputs.clear()
             makeCurrent(pbuffer)
             program.release()
@@ -81,9 +90,13 @@ class LookSurfaceProcessor : SurfaceProcessor {
         }
     }
 
-    override fun onInputSurface(request: SurfaceRequest) {
+    override fun onInputSurface(request: SurfaceRequest) = provideInput(request, null)
+
+    /** Feeds [request] from a new input texture; [onReleased] runs (GL thread) once the camera is done with it. */
+    fun provideInput(request: SurfaceRequest, onReleased: (() -> Unit)?) {
         if (released) {
             request.willNotProvideSurface()
+            onReleased?.invoke()
             return
         }
         val st = SurfaceTexture(oesTexture)
@@ -93,6 +106,7 @@ class LookSurfaceProcessor : SurfaceProcessor {
             st.setOnFrameAvailableListener(null)
             st.release()
             surface.release()
+            onReleased?.invoke()
         }
         st.setOnFrameAvailableListener({ drawFrame(it) }, handler)
     }
@@ -103,11 +117,39 @@ class LookSurfaceProcessor : SurfaceProcessor {
             return
         }
         val surface = output.getSurface(executor) {
-            outputs.remove(output)?.let { EGL14.eglDestroySurface(display, it) }
+            outputs.remove(output)?.let { EGL14.eglDestroySurface(display, it.egl) }
             output.close()
         }
         val eglSurface = EGL14.eglCreateWindowSurface(display, config, surface, intArrayOf(EGL14.EGL_NONE), 0)
-        outputs[output] = eglSurface
+        outputs[output] = Output(eglSurface, output.size.width, output.size.height, output::updateTransformMatrix)
+    }
+
+    /**
+     * Draws every frame onto [surface] (for example a preview view's surface) with the input's own
+     * transform, so the consumer sees the same geometry as a direct camera stream. Runs on the GL
+     * thread; [onFailed] is told when the window surface cannot be used.
+     */
+    fun addOutput(key: Any, surface: Surface, width: Int, height: Int, onFailed: (Throwable) -> Unit) {
+        handler.post {
+            if (released) return@post
+            try {
+                val egl = EGL14.eglCreateWindowSurface(display, config, surface, intArrayOf(EGL14.EGL_NONE), 0)
+                check(egl != EGL14.EGL_NO_SURFACE) { "eglCreateWindowSurface 0x%x".format(EGL14.eglGetError()) }
+                outputs[key] = Output(egl, width, height, { out, tex -> System.arraycopy(tex, 0, out, 0, 16) }, stampFrames = false)
+            } catch (e: RuntimeException) {
+                onFailed(e)
+            }
+        }
+    }
+
+    fun removeOutput(key: Any) {
+        handler.post {
+            if (released) return@post
+            outputs.remove(key)?.let {
+                runCatching { makeCurrent(pbuffer) }
+                EGL14.eglDestroySurface(display, it.egl)
+            }
+        }
     }
 
     private fun drawFrame(st: SurfaceTexture) {
@@ -120,12 +162,23 @@ class LookSurfaceProcessor : SurfaceProcessor {
             return
         }
         st.getTransformMatrix(texMatrix)
-        for ((out, eglSurface) in outputs) {
-            makeCurrent(eglSurface)
-            out.updateTransformMatrix(outMatrix, texMatrix)
-            program.draw(oesTexture, outMatrix, out.size.width, out.size.height)
-            EGLExt.eglPresentationTimeANDROID(display, eglSurface, st.timestamp)
-            EGL14.eglSwapBuffers(display, eglSurface)
+        val dead = ArrayList<Any>(0)
+        for ((key, out) in outputs) {
+            // A window surface can go away before its owner tells us (view detached); drop it
+            // instead of throwing on the GL thread.
+            if (!EGL14.eglMakeCurrent(display, out.egl, out.egl, context)) {
+                Log.w(TAG, "Output surface lost (0x%x)".format(EGL14.eglGetError()))
+                dead += key
+                continue
+            }
+            out.matrix(outMatrix, texMatrix)
+            program.draw(oesTexture, outMatrix, out.width, out.height)
+            if (out.stampFrames) EGLExt.eglPresentationTimeANDROID(display, out.egl, st.timestamp)
+            EGL14.eglSwapBuffers(display, out.egl)
+        }
+        if (dead.isNotEmpty()) {
+            makeCurrent(pbuffer)
+            dead.forEach { k -> outputs.remove(k)?.let { EGL14.eglDestroySurface(display, it.egl) } }
         }
         countFrame()
     }

@@ -9,10 +9,12 @@ import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.util.Log
+import androidx.camera.core.Preview
 import androidx.camera.view.CameraController
 import dev.opencamera.pipeline.ai.AiOps
 import dev.opencamera.pipeline.looks.LookEffect
 import dev.opencamera.pipeline.looks.LookParams
+import dev.opencamera.pipeline.looks.LookPreviewSurfaceProvider
 import dev.opencamera.pipeline.looks.LookSurfaceProcessor
 import dev.opencamera.pipeline.watermark.WatermarkTemplate
 import kotlinx.coroutines.CoroutineScope
@@ -49,6 +51,30 @@ class LookController(
 
     /** CameraX rejects effects next to RAW capture; the look is then applied to saved photos only. */
     private var rawSession = false
+
+    private var ownPreview: LookPreviewSurfaceProvider? = null
+
+    /**
+     * True while the viewfinder is drawn by our own renderer ([wrapPreview]): the look is live in
+     * every session layout (RAW included) and switching looks never touches the session.
+     */
+    val ownsPreview get() = ownPreview?.enabled == true
+
+    /**
+     * Wraps the preview view's surface provider so frames pass through the look renderer.
+     * [onFailure] runs on the main thread when the renderer cannot serve the view; later binds
+     * then use the CameraX effect path (no live look next to RAW).
+     */
+    fun wrapPreview(context: Context, target: Preview.SurfaceProvider, onFailure: () -> Unit): Preview.SurfaceProvider {
+        if (processor == null && !previewEffectBlocked) {
+            processor = runCatching { LookSurfaceProcessor() }.onFailure { Log.w(TAG, "No GL for looks", it) }.getOrNull()
+        }
+        return LookPreviewSurfaceProvider(context, target, { processor }) {
+            // The next refresh re-applies the look through the effect path.
+            applied = null
+            onFailure()
+        }.also { ownPreview = it }
+    }
 
     private var preloaded: Deferred<LookParams?>? = null
     private var preloadedKey: Pair<String, Float>? = null
@@ -91,6 +117,13 @@ class LookController(
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     fun attachIfReady() {
+        if (ownsPreview) {
+            preloaded?.takeIf { it.isCompleted }?.let { d ->
+                processor?.setLook(runCatching { d.getCompleted() }.getOrNull())
+                applied = prefs.lookId to prefs.intensity
+            }
+            return
+        }
         if (effectAttached || previewEffectBlocked || rawSession) return
         val key = prefs.lookId to prefs.intensity
         val params = if (key.first == LookPreferences.NONE) {
@@ -186,7 +219,7 @@ class LookController(
             }
             val p = processor ?: LookSurfaceProcessor().also { processor = it }
             p.setLook(params)
-            if (!effectAttached && !previewEffectBlocked && !rawSession) {
+            if (!effectAttached && !previewEffectBlocked && !rawSession && !ownsPreview) {
                 try {
                     cameraController.setEffects(setOf(LookEffect(p)))
                     effectAttached = true

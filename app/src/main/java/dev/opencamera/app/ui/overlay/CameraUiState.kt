@@ -123,6 +123,8 @@ data class CameraUiState(
     val captures: Int = 0,
     val canFlip: Boolean = true,
     val googleLens: Boolean = false,
+    /** Image quality label with megapixels for the bound camera; empty hides the tile. */
+    val imageQuality: String = "",
     val looks: List<LookItem> = emptyList(),
     val lookId: String = "",
     val recordingPaused: Boolean = false,
@@ -160,6 +162,7 @@ interface CameraUiActions {
     fun proFormat()
     fun proReset()
     fun setSkin(id: String)
+    fun cycleImageQuality()
     fun setBlur(enabled: Boolean)
 
     /** A downscaled preview frame for a sheet backdrop, or null. */

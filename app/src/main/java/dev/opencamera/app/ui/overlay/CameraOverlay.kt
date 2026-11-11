@@ -204,6 +204,7 @@ private fun CameraUiState.forBottom() = CameraUiState(
 private fun CameraUiState.forSheets() = CameraUiState(
     blurEnabled = blurEnabled, cameraMode = cameraMode, controls = controls, creative = creative,
     googleLens = googleLens, insetBottom = insetBottom, moreModes = moreModes, multiFrame = multiFrame,
+    imageQuality = imageQuality,
 )
 
 @Composable

@@ -69,6 +69,10 @@ internal class GlLookProgram(externalInput: Boolean = true) {
         GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
         GLES30.glBindTexture(inputTarget, inputTexture)
         GLES30.glUniform1i(uInput, 0)
+        // Samplers of different types must not share a unit, even when the look is off;
+        // otherwise the draw fails with GL_INVALID_OPERATION and the output stays black.
+        GLES30.glUniform1i(uLut, 1)
+        GLES30.glUniform1i(uTone, 2)
         GLES30.glUniformMatrix4fv(uTexMatrix, 1, false, texMatrix, 0)
         GLES30.glUniform2f(uSize, width.toFloat(), height.toFloat())
         val p = params

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="image_quality_title">Chất lượng ảnh</string>
+    <string name="image_quality_summary">Kích thước ảnh chụp bằng HDR, Đêm và các chế độ ghép nhiều khung</string>
+    <string name="image_quality_auto">Tự động (%1$d MP)</string>
+    <string name="image_quality_max">Tối đa (RAW %1$d MP)</string>
+    <string name="image_quality_fast">Nhanh (YUV %1$d MP)</string>
+    <string name="image_quality_auto_plain">Tự động</string>
+    <string name="image_quality_max_plain">Tối đa (RAW)</string>
+    <string name="image_quality_fast_plain">Nhanh (YUV)</string>
+    <string name="look_preview_fallback">Không xem trước phong cách trực tiếp được, dùng xem trước thường</string>
+</resources>

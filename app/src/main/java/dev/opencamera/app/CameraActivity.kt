@@ -62,6 +62,9 @@ import androidx.camera.core.ExperimentalZeroShutterLag
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.MirrorMode
+import androidx.camera.core.Preview
+import dev.opencamera.pipeline.looks.LookPreviewSurfaceProvider
+import dev.opencamera.app.multiframe.ImageQuality
 import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
@@ -101,6 +104,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -1247,6 +1251,10 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         }
 
         launch {
+            viewModel.multiFrame.sourceFlow.collectLatest { rebindIfAnalysisChanged() }
+        }
+
+        launch {
             viewModel.multiFrame.configCap.collectLatest { rebindIfAnalysisChanged() }
         }
 
@@ -1696,12 +1704,35 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         }
     }
 
+    /**
+     * Routes the viewfinder through our look renderer instead of a CameraX effect, so the look
+     * stays live next to RAW capture and look changes never rebind. PreviewView offers no hook for
+     * this, so its surface provider is swapped before the controller attaches. Any failure keeps
+     * the stock provider (CameraX effect path).
+     */
+    /** Megapixels of the bound photo camera, for the image quality toggle. */
+    private var imageQualityMp: ImageQuality.Megapixels? = null
+
+    private fun installLookPreview() {
+        FeatureGuard.attempt(LOG_TAG, "Own look preview") {
+            val field = PreviewView::class.java.getDeclaredField("mSurfaceProvider").apply { isAccessible = true }
+            val original = field.get(viewFinder) as Preview.SurfaceProvider
+            if (original is LookPreviewSurfaceProvider) return@attempt
+            field.set(viewFinder, viewModel.lookController.wrapPreview(this, original) {
+                Toast.makeText(this, R.string.look_preview_fallback, Toast.LENGTH_SHORT).show()
+                viewModel.lookController.refresh()
+                rebindIfAnalysisChanged()
+            })
+        }
+    }
+
     private suspend fun queueSetupWithCameraPermissions() {
         var initialized = false
 
         permissionsManager.permissionStateFlow(Permission.CAMERA).collect { permissionState ->
             if (permissionState == PermissionState.GRANTED && !initialized) {
                 // Attach CameraController to PreviewView
+                installLookPreview()
                 viewFinder.controller = viewModel.cameraController
                 viewModel.lookController.refresh()
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -3159,6 +3190,22 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         launch { viewModel.motionPhoto.motionPhoto.collect { m -> uiState.update { it.copy(motionPhoto = m) } } }
         launch { viewModel.lookController.lookId.collect { id -> uiState.update { it.copy(lookId = id) } } }
         launch {
+            combine(viewModel.multiFrame.sourceFlow, viewModel.cameraConfiguration) { source, cfg ->
+                val photo = cfg as? CameraConfiguration.Photo
+                Triple(source, photo?.camera?.cameraId, photo?.photoAspectRatio)
+            }.distinctUntilChanged().collectLatest { (source, cameraId, ratio) ->
+                val aspect = if (ratio == AspectRatio.RATIO_16_9) 16f / 9f else 4f / 3f
+                val mp = cameraId?.let { id ->
+                    withContext(Dispatchers.IO) {
+                        ImageQuality.megapixels(getSystemService(android.hardware.camera2.CameraManager::class.java), id, aspect)
+                    }
+                }
+                imageQualityMp = mp
+                val label = if (cameraId == null) "" else ImageQuality.label(this@CameraActivity, source, mp)
+                uiState.update { it.copy(imageQuality = label) }
+            }
+        }
+        launch {
             // Debug builds can pin the glyph angle (the device may be fixed on a stand).
             val pinned = OverlayHost.debugFailure(this@CameraActivity, intent.getStringExtra(EXTRA_DEBUG_GLYPH_ROTATION))
                 ?.toIntOrNull()
@@ -3233,6 +3280,9 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         override fun proReset() = act("pro reset") { proModeUi.onReset() }
         override fun setSkin(id: String) = act("skin") { skinRepository.select(id) }
         override fun setBlur(enabled: Boolean) = act("blur") { skinRepository.setBlurEnabled(enabled) }
+        override fun cycleImageQuality() = act("image quality") {
+            viewModel.multiFrame.source = ImageQuality.next(viewModel.multiFrame.source, imageQualityMp)
+        }
 
         override suspend fun previewSnapshot(): Bitmap? = try {
             PreviewFrames.copy(viewFinder, maxOf(viewFinder.width, viewFinder.height) / 4)

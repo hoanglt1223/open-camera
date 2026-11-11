@@ -28,3 +28,6 @@
 
 # Suppress warnings for the dynamically loaded camera extensions library
 -dontwarn androidx.camera.extensions.impl.advanced.**
+
+# Our look renderer swaps the preview view's surface provider by name (CameraActivity.installLookPreview).
+-keepclassmembers class androidx.camera.view.PreviewView { *** mSurfaceProvider; }

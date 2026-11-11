@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="image_quality_title">Image quality</string>
+    <string name="image_quality_summary">Size of photos taken with HDR, Night and other multi-frame modes</string>
+    <string name="image_quality_auto">Auto (%1$d MP)</string>
+    <string name="image_quality_max">Maximum (RAW %1$d MP)</string>
+    <string name="image_quality_fast">Fast (YUV %1$d MP)</string>
+    <string name="image_quality_auto_plain">Auto</string>
+    <string name="image_quality_max_plain">Maximum (RAW)</string>
+    <string name="image_quality_fast_plain">Fast (YUV)</string>
+    <string name="look_preview_fallback">Live look preview unavailable, using the standard preview</string>
+</resources>

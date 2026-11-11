@@ -319,6 +319,13 @@ private fun SettingsSheet(state: CameraUiState, actions: CameraUiActions, close:
         )
         CameraMode.QR -> listOf(Control.GRID)
     }
+    if (state.cameraMode == CameraMode.PHOTO && state.imageQuality.isNotEmpty()) {
+        ValueRow(stringResource(R.string.image_quality_title), state.imageQuality, true) {
+            Haptics.segment(view)
+            actions.cycleImageQuality()
+        }
+        Divider()
+    }
     rows.forEach { c ->
         val ctl = state.controls[c] ?: return@forEach
         if (!ctl.visible) return@forEach
