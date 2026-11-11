@@ -19,6 +19,9 @@
 #include "finish.h"
 #include "merge.h"
 #include "pipeline.h"
+#include "raw.h"
+#include "stack.h"
+#include "superres.h"
 
 using namespace mf;
 
@@ -229,8 +232,112 @@ void testSuperRes() {
     }
     const double single = psnrY(frames[0], truth, 24);
     const double sr = psnrY(r.image, truth, 24);
-    std::printf("  PSNR vs ground truth: upscaled single %.2f dB, multi-frame SR %.2f dB\n", single, sr);
-    check(sr > single + 0.25, "multi-frame super-res beats single-frame upscale");
+    std::printf("  HAL-zoomed input: upscaled single %.2f dB, multi-frame %.2f dB\n", single, sr);
+    // Fallback path only (the HAL already interpolated the frames): it must not lose detail.
+    check(sr > single, "super-res on HAL-zoomed frames is not worse than a single frame");
+}
+
+// Super Res on an unzoomed burst: native sensor frames, zoom crop after alignment and merge.
+void testSuperResCrop() {
+    std::mt19937 rng(3);
+    const int w = 800, h = 600, n = 8;
+    const int cx = w / 4, cy = h / 4, cw = w / 2, ch = h / 2;  // 2x zoom on the centre
+    Scene s;
+    // Scene units are half a sensor pixel, so the scene holds detail beyond the sensor's Nyquist.
+    auto sensor = [&](float dx, float dy, float noise) {
+        std::normal_distribution<float> nd(0, noise);
+        Frame f(w, h);
+        for (int y = 0; y < h; ++y) {
+            for (int x = 0; x < w; ++x) {
+                float acc = 0;
+                for (int j = 0; j < 4; ++j)
+                    for (int i = 0; i < 4; ++i) acc += s(2 * (x + dx) + 0.25f + 0.5f * i, 2 * (y + dy) + 0.25f + 0.5f * j);
+                f.y[size_t(y) * w + x] = clampU8(acc / 16 + nd(rng));
+            }
+        }
+        std::fill(f.vu.begin(), f.vu.end(), 128);
+        return f;
+    };
+    std::uniform_real_distribution<float> shift(-6, 6);
+    std::vector<Frame> frames;
+    frames.push_back(sensor(0, 0, 2));
+    for (int i = 1; i < n; ++i) frames.push_back(sensor(shift(rng), shift(rng), 2));
+    // Output pixel (ox, oy) covers half a sensor pixel of the crop.
+    Frame truth(w, h);
+    for (int y = 0; y < h; ++y)
+        for (int x = 0; x < w; ++x) {
+            float acc = 0;
+            for (int j = 0; j < 2; ++j)
+                for (int i = 0; i < 2; ++i) acc += s(2 * cx + x + 0.25f + 0.5f * i, 2 * cy + y + 0.25f + 0.5f * j);
+            truth.y[size_t(y) * w + x] = clampU8(acc / 4);
+        }
+
+    Params p;
+    p.mode = Mode::SuperRes;
+    p.toneEvStep = 0;
+    p.reference = 0;
+    p.cropX = cx;
+    p.cropY = cy;
+    p.cropW = cw;
+    p.cropH = ch;
+    Result r;
+    std::string err;
+    const bool ok = processBurst(frames, p, r, nullptr, &err);
+    check(ok && r.image.width == w && r.image.height == h, "super-res crop burst succeeds at full size");
+    if (!ok || r.referenceIndex != 0) return;
+
+    GrayF ref(cw, ch), up;
+    for (int y = 0; y < ch; ++y)
+        for (int x = 0; x < cw; ++x) ref.px[size_t(y) * cw + x] = frames[0].y[size_t(cy + y) * w + cx + x];
+    resizeBilinear(ref, 1, w, h, up);
+    Frame single(w, h);
+    for (size_t i = 0; i < single.y.size(); ++i) single.y[i] = clampU8(up.px[i]);
+    const double ps = psnrY(single, truth, 24), psr = psnrY(r.image, truth, 24);
+    std::printf("  unzoomed burst, 2x crop: single upscale %.2f dB, multi-frame SR %.2f dB (+%.2f)\n", ps, psr,
+                psr - ps);
+    check(psr > ps + 1.0, "multi-frame super-res beats single-frame upscale by more than 1 dB");
+}
+
+void testRawDevelop() {
+    // Flat grey card under a warm light: camera RGB = grey * (1/wb). After development it must be
+    // neutral, at the expected sRGB level, with no demosaic artefacts on a flat field.
+    const int w = 64, h = 48;
+    const float white = 1023, black = 64, grey = 0.18f;
+    RawParams p;
+    p.cfa = Cfa::Rggb;
+    p.wb[0] = 2.0f;
+    p.wb[1] = p.wb[2] = 1.0f;
+    p.wb[3] = 1.6f;
+    for (float &b : p.black) b = black;
+    p.white = white;
+    std::vector<uint16_t> raw(size_t(w) * h);
+    for (int y = 0; y < h; ++y)
+        for (int x = 0; x < w; ++x) {
+            const int pos = (y & 1) * 2 + (x & 1);
+            const float g = pos == 0 ? grey / 2.0f : pos == 3 ? grey / 1.6f : grey;
+            raw[size_t(y) * w + x] = uint16_t(std::lround(black + g * (white - black)));
+        }
+    Frame out;
+    check(developRaw(raw.data(), w, h, w * 2, p, out), "raw development succeeds");
+    int maxChroma = 0, minY = 255, maxY = 0;
+    for (uint8_t v : out.vu) maxChroma = std::max(maxChroma, std::abs(int(v) - 128));
+    for (uint8_t v : out.y) {
+        minY = std::min<int>(minY, v);
+        maxY = std::max<int>(maxY, v);
+    }
+    // sRGB(0.18) = 118.
+    std::printf("  raw grey card: Y %d..%d, max chroma offset %d\n", minY, maxY, maxChroma);
+    check(maxChroma <= 1 && minY >= 116 && maxY <= 120, "white-balanced grey develops to neutral sRGB 118");
+
+    // Saturated colour patch keeps its hue through the colour matrix (identity here): pure red.
+    std::vector<uint16_t> red(size_t(w) * h);
+    for (int y = 0; y < h; ++y)
+        for (int x = 0; x < w; ++x) red[size_t(y) * w + x] = uint16_t((y & 1) == 0 && (x & 1) == 0 ? 900 : 64);
+    p.wb[0] = p.wb[1] = p.wb[2] = p.wb[3] = 1.0f;
+    check(developRaw(red.data(), w, h, w * 2, p, out), "raw development of a red patch succeeds");
+    const int cr = out.vu[size_t(10) * w + 20], cb = out.vu[size_t(10) * w + 21];
+    std::printf("  raw red patch: Cr %d Cb %d\n", cr, cb);
+    check(cr > 200 && cb < 110, "red stays red after demosaic");
 }
 
 void testToneMap() {
@@ -266,7 +373,7 @@ void testToneMap() {
     check(skyAfter < 250 && skyAfter > 215, "tone map keeps highlights below clipping");
 }
 
-void timing(int w, int h, int n, Mode mode, const char *label) {
+void timing(int w, int h, int n, Mode mode, const char *label, float zoom = 1.0f) {
     std::mt19937 rng(5);
     std::vector<Frame> frames;
     std::uniform_real_distribution<float> shift(-8, 8);
@@ -274,6 +381,12 @@ void timing(int w, int h, int n, Mode mode, const char *label) {
     Params p;
     p.mode = mode;
     p.toneEvStep = mode == Mode::Astro ? 0 : 1.0f;
+    if (zoom > 1.0f) {
+        p.cropW = int(w / zoom);
+        p.cropH = int(h / zoom);
+        p.cropX = (w - p.cropW) / 2;
+        p.cropY = (h - p.cropH) / 2;
+    }
     Result r;
     std::string err;
     auto t = std::chrono::steady_clock::now();
@@ -284,6 +397,121 @@ void timing(int w, int h, int n, Mode mode, const char *label) {
     check(ok, label);
 }
 
+Frame blurred(const Frame &f, float sigma) {
+    GrayF g(f.width, f.height), out;
+    for (size_t i = 0; i < f.y.size(); ++i) g.px[i] = f.y[i];
+    gaussianBlur(g, out, sigma);
+    Frame r = f;
+    for (size_t i = 0; i < r.y.size(); ++i) r.y[i] = clampU8(out.px[i]);
+    return r;
+}
+
+Frame addNoise(Frame f, float sigma, std::mt19937 &rng) {
+    std::normal_distribution<float> n(0, sigma);
+    for (auto &v : f.y) v = clampU8(v + n(rng));
+    return f;
+}
+
+void testStackOps() {
+    std::mt19937 rng(5);
+    const int w = 480, h = 360, n = 7;
+    Frame clean = render(w, h, 0, 0, 0, rng);
+    std::vector<Frame> frames;
+    for (int i = 0; i < n; ++i) {
+        Frame f = render(w, h, 0, 0, 8, rng);
+        // A walker that is somewhere else in every frame.
+        for (int y = 100; y < 160; ++y)
+            for (int x = 40 + 60 * i; x < 80 + 60 * i; ++x) f.y[size_t(y) * w + x] = 245;
+        frames.push_back(std::move(f));
+    }
+    StackParams p;
+    p.align = false;
+    StackResult r;
+    std::string err;
+    p.op = StackOp::Median;
+    check(stackBurst(frames, p, r, &err), "median stack succeeds");
+    double ghost = 0;
+    for (int y = 100; y < 160; ++y)
+        for (int x = 40; x < 80 + 60 * (n - 1); ++x)
+            ghost += std::fabs(double(r.image.y[size_t(y) * w + x]) - clean.y[size_t(y) * w + x]);
+    ghost /= 60.0 * (40 + 60 * (n - 1));
+    std::printf("  median: mean abs error on the walker path %.2f\n", ghost);
+    check(ghost < 8.0, "median stack removes a passer-by");
+
+    p.op = StackOp::Mean;
+    std::vector<Frame> still;
+    for (int i = 0; i < n; ++i) still.push_back(render(w, h, 0, 0, 8, rng));
+    check(stackBurst(still, p, r, &err), "mean stack succeeds");
+    const double single = psnrY(still[0], clean, 8), mean = psnrY(r.image, clean, 8);
+    std::printf("  mean: PSNR single %.2f dB, stacked %.2f dB\n", single, mean);
+    check(mean - single > 4.0, "mean stack averages noise like a long exposure");
+
+    p.op = StackOp::Max;
+    check(stackBurst(frames, p, r, &err), "max stack succeeds");
+    int lit = 0;
+    for (int i = 0; i < n; ++i) lit += r.image.y[size_t(130) * w + 60 + 60 * i] > 235;
+    check(lit == n, "max stack keeps every position of a moving light (trail)");
+}
+
+void testFocusStack() {
+    std::mt19937 rng(6);
+    const int w = 480, h = 360;
+    Frame clean = render(w, h, 0, 0, 0, rng);
+    Frame soft = blurred(clean, 3.0f);
+    Frame a = clean, b = clean;
+    for (int y = 0; y < h; ++y)
+        for (int x = 0; x < w; ++x) {
+            const size_t i = size_t(y) * w + x;
+            (x < w / 2 ? b : a).y[i] = soft.y[i];
+        }
+    std::vector<Frame> frames{addNoise(a, 2, rng), addNoise(b, 2, rng)};
+    StackParams p;
+    p.op = StackOp::Focus;
+    p.align = false;
+    StackResult r;
+    std::string err;
+    check(stackBurst(frames, p, r, &err), "focus stack succeeds");
+    const double pa = psnrY(frames[0], clean, 8), pb = psnrY(frames[1], clean, 8), ps = psnrY(r.image, clean, 8);
+    std::printf("  focus: PSNR near %.2f, far %.2f, stacked %.2f dB\n", pa, pb, ps);
+    check(ps > std::max(pa, pb) + 3.0, "focus stack is sharper than either source frame");
+}
+
+void testMoon() {
+    std::mt19937 rng(7);
+    const int w = 400, h = 400, r0 = 120;
+    Scene s;
+    Frame truth(w, h);
+    for (int y = 0; y < h; ++y)
+        for (int x = 0; x < w; ++x) {
+            const float d = std::hypot(x - 200.0f, y - 200.0f);
+            truth.y[size_t(y) * w + x] = d < r0 ? clampU8(0.9f * s(x * 0.7f, y * 0.7f)) : 6;
+        }
+    std::fill(truth.vu.begin(), truth.vu.end(), 128);
+    // Atmospheric seeing: frames blurred by different amounts, a few lucky ones nearly sharp.
+    std::vector<Frame> frames;
+    const float seeing[] = {2.6f, 1.3f, 2.2f, 3.0f, 1.2f, 2.4f, 2.8f, 1.4f, 2.0f, 2.5f};
+    for (float sg : seeing) frames.push_back(addNoise(blurred(truth, sg), 6, rng));
+    StackParams p;
+    p.op = StackOp::Moon;
+    p.align = false;
+    p.keepFraction = 0.3f;
+    StackResult r;
+    std::string err;
+    check(stackBurst(frames, p, r, &err), "moon stack succeeds");
+    check(r.framesUsed == 3, "lucky imaging keeps the sharpest 30%");
+    double best = 0, avg = 0;
+    for (auto &f : frames) {
+        best = std::max(best, psnrY(f, truth, 20));
+        avg += psnrY(f, truth, 20) / frames.size();
+    }
+    const double out = psnrY(r.image, truth, 20);
+    std::printf("  moon: PSNR average frame %.2f, best frame %.2f, result %.2f dB\n", avg, best, out);
+    check(out > best, "moon result beats the best single frame");
+    int clipped = 0;
+    for (uint8_t v : r.image.y) clipped += v >= 255;
+    check(clipped < w * h / 1000, "moon result is not clipped");
+}
+
 }  // namespace
 
 int main(int argc, char **argv) {
@@ -291,11 +519,17 @@ int main(int argc, char **argv) {
     testAlignment();
     testMergeSnrAndGhosts();
     testSuperRes();
+    testSuperResCrop();
+    testRawDevelop();
     testToneMap();
+    testStackOps();
+    testFocusStack();
+    testMoon();
     if (perf) {
         timing(4000, 3000, 8, Mode::Hdr, "HDR");
         timing(4000, 3000, 12, Mode::Night, "Night");
         timing(4000, 3000, 8, Mode::SuperRes, "SuperRes");
+        timing(4000, 3000, 8, Mode::SuperRes, "SuperRes 2x crop", 2.0f);
     }
     std::printf("%s (%d failure%s)\n", failures ? "FAILED" : "OK", failures, failures == 1 ? "" : "s");
     return failures ? 1 : 0;

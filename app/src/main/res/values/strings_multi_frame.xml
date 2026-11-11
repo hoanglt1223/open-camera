@@ -14,4 +14,5 @@
     <string name="stream_fallback_look">Live look preview is not available on this camera; looks still apply to photos</string>
     <string name="stream_fallback_baseline">Camera opened in basic mode: some features are off for this camera</string>
     <string name="stream_fallback_failed">Camera could not be opened</string>
+    <string name="full_res_fallback">Full-resolution multi-frame capture is not available; using the standard camera stream</string>
 </resources>

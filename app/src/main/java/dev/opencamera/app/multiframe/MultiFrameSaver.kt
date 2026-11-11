@@ -18,6 +18,23 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+/** Exposure EXIF fields; serialisable so a burst restored from disk keeps them. */
+data class ExposureExif(
+    val exposureNs: Long?,
+    val iso: Int?,
+    val aperture: Float?,
+    val focalLength: Float?,
+) {
+    companion object {
+        fun from(r: CaptureResult) = ExposureExif(
+            r.get(CaptureResult.SENSOR_EXPOSURE_TIME),
+            r.get(CaptureResult.SENSOR_SENSITIVITY),
+            r.get(CaptureResult.LENS_APERTURE),
+            r.get(CaptureResult.LENS_FOCAL_LENGTH),
+        )
+    }
+}
+
 /** Writes a merged JPEG with EXIF into MediaStore (DCIM/Camera). */
 object MultiFrameSaver {
     private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
@@ -29,10 +46,12 @@ object MultiFrameSaver {
         val captureResult: CaptureResult?,
         val location: Location?,
         val description: String,
+        /** Used when there is no [captureResult] (e.g. a burst restored from disk). */
+        val exposure: ExposureExif? = null,
     )
 
     fun save(context: Context, jpeg: ByteArray, width: Int, height: Int, meta: Metadata): Uri? {
-        val temp = File.createTempFile("mf", ".jpg", context.cacheDir)
+        val temp = File.createTempFile("merged", ".jpg", context.cacheDir)
         try {
             temp.writeBytes(jpeg)
             writeExif(temp, width, height, meta)
@@ -90,20 +109,15 @@ object MultiFrameSaver {
                 else -> ExifInterface.ORIENTATION_NORMAL
             }.toString()
         )
-        meta.captureResult?.let { r ->
-            r.get(CaptureResult.SENSOR_EXPOSURE_TIME)?.let {
-                exif.setAttribute(ExifInterface.TAG_EXPOSURE_TIME, (it / 1e9).toString())
-            }
-            r.get(CaptureResult.SENSOR_SENSITIVITY)?.let {
-                exif.setAttribute(ExifInterface.TAG_PHOTOGRAPHIC_SENSITIVITY, it.toString())
-            }
-            r.get(CaptureResult.LENS_APERTURE)?.let {
-                exif.setAttribute(ExifInterface.TAG_F_NUMBER, it.toString())
-            }
-            r.get(CaptureResult.LENS_FOCAL_LENGTH)?.let {
-                exif.setAttribute(ExifInterface.TAG_FOCAL_LENGTH, "${(it * 1000).toInt()}/1000")
-            }
+        (meta.captureResult?.let(ExposureExif::from) ?: meta.exposure)?.let { e ->
+            e.exposureNs?.let { exif.setAttribute(ExifInterface.TAG_EXPOSURE_TIME, (it / 1e9).toString()) }
+            e.iso?.let { exif.setAttribute(ExifInterface.TAG_PHOTOGRAPHIC_SENSITIVITY, it.toString()) }
+            e.aperture?.let { exif.setAttribute(ExifInterface.TAG_F_NUMBER, it.toString()) }
+            e.focalLength?.let { exif.setAttribute(ExifInterface.TAG_FOCAL_LENGTH, "${(it * 1000).toInt()}/1000") }
         }
+        exif.setAttribute(ExifInterface.TAG_FLASH, "0")
+        exif.setAttribute(ExifInterface.TAG_WHITE_BALANCE, ExifInterface.WHITE_BALANCE_AUTO.toString())
+        exif.setAttribute(ExifInterface.TAG_COLOR_SPACE, ExifInterface.COLOR_SPACE_S_RGB.toString())
         meta.location?.let { exif.setGpsInfo(it) }
         exif.saveAttributes()
     }

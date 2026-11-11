@@ -23,6 +23,13 @@ struct Params {
     float toneEvStep = 1.0f;
     // Reference frame index, or -1 to pick the sharpest of the first three frames.
     int reference = -1;
+    // Optional crop of the input frames (full-resolution pixels, cropW = 0: none). The crop is
+    // aligned and merged, then scaled to the input frame size; Super Res fills the extra pixels
+    // from the sub-pixel shifts between frames. Used to zoom after merging an unzoomed burst.
+    int cropX = 0;
+    int cropY = 0;
+    int cropW = 0;
+    int cropH = 0;
 };
 
 struct Result {

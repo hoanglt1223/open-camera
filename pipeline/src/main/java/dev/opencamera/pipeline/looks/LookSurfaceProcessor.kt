@@ -130,7 +130,10 @@ class LookSurfaceProcessor : SurfaceProcessor {
 
     private fun countFrame() {
         val now = SystemClock.elapsedRealtime()
-        if (fpsWindowStart == 0L) fpsWindowStart = now
+        if (fpsWindowStart == 0L) {
+            fpsWindowStart = now
+            Log.i(TAG, "first look frame")
+        }
         frames++
         if (now - fpsWindowStart >= 2000) {
             fps = frames * 1000f / (now - fpsWindowStart)

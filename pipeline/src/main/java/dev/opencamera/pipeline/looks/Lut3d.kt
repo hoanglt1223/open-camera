@@ -78,3 +78,19 @@ object CubeParser {
         return Lut3d(size, buf)
     }
 }
+
+/** Writer for `.cube` 3D LUTs (red fastest), readable by Resolve, Lightroom and [CubeParser]. */
+object CubeWriter {
+    fun write(lut: Lut3d, title: String): String = buildString(lut.data.size * 10 + 128) {
+        append("TITLE \"").append(title.replace("\"", "'").replace('\n', ' ')).append("\"\n")
+        append("LUT_3D_SIZE ").append(lut.size).append('\n')
+        append("DOMAIN_MIN 0.0 0.0 0.0\n")
+        append("DOMAIN_MAX 1.0 1.0 1.0\n")
+        val d = lut.data
+        var i = 0
+        while (i < d.size) {
+            append(String.format(java.util.Locale.US, "%.6f %.6f %.6f\n", d[i], d[i + 1], d[i + 2]))
+            i += 3
+        }
+    }
+}
