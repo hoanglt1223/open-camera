@@ -66,7 +66,9 @@ android_app {
         "androidx.lifecycle_lifecycle-runtime",
         "androidx.lifecycle_lifecycle-runtime-ktx",
         "androidx.lifecycle_lifecycle-viewmodel-ktx",
+        "OpenCamera_androidx.media3_media3-effect",
         "OpenCamera_androidx.media3_media3-exoplayer",
+        "OpenCamera_androidx.media3_media3-transformer",
         "OpenCamera_androidx.media3_media3-ui",
         "androidx.preference_preference",
         "androidx.recyclerview_recyclerview",
@@ -84,6 +86,7 @@ android_app {
         "OpenCamera_io.github.zxing-cpp_android",
         "kotlin-stdlib",
         "kotlinx_coroutines_guava",
+        "OpenCamera_org.opencv_opencv",
     ],
 
     optional_uses_libs: [

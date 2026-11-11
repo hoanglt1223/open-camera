@@ -47,6 +47,7 @@ dependencies {
     implementation(project(":ml"))
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.exifinterface)
+    implementation(libs.opencv)
     testImplementation(libs.junit)
     testImplementation(libs.json)
     androidTestImplementation(libs.androidx.test.runner)

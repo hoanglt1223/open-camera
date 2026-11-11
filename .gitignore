@@ -8,3 +8,5 @@ build/
 .externalNativeBuild
 .cxx
 local.properties
+# OpenCV AAR is ~118 MB (over the Git host file limit); app:generateBp recreates it.
+/app/libs/org/opencv/**/*.aar

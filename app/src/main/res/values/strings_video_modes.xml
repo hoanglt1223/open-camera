@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="camera_mode_more">More</string>
+
+    <string name="video_mode_pro_video">Pro video</string>
+    <string name="video_mode_slow_motion">Slow-mo</string>
+    <string name="video_mode_time_lapse">Time-lapse</string>
+    <string name="video_mode_hyperlapse">Hyperlapse</string>
+    <string name="video_mode_short_video">Short video</string>
+    <string name="video_mode_dual_video">Dual video</string>
+    <string name="video_mode_slow_shutter">Slow shutter</string>
+    <string name="video_mode_time_freeze">Time freeze</string>
+    <string name="video_mode_bokeh_video">Bokeh video</string>
+    <string name="video_mode_panorama">Panorama</string>
+    <string name="video_mode_document">Document</string>
+
+    <string name="video_modes_busy">Wait…</string>
+    <string name="video_modes_capture">Capture</string>
+    <string name="video_modes_close">Back</string>
+    <string name="video_modes_duration">%1$d:%2$02d</string>
+    <string name="video_modes_failed">Capture failed</string>
+    <string name="video_modes_flip">Flip</string>
+    <string name="video_modes_high_speed_fallback">High-speed session unavailable, using re-timed slow motion</string>
+    <string name="video_modes_mic_failed">Selected microphone failed, switched back to the default</string>
+    <string name="video_modes_mode_unavailable">%1$s is not available on this device</string>
+    <string name="video_modes_no_camera">Camera unavailable</string>
+    <string name="video_modes_no_frames">Nothing was captured</string>
+    <string name="video_modes_none">No extra modes on this device</string>
+    <string name="video_modes_page_added">Page %1$d added</string>
+    <string name="video_modes_pano_lower">Tilt down</string>
+    <string name="video_modes_pano_raise">Tilt up</string>
+    <string name="video_modes_pano_turn">Turn slowly</string>
+    <string name="video_modes_panorama_failed">Panorama could not be stitched</string>
+    <string name="video_modes_panorama_too_short">Turn further for a panorama</string>
+    <string name="video_modes_pause">Pause</string>
+    <string name="video_modes_pdf_saved">PDF saved to Documents/OpenCamera</string>
+    <string name="video_modes_post_failed">Saved the original; processing failed</string>
+    <string name="video_modes_processing">Processing…</string>
+    <string name="video_modes_reduced">Some settings are not supported together and were turned off</string>
+    <string name="video_modes_resume">Resume</string>
+    <string name="video_modes_saved">Video saved</string>
+    <string name="video_modes_saved_photo">Photo saved</string>
+    <string name="video_modes_saved_post">Saved the original and the processed copy</string>
+    <string name="video_modes_saved_video">Video saved (%1$d frames)</string>
+    <string name="video_modes_start">Start</string>
+    <string name="video_modes_stop">Stop</string>
+    <string name="video_modes_thermal_stop">Device too hot, recording stopped</string>
+    <string name="video_modes_thermal_warm">Device is warm</string>
+
+    <string name="video_opt_bitrate">Bitrate %1$s</string>
+    <string name="video_opt_doc_bw">B&amp;W</string>
+    <string name="video_opt_doc_color">Color</string>
+    <string name="video_opt_doc_gray">Gray</string>
+    <string name="video_opt_export_pdf">Export PDF (%1$d)</string>
+    <string name="video_opt_fps">%1$d fps</string>
+    <string name="video_opt_hdr_off">HDR off</string>
+    <string name="video_opt_hdr_on">HDR 10-bit</string>
+    <string name="video_opt_high_speed">%1$d fps high speed</string>
+    <string name="video_opt_interval">Every %1$.1f s</string>
+    <string name="video_opt_length">%1$d s</string>
+    <string name="video_opt_log_off">Log off</string>
+    <string name="video_opt_log_on">Log on</string>
+    <string name="video_opt_mic">Mic %1$s</string>
+    <string name="video_opt_mono">Mono</string>
+    <string name="video_opt_music_clear">Remove music</string>
+    <string name="video_opt_music_pick">Add music</string>
+    <string name="video_opt_orig_off">Original sound off</string>
+    <string name="video_opt_orig_on">Original sound on</string>
+    <string name="video_opt_quality">Quality %1$s</string>
+    <string name="video_opt_retimed">%1$d fps → %2$dx slow</string>
+    <string name="video_opt_silky">Silky</string>
+    <string name="video_opt_speed">%1$dx</string>
+    <string name="video_opt_stab">Stabilization %1$s</string>
+    <string name="video_opt_stereo">Stereo</string>
+    <string name="video_opt_trails">Light trails</string>
+
+    <string name="video_value_high">high</string>
+    <string name="video_value_low">low</string>
+    <string name="video_value_mic_camcorder">camcorder</string>
+    <string name="video_value_mic_default">default</string>
+    <string name="video_value_mic_raw">unprocessed</string>
+    <string name="video_value_mic_voice">voice</string>
+    <string name="video_value_off">off</string>
+    <string name="video_value_stab_gyro">gyro</string>
+    <string name="video_value_stab_hal">camera</string>
+    <string name="video_value_standard">standard</string>
+</resources>
