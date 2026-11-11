@@ -41,10 +41,12 @@ import androidx.camera.camera2.interop.CaptureRequestOptions
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.ExperimentalZeroShutterLag
+import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.MirrorMode
 import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.extensions.ExtensionMode
 import androidx.camera.video.Quality
 import androidx.camera.video.QualitySelector
@@ -64,7 +66,9 @@ import androidx.core.view.children
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
+import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import coil3.load
@@ -73,9 +77,11 @@ import coil3.request.error
 import coil3.request.fallback
 import coil3.size.Scale
 import coil3.video.VideoFrameDecoder
+import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
@@ -122,6 +128,7 @@ import dev.opencamera.app.models.VideoDynamicRange
 import dev.opencamera.app.models.VideoMirrorMode
 import dev.opencamera.app.models.VideoStabilizationMode
 import dev.opencamera.app.pro.ProModeUi
+import dev.opencamera.app.robustness.FeatureGuard
 import dev.opencamera.app.ui.dialogs.LocationPermissionsDialog
 import dev.opencamera.app.ui.dialogs.QrBottomSheetDialog
 import dev.opencamera.app.ui.views.CameraModeSelectorLayout
@@ -142,6 +149,7 @@ import dev.opencamera.app.utils.GoogleLensUtils
 import dev.opencamera.app.utils.PermissionsManager
 import dev.opencamera.app.utils.ShortcutsUtils
 import dev.opencamera.app.viewmodels.CameraViewModel
+import dev.opencamera.capture.MultiFrameSetting
 import java.io.ByteArrayInputStream
 import java.io.FileNotFoundException
 import java.io.InputStream
@@ -174,6 +182,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     private val levelerView by lazy { findViewById<LevelerView>(R.id.levelerView) }
     private val mainLayout by lazy { findViewById<ConstraintLayout>(R.id.mainLayout) }
     private val micButton by lazy { findViewById<Button>(R.id.micButton) }
+    private val multiFrameButton by lazy { findViewById<Button>(R.id.multiFrameButton) }
+    private val multiFrameProgress by lazy { findViewById<LinearProgressIndicator>(R.id.multiFrameProgress) }
     private val previewBlurView by lazy { findViewById<PreviewBlurView>(R.id.previewBlurView) }
     private val proButton by lazy { findViewById<ImageButton>(R.id.proButton) }
     private val screenFlashView by lazy { findViewById<ScreenFlashView>(R.id.screenFlashView) }
@@ -215,7 +225,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             (application as ApertureApplication).preferencesRepository,
             mainLayout,
             viewFinder,
-            R.id.secondaryBottomBarLayout,
+            R.id.proPanelAnchor,
         )
     }
     private val isGoogleLensAvailable by lazy { GoogleLensUtils.isGoogleLensAvailable(this) }
@@ -456,6 +466,11 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         effectButton.setOnClickListener { viewModel.cycleExtensionMode() }
         gridButton.setOnClickListener { viewModel.cycleGridMode() }
         timerButton.setOnClickListener { viewModel.toggleTimerMode() }
+        multiFrameButton.setOnClickListener { viewModel.multiFrame.cycleSetting() }
+        lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onResume(owner: LifecycleOwner) = viewModel.multiFrame.motionMeter.start()
+            override fun onPause(owner: LifecycleOwner) = viewModel.multiFrame.motionMeter.stop()
+        })
         micButton.setOnClickListener { viewModel.toggleVideoMicrophoneEnabled() }
         settingsButton.setOnClickListener { openSettings() }
         setupLookPicker()
@@ -1034,8 +1049,70 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         }
 
         launch {
-            viewModel.timerMode.collectLatest { timerMode ->
-                // Update secondary bar buttons
+            var boundWithMultiFrame: Boolean? = null
+            viewModel.multiFrame.setting.collectLatest { setting ->
+                multiFrameButton.setCompoundDrawablesWithIntrinsicBounds(
+                    0,
+                    when (setting) {
+                        MultiFrameSetting.OFF -> R.drawable.ic_hdr_off
+                        MultiFrameSetting.HDR_AUTO -> R.drawable.ic_hdr_auto
+                        MultiFrameSetting.HDR_ON -> R.drawable.ic_hdr_on
+                        MultiFrameSetting.NIGHT -> R.drawable.ic_clear_night
+                        MultiFrameSetting.ASTRO -> R.drawable.ic_astro
+                    },
+                    0,
+                    0
+                )
+                multiFrameButton.setText(
+                    when (setting) {
+                        MultiFrameSetting.OFF -> R.string.multi_frame_off
+                        MultiFrameSetting.HDR_AUTO -> R.string.multi_frame_hdr_auto
+                        MultiFrameSetting.HDR_ON -> R.string.multi_frame_hdr_on
+                        MultiFrameSetting.NIGHT -> R.string.multi_frame_night
+                        MultiFrameSetting.ASTRO -> R.string.multi_frame_astro
+                    }
+                )
+
+                // The analysis stream is only bound while a multi-frame setting is active
+                val enabled = setting != MultiFrameSetting.OFF
+                val previous = boundWithMultiFrame
+                boundWithMultiFrame = enabled
+                if (previous != null && previous != enabled &&
+                    viewModel.cameraState.value == CameraState.IDLE
+                ) {
+                    viewModel.cameraConfiguration.replayCache.lastOrNull()?.let {
+                        bindCameraUseCases(it)
+                    }
+                }
+            }
+        }
+
+        launch {
+            viewModel.multiFrame.progress.collectLatest { progress ->
+                multiFrameProgress.isVisible = progress != null
+                progress?.let { multiFrameProgress.setProgressCompat((it * 100).toInt(), true) }
+            }
+        }
+
+        launch {
+            var astroOffered = false
+            while (true) {
+                delay(1000)
+                if (astroOffered || viewModel.cameraMode.value != CameraMode.PHOTO) continue
+                val setting = viewModel.multiFrame.setting.value
+                if (setting == MultiFrameSetting.ASTRO || setting == MultiFrameSetting.OFF) continue
+                if (!viewModel.multiFrame.astroSuggested()) continue
+                astroOffered = true
+                Snackbar.make(mainLayout, R.string.multi_frame_astro_suggestion, Snackbar.LENGTH_LONG)
+                    .setAction(R.string.multi_frame_astro) {
+                        viewModel.multiFrame.setSetting(MultiFrameSetting.ASTRO)
+                    }
+                    .show()
+            }
+        }
+
+        launch {
+            viewModel.timerMode.collectLatest { timerMode ->                // Update secondary bar buttons
                 timerButton.setCompoundDrawablesWithIntrinsicBounds(
                     0,
                     when (timerMode) {
@@ -1490,7 +1567,73 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     /**
      * Rebind cameraProvider use cases
      */
+    /**
+     * Binds [useCases] through [FeatureGuard.bindChain]: optional streams are dropped when the
+     * camera has no supported surface combination for them (seen on Snapdragon 8 Elite with
+     * Preview + JPEG + full-res YUV). Never throws; the last resort is the baseline use case.
+     */
+    private fun bindWithFallback(useCases: Int) {
+        val controller = viewModel.cameraController
+        val primary = (useCases and (CameraController.IMAGE_CAPTURE or CameraController.VIDEO_CAPTURE))
+            .takeIf { it != 0 } ?: useCases
+        val chain = FeatureGuard.bindChain(
+            useCases, primary, CameraController.IMAGE_ANALYSIS, CameraController.IMAGE_CAPTURE,
+        )
+        for (step in chain) {
+            if (step.dropEffect) viewModel.lookController.disablePreviewEffect()
+            val bound = FeatureGuard.attempt(LOG_TAG, "Binding use cases ") {
+                controller.setEnabledUseCases(step.useCases)
+                controller.bindToLifecycle(this)
+            } != null
+            if (!bound) continue
+            if (step.useCases and CameraController.IMAGE_ANALYSIS == 0) {
+                viewModel.multiFrame.analyzer.resetStream()
+            }
+            val notice = when (step.dropped) {
+                FeatureGuard.Dropped.NONE -> null
+                FeatureGuard.Dropped.MULTI_FRAME -> R.string.stream_fallback_multi_frame
+                FeatureGuard.Dropped.LOOK_PREVIEW -> R.string.stream_fallback_look
+                FeatureGuard.Dropped.BASELINE -> R.string.stream_fallback_baseline
+            }
+            notice?.let {
+                Log.w(LOG_TAG, "Bound with fallback ")
+                Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
+            }
+            return
+        }
+        Log.e(LOG_TAG, "No use case combination could be bound")
+        Toast.makeText(this, R.string.stream_fallback_failed, Toast.LENGTH_LONG).show()
+    }
+
+    /**
+     * Last resort around the bind: a configuration that cannot be bound (unsupported mode,
+     * format or extension) reopens the camera with plain preview + JPEG capture.
+     */
     private fun bindCameraUseCases(cameraConfiguration: CameraConfiguration) {
+        try {
+            bindCameraUseCasesOrThrow(cameraConfiguration)
+        } catch (e: RuntimeException) {
+            Log.e(LOG_TAG, "Bind failed for $cameraConfiguration, reopening in baseline mode", e)
+            viewModel.lookController.disablePreviewEffect()
+            viewModel.multiFrame.analyzer.resetStream()
+            FeatureGuard.attempt(LOG_TAG, "Baseline bind") {
+                viewModel.cameraController.imageOutputFormat = ImageCapture.OUTPUT_FORMAT_JPEG
+                viewModel.cameraController.cameraSelector = CameraSelector.Builder()
+                    .requireLensFacing(
+                        when (cameraConfiguration.camera.cameraFacing) {
+                            CameraFacing.FRONT -> CameraSelector.LENS_FACING_FRONT
+                            else -> CameraSelector.LENS_FACING_BACK
+                        }
+                    )
+                    .build()
+                viewModel.cameraController.setEnabledUseCases(CameraController.IMAGE_CAPTURE)
+                viewModel.cameraController.bindToLifecycle(this)
+            }
+            Toast.makeText(this, R.string.stream_fallback_baseline, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun bindCameraUseCasesOrThrow(cameraConfiguration: CameraConfiguration) {
         require(viewModel.cameraState.value == CameraState.IDLE) {
             "Trying to rebind camera while camera is not in IDLE state"
         }
@@ -1571,7 +1714,32 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                         )
                         .build()
 
-                CameraController.IMAGE_CAPTURE
+                viewModel.multiFrame.analyzer.resetStream()
+                // RAW adds its own stream; skip the YUV burst stream to stay within the
+                // device's stream combinations (bursts are JPEG-only anyway).
+                if (viewModel.multiFrame.enabled &&
+                    cameraConfiguration.photoOutputFormat == PhotoOutputFormat.JPEG &&
+                    cameraConfiguration.extensionMode == ExtensionMode.NONE &&
+                    cameraConfiguration.camera.cameraFacing != CameraFacing.FRONT
+                ) {
+                    // Full resolution YUV stream for multi-frame bursts
+                    viewModel.cameraController.imageAnalysisResolutionSelector =
+                        ResolutionSelector.Builder()
+                            .setAspectRatioStrategy(
+                                AspectRatioStrategy(
+                                    cameraConfiguration.photoAspectRatio,
+                                    AspectRatioStrategy.FALLBACK_RULE_AUTO,
+                                )
+                            )
+                            .setResolutionStrategy(ResolutionStrategy.HIGHEST_AVAILABLE_STRATEGY)
+                            .build()
+                    viewModel.cameraController.setImageAnalysisAnalyzer(
+                        viewModel.multiFrame.analysisExecutor, viewModel.multiFrame.analyzer
+                    )
+                    CameraController.IMAGE_CAPTURE or CameraController.IMAGE_ANALYSIS
+                } else {
+                    CameraController.IMAGE_CAPTURE
+                }
             }
 
             is CameraConfiguration.Video -> {
@@ -1644,14 +1812,13 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
         // Bind use cases to camera
         viewModel.cameraController.cameraSelector = cameraSelector
-        viewModel.cameraController.setEnabledUseCases(cameraUseCases)
-
-        // Bind camera controller to lifecycle
-        viewModel.cameraController.bindToLifecycle(this)
+        bindWithFallback(cameraUseCases)
 
         // Wait for camera to be ready
         lifecycleScope.launch {
-            viewModel.cameraController.initializationFuture.await()
+            FeatureGuard.attempt(LOG_TAG, "Camera initialization") {
+                viewModel.cameraController.initializationFuture.await()
+            } ?: return@launch
 
             val camera2CameraControl = viewModel.cameraController.camera2CameraControl ?: run {
                 Log.wtf(LOG_TAG, "Camera2CameraControl not available even with camera ready?")

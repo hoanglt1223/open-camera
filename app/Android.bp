@@ -13,8 +13,11 @@ android_app {
     srcs: [
         "src/main/java/**/*.kt",
         ":OpenCamera_profiles_srcs",
+        ":OpenCamera_capture_srcs",
+        ":OpenCamera_pipeline_srcs",
     ],
     resource_dirs: ["src/main/res"],
+    asset_dirs: ["src/main/assets"],
     manifest: "src/main/AndroidManifest.xml",
 
     sdk_version: "36",
@@ -23,6 +26,10 @@ android_app {
     overrides: ["Aperture", "Camera2"],
 
     use_embedded_native_libs: true,
+    jni_libs: [
+        "libopencamera_pipeline",
+        "libopencamera_looks",
+    ],
 
     required: [
         "OpenCameraFrameworksBaseOverlay",

@@ -87,12 +87,15 @@ object ProfileMerger {
 /**
  * One chip of the zoom selector: open [cameraId] and set [zoomRatio] on it.
  * [ratio] is the field of view relative to the main lens and orders the chips.
+ * [lensId] is the profile's camera behind the stop (the main lens for crop stops), stable even
+ * when the stop is reached through a duplicate or logical camera.
  */
 data class LensChip(
     val label: String,
     val ratio: Float,
     val cameraId: String,
     val zoomRatio: Float,
+    val lensId: String = cameraId,
 )
 
 /** Zoom stops in display order, with chip selection for an arbitrary zoom ratio. */
@@ -129,7 +132,7 @@ class LensPlan(val stops: List<ZoomStop>, private val cameras: List<CameraEntry>
                 stop.mode == StopMode.CROP -> stop.ratio / (baseRatio[stop.cameraId] ?: 1f)
                 else -> 1f
             }
-            LensChip(stop.label, stop.ratio, id, zoom)
+            LensChip(stop.label, stop.ratio, id, zoom, stop.cameraId)
         }
         return if (chips.any { it.ratio == 1f }) chips else emptyList()
     }

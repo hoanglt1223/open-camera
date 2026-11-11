@@ -64,7 +64,7 @@ class ProcessingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startInForeground(queue.pendingCount())
+        startInForeground(pendingCount())
         if (worker?.isActive != true) {
             worker = scope.launch { runQueue() }
         }
@@ -82,11 +82,16 @@ class ProcessingService : Service() {
             while (true) {
                 val job = queue.claimNext()
                 if (job == null) {
-                    val due = queue.nextDueAt() ?: break
+                    val due = queue.nextDueAt()
+                        ?: if (BurstJobQueue.get(this).pending.value > 0) {
+                            System.currentTimeMillis() + BURST_POLL_MS
+                        } else {
+                            break
+                        }
                     delay((due - System.currentTimeMillis()).coerceAtLeast(50))
                     continue
                 }
-                updateNotification(queue.pendingCount())
+                updateNotification(pendingCount())
                 runCatching { withContext(Dispatchers.Default) { process(job) } }.onFailure { e ->
                     Log.e(TAG, "Job ${job.id} failed", e)
                     val retryable = e !is FileNotFoundException && e !is IllegalArgumentException
@@ -211,6 +216,8 @@ class ProcessingService : Service() {
         }
     }
 
+    private fun pendingCount() = queue.pendingCount() + BurstJobQueue.get(this).pending.value
+
     private fun startInForeground(pending: Int) {
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING
@@ -246,6 +253,7 @@ class ProcessingService : Service() {
         private const val CHANNEL_ID = "processing"
         private const val NOTIFICATION_ID = 0x0c01
         private const val PENDING_SUFFIX = "_oc"
+        private const val BURST_POLL_MS = 250L
 
         @Volatile
         private var sharedQueue: ProcessingQueue? = null
@@ -264,6 +272,9 @@ class ProcessingService : Service() {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
             if (queue(context).pendingCount() > 0) start(context)
         }
+
+        /** Keeps the service in the foreground while multi-frame merges run. */
+        fun keepAlive(context: Context) = start(context)
 
         private fun start(context: Context) {
             try {

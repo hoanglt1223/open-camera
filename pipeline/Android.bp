@@ -9,9 +9,43 @@ package {
 
 cc_library_shared {
     name: "libopencamera_pipeline",
-    srcs: ["src/main/cpp/pipeline_jni.cpp"],
+    srcs: [
+        "src/main/cpp/pipeline_jni.cpp",
+        "src/main/cpp/mf/align.cpp",
+        "src/main/cpp/mf/finish.cpp",
+        "src/main/cpp/mf/merge.cpp",
+        "src/main/cpp/mf/pipeline.cpp",
+        "src/main/cpp/mf/superres.cpp",
+    ],
+    local_include_dirs: ["src/main/cpp/mf"],
+    cflags: [
+        "-O3",
+        "-ffast-math",
+        "-Wall",
+        "-Werror",
+    ],
+    cppflags: ["-fexceptions"],
     shared_libs: ["liblog"],
     sdk_version: "current",
     stl: "c++_shared",
     product_specific: true,
+}
+
+cc_library_shared {
+    name: "libopencamera_looks",
+    srcs: ["src/main/cpp/looks/look_apply.cpp"],
+    cflags: [
+        "-O3",
+        "-Wall",
+        "-Werror",
+    ],
+    shared_libs: ["libjnigraphics"],
+    sdk_version: "current",
+    stl: "c++_shared",
+    product_specific: true,
+}
+
+filegroup {
+    name: "OpenCamera_pipeline_srcs",
+    srcs: ["src/main/java/**/*.kt"],
 }

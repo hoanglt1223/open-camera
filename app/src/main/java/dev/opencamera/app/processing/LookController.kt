@@ -39,6 +39,7 @@ class LookController(
     private var processor: LookSurfaceProcessor? = null
     private var effectAttached = false
     private var applied: Pair<String, Float>? = null
+    private var previewEffectBlocked = false
 
     /** Applies the saved look (and intensity) to the preview; cheap if nothing changed. */
     fun refresh() {
@@ -59,6 +60,18 @@ class LookController(
         if (look == null && frame == WatermarkTemplate.NONE) return
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
         ProcessingService.enqueue(app, uri, look, prefs.intensity, frame.key)
+    }
+
+    /**
+     * Drops the preview effect for this session when the camera cannot bind it; looks are still
+     * rendered onto saved photos.
+     */
+    fun disablePreviewEffect() {
+        previewEffectBlocked = true
+        if (effectAttached) {
+            cameraController.setEffects(emptySet())
+            effectAttached = false
+        }
     }
 
     fun release() {
@@ -86,9 +99,14 @@ class LookController(
             }
             val p = processor ?: LookSurfaceProcessor().also { processor = it }
             p.setLook(params)
-            if (!effectAttached) {
-                cameraController.setEffects(setOf(LookEffect(p)))
-                effectAttached = true
+            if (!effectAttached && !previewEffectBlocked) {
+                try {
+                    cameraController.setEffects(setOf(LookEffect(p)))
+                    effectAttached = true
+                } catch (e: RuntimeException) {
+                    Log.w(TAG, "Preview look effect not supported, photos only", e)
+                    disablePreviewEffect()
+                }
             }
         }
     }

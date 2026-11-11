@@ -193,6 +193,12 @@
                 android:text="@string/timer_off" />
 
             <Button
+                android:id="@+id/multiFrameButton"
+                style="@style/Theme.Aperture.Camera.SecondaryTopBarButton"
+                android:drawableTop="@drawable/ic_hdr_auto"
+                android:text="@string/multi_frame_hdr_auto" />
+
+            <Button
                 android:id="@+id/gridButton"
                 style="@style/Theme.Aperture.Camera.SecondaryTopBarButton"
                 android:drawableTop="@drawable/ic_grid_3x3_off"
@@ -393,4 +399,23 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Pro panel sits above whichever of these bottom overlays is open. -->
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/proPanelAnchor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="top"
+        app:constraint_referenced_ids="secondaryTopBarLayout,lookPickerView,multiFrameProgress" />
+
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/multiFrameProgress"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:max="100"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@+id/secondaryBottomBarLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

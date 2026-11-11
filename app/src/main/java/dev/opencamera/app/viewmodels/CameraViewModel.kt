@@ -6,6 +6,7 @@
 package dev.opencamera.app.viewmodels
 
 import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Intent
 import android.content.IntentFilter
@@ -46,6 +47,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -95,6 +97,8 @@ import dev.opencamera.app.models.Rotation
 import dev.opencamera.app.models.ShadingMode
 import dev.opencamera.app.models.ThermalStatus
 import dev.opencamera.app.models.TimerMode
+import dev.opencamera.app.multiframe.MultiFrameCaptureController
+import dev.opencamera.app.processing.BurstJobQueue
 import dev.opencamera.app.processing.LookController
 import dev.opencamera.app.qr.QrImageAnalyzer
 import dev.opencamera.app.repositories.CameraRepository
@@ -168,6 +172,8 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
      * QR image analyzer.
      */
     val qrImageAnalyzer = QrImageAnalyzer(applicationContext, viewModelScope)
+
+    val multiFrame = MultiFrameCaptureController(applicationContext, BurstJobQueue.get(applicationContext))
 
     /**
      * Do not emit here directly, use [emitEvent].
@@ -554,6 +560,23 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
             viewModelScope,
             started = SharingStarted.WhileSubscribed(),
             initialValue = null
+        )
+
+    /**
+     * The profile lens behind the current camera and zoom (null without profile chips). Pro
+     * settings are keyed by its [LensChip.lensId], so logical-zoom stops keep separate settings.
+     */
+    val currentLensChip = combine(lensChips, camera, zoomState) { chips, camera, zoom ->
+        val ratio = zoom?.zoomRatio ?: 1f
+        val onCamera = chips.map { it.first }.filter { it.cameraId == camera.cameraId }
+        onCamera.sortedBy { it.zoomRatio }.lastOrNull { it.zoomRatio <= ratio + 1e-3f }
+            ?: onCamera.firstOrNull()
+    }
+        .distinctUntilChanged()
+        .stateIn(
+            viewModelScope,
+            started = SharingStarted.WhileSubscribed(),
+            initialValue = null,
         )
 
     val tapToFocusInfoState = cameraController.tapToFocusInfoState.asFlow()
@@ -1033,6 +1056,8 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
 
         cameraExecutor.shutdown()
 
+        multiFrame.release()
+
         cameraSoundsUtils.release()
     }
 
@@ -1086,9 +1111,13 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         )
     }
 
-    fun takePhoto() {
+    fun takePhoto(allowMultiFrame: Boolean = true) {
         // Bail out if a photo is already being taken
         if (cameraState.value == CameraState.TAKING_PHOTO) {
+            return
+        }
+
+        if (allowMultiFrame && takeMultiFramePhoto()) {
             return
         }
 
@@ -1220,6 +1249,52 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         }
     }
 
+    /**
+     * Captures a burst over the analysis stream when a multi-frame mode applies. Returns false
+     * when the regular single capture should be used instead.
+     */
+    @SuppressLint("RestrictedApi")
+    private fun takeMultiFramePhoto(): Boolean {
+        if (inSingleCaptureMode.value || cameraFacing.value == CameraFacing.FRONT) {
+            return false
+        }
+        val cameraControl = cameraController.cameraControl ?: return false
+        val cameraInfo = cameraController.cameraInfo ?: return false
+        // Bursts are YUV-only: keep the user's RAW / Ultra HDR choice.
+        if (cameraController.imageOutputFormat != ImageCapture.OUTPUT_FORMAT_JPEG) return false
+        val zoomRatio = cameraController.zoomState.value?.zoomRatio ?: 1f
+        val plan = multiFrame.plan(cameraInfo, zoomRatio) ?: return false
+
+        cameraState.value = CameraState.TAKING_PHOTO
+        viewModelScope.launch {
+            emitEvent(Event.PhotoCaptureStatus.CaptureStarted)
+            cameraSoundsUtils.playShutterClick()
+
+            val captured = try {
+                multiFrame.capture(cameraControl, cameraInfo, plan)
+            } catch (e: Exception) {
+                Log.e(LOG_TAG, "Burst capture failed, taking a single frame", e)
+                null
+            }
+            cameraState.value = CameraState.IDLE
+            if (captured == null) {
+                takePhoto(allowMultiFrame = false)
+                return@launch
+            }
+            multiFrame.process(captured, location.value) { uri ->
+                uri ?: return@process
+                mediaRepository.broadcastNewPicture(uri)
+                lookController.onPhotoSaved(uri)
+                emitEvent(
+                    Event.PhotoCaptureStatus.ImageSaved(
+                        ImageCapture.OutputFileResults(uri, ImageFormat.JPEG),
+                        null,
+                    )
+                )
+            }
+        }
+        return true
+    }
     fun captureVideo() {
         if (cameraState.value != CameraState.IDLE) {
             if (cameraController.isRecording) {

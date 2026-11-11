@@ -31,6 +31,7 @@ import dev.opencamera.app.models.CameraConfiguration
 import dev.opencamera.app.models.PhotoOutputFormat
 import dev.opencamera.app.repositories.PreferencesRepository
 import dev.opencamera.app.viewmodels.CameraViewModel
+import dev.opencamera.profiles.LensChip
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -72,6 +73,7 @@ class ProModeUi(
     private var control: Camera2CameraControl? = null
     private var baseOptions: CaptureRequestOptions? = null
     private var afLocked = false
+    private var lensChip: LensChip? = null
 
     private val active get() = store.enabled && caps != null && configuration is CameraConfiguration.Photo
 
@@ -106,6 +108,17 @@ class ProModeUi(
                         render()
                     }
                 }
+                launch {
+                    viewModel.currentLensChip.collect { chip ->
+                        if (chip == lensChip) return@collect
+                        lensChip = chip
+                        caps?.let {
+                            settings = store.load(storeKey(it)).clampTo(it.ranges)
+                            applyOptions()
+                            render()
+                        }
+                    }
+                }
                 launch { analyzeLoop() }
             }
         }
@@ -125,7 +138,7 @@ class ProModeUi(
         baseOptions = base
         afLocked = false
         caps = ProCapabilities.from(cameraInfo).also {
-            settings = store.load(it.cameraId).clampTo(it.ranges)
+            settings = store.load(storeKey(it)).clampTo(it.ranges)
             Log.d(LOG_TAG, "Camera ${it.cameraId}: manualSensor=${it.manualSensor} " +
                     "manualPost=${it.manualPostProcessing} raw=${it.raw} iso=${it.ranges.iso} " +
                     "exposure=${it.ranges.exposureNs} minFocus=${it.ranges.minFocusDiopters} " +
@@ -142,7 +155,12 @@ class ProModeUi(
         render()
     }
 
+    /** Profile lens id when the zoom selector knows it (logical-zoom stops share one camera). */
+    private fun storeKey(c: ProCapabilities) =
+        lensChip?.takeIf { it.cameraId == c.cameraId }?.lensId ?: c.cameraId
+
     private fun applyOptions() {
+        viewModel.multiFrame.manualExposureActive = active && settings.manualExposure
         val control = control ?: return
         // set() drops keys from an earlier Pro state; add() layers the Pro keys on top.
         control.setCaptureRequestOptions(baseOptions ?: return)
@@ -186,7 +204,7 @@ class ProModeUi(
 
     override fun onSettingsChanged(settings: ProSettings) {
         this.settings = settings
-        caps?.let { store.save(it.cameraId, settings) }
+        caps?.let { store.save(storeKey(it), settings) }
         applyOptions()
         render()
     }

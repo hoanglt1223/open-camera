@@ -36,6 +36,24 @@ contributors`, `SPDX-License-Identifier: Apache-2.0`) or is covered by
 `reuse lint` must pass.
 <!-- REUSE-IgnoreEnd -->
 
+## Robustness (mandatory)
+
+The app must never crash because a camera feature is unavailable. Every
+optional feature (multi-frame, look effect, viewfinder overlays, RAW, Pro
+manual controls, profile-driven lens selection, native/JNI calls, ML) must
+degrade to a working baseline (preview + JPEG capture) instead of throwing.
+
+- Wrap CameraX binding, Camera2 interop, JNI calls and file/MediaStore I/O in
+  failure handling that logs the reason and shows the user a short notice
+  when a feature is turned off.
+- Reuse pp/.../robustness/FeatureGuard.kt: indChain gives the bind
+  fallback order (all use cases, then without the analysis stream, then
+  without the preview effect, then the baseline), ttempt runs a block and
+  logs instead of throwing. A bind that still fails reopens the camera in
+  baseline mode.
+- Native code reports errors as status codes; it never aborts the process.
+- New fallbacks get a unit test for their ordering or decision logic.
+
 ## Workflow
 
 - Branch from `main`, keep commits focused, use Conventional Commits.
