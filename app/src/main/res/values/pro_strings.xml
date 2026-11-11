@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="pro_toggle">Manual</string>
+    <string name="pro_toggle_description">Manual controls</string>
+    <string name="pro_auto">Auto</string>
+    <string name="pro_iso">ISO</string>
+    <string name="pro_shutter">Shutter</string>
+    <string name="pro_wb">WB</string>
+    <string name="pro_wb_description">White balance</string>
+    <string name="pro_focus">Focus</string>
+    <string name="pro_focus_infinity">∞</string>
+    <string name="pro_ev">EV</string>
+    <string name="pro_ev_description">Exposure compensation</string>
+    <string name="pro_meter">Meter</string>
+    <string name="pro_meter_description">Metering mode</string>
+    <string name="pro_meter_center">Center</string>
+    <string name="pro_meter_spot">Spot</string>
+    <string name="pro_meter_matrix">Matrix</string>
+    <string name="pro_wb_incandescent">Incandescent</string>
+    <string name="pro_wb_fluorescent">Fluorescent</string>
+    <string name="pro_wb_daylight">Daylight</string>
+    <string name="pro_wb_cloudy">Cloudy</string>
+    <string name="pro_wb_shade">Shade</string>
+    <string name="pro_ae_lock">AE-L</string>
+    <string name="pro_ae_lock_description">Exposure lock</string>
+    <string name="pro_af_lock">AF-L</string>
+    <string name="pro_af_lock_description">Focus lock</string>
+    <string name="pro_peaking">Peaking</string>
+    <string name="pro_peaking_description">Focus peaking</string>
+    <string name="pro_zebra">Zebra</string>
+    <string name="pro_zebra_description">Zebra stripes on highlights</string>
+    <string name="pro_histogram">Histogram</string>
+    <string name="pro_format_description">Photo format</string>
+    <string name="pro_format_jpeg">JPEG</string>
+    <string name="pro_format_raw">RAW</string>
+    <string name="pro_format_raw_jpeg">RAW+JPEG</string>
+    <string name="pro_reset">Reset</string>
+    <string name="pro_reset_description">Reset manual controls for this lens</string>
+    <string name="pro_state_on">on</string>
+    <string name="pro_state_off">off</string>
+    <string name="pro_value_description">%1$s: %2$s</string>
+    <string name="pro_meter_reading">%1$s EV</string>
+</resources>

@@ -121,6 +121,7 @@ import dev.opencamera.app.models.TimerMode
 import dev.opencamera.app.models.VideoDynamicRange
 import dev.opencamera.app.models.VideoMirrorMode
 import dev.opencamera.app.models.VideoStabilizationMode
+import dev.opencamera.app.pro.ProModeUi
 import dev.opencamera.app.ui.dialogs.LocationPermissionsDialog
 import dev.opencamera.app.ui.dialogs.QrBottomSheetDialog
 import dev.opencamera.app.ui.views.CameraModeSelectorLayout
@@ -202,6 +203,16 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
     // QR
     private val qrBottomSheetDialog by lazy { QrBottomSheetDialog(this) }
+    private val proModeUi by lazy {
+        ProModeUi(
+            this,
+            viewModel,
+            (application as ApertureApplication).preferencesRepository,
+            mainLayout,
+            viewFinder,
+            R.id.secondaryBottomBarLayout,
+        )
+    }
     private val isGoogleLensAvailable by lazy { GoogleLensUtils.isGoogleLensAvailable(this) }
 
     private var viewFinderTouchEvent: MotionEvent? = null
@@ -429,6 +440,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
             windowInsets
         }
+
+        proModeUi.attach()
 
         // Set secondary top bar button callbacks
         aspectRatioButton.setOnClickListener { viewModel.cyclePhotoAspectRatio() }
@@ -1637,8 +1650,9 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
             val camera2Options = cameraConfiguration.camera2Options
 
-            // Set Camera2 CaptureRequest options
-            camera2CameraControl.setCaptureRequestOptions(CaptureRequestOptions.Builder()
+            // Set Camera2 CaptureRequest options, plus Pro mode options when active
+            val cameraInfo = viewModel.cameraController.cameraInfo ?: return@launch
+            proModeUi.bind(cameraInfo, camera2CameraControl, cameraConfiguration, CaptureRequestOptions.Builder()
                 .setFrameRate(
                     when (cameraConfiguration) {
                         is CameraConfiguration.Video -> cameraConfiguration.videoFrameRate
