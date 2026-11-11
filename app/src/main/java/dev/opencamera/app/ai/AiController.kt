@@ -50,6 +50,9 @@ class AiController(
     private val sceneChip: TextView,
     private val isPhotoMode: () -> Boolean,
     private val onScenePreset: (Scene) -> Unit,
+    private val hintsWanted: () -> Boolean = { false },
+    /** Subject analysis for composition hints: suggestion (null = no subject) and subject top. */
+    private val onComposition: (Composition.Suggestion?, Float?) -> Unit = { _, _ -> },
 ) {
     private val context = viewFinder.context
     val settings = AiSettings(context)
@@ -60,6 +63,7 @@ class AiController(
     private val scenes = SceneDetector(context, runtime, faces)
     private val saliency = SaliencyDetector(runtime, maxModelMs = 400)
 
+    private val stabilizer = dev.opencamera.pipeline.ai.MaskStabilizer()
     private var liveBokehOk = true
     private var sceneOk = true
     private var compositionOk = true
@@ -99,8 +103,12 @@ class AiController(
             val photo = isPhotoMode()
             val wantBokeh = photo && settings.portrait && settings.livePortraitPreview && liveBokehOk && NativeAi.available
             val wantScene = photo && settings.sceneDetection && sceneOk && now - lastScene >= SCENE_INTERVAL_MS
-            val wantComposition = photo && settings.composition && compositionOk && now - lastComposition >= COMPOSITION_INTERVAL_MS
-            if (!wantBokeh) bokehView.isVisible = false
+            val compositionOn = photo && (settings.composition || hintsWanted()) && compositionOk
+            val wantComposition = compositionOn && now - lastComposition >= COMPOSITION_INTERVAL_MS
+            if (!wantBokeh) {
+                bokehView.isVisible = false
+                stabilizer.reset()
+            }
             if (!(photo && settings.composition && compositionOk)) overlay.suggestion = null
             if (!(photo && settings.sceneDetection && sceneOk)) showScene(Scene.NONE)
             if (!wantBokeh && !wantScene && !wantComposition) {
@@ -117,42 +125,71 @@ class AiController(
             }
             if (wantScene) lastScene = now
             if (wantComposition) lastComposition = now
+            if (wantBokeh && !stabilizer.visible) {
+                bokehView.isVisible = false
+            }
             result.bokeh?.let {
                 bokehView.setImageBitmap(it)
-                bokehView.isVisible = settings.portrait
+                bokehView.isVisible = settings.portrait && isPhotoMode()
                 logFps()
             }
             result.scene?.let(::onSceneDetected)
-            if (wantComposition) overlay.suggestion = result.composition
+            if (wantComposition) {
+                overlay.suggestion = result.composition.takeIf { settings.composition }
+                onComposition(result.composition, result.subjectTop)
+            } else if (!compositionOn) {
+                onComposition(null, null)
+            }
             val spent = SystemClock.uptimeMillis() - now
             delay(if (wantBokeh) max(0L, LIVE_FRAME_MS - spent) else IDLE_MS)
         }
     }
 
-    private class Analysis(val bokeh: Bitmap?, val scene: Scene?, val composition: Composition.Suggestion?)
+    private class Analysis(
+        val bokeh: Bitmap?,
+        val scene: Scene?,
+        val composition: Composition.Suggestion?,
+        val subjectTop: Float?,
+    )
 
     private fun analyze(frame: Bitmap, wantBokeh: Boolean, wantScene: Boolean, wantComposition: Boolean): Analysis {
         val k = LIVE_LONG_SIDE.toFloat() / max(frame.width, frame.height)
         val small = ImageTensors.scaled(frame, (frame.width * k).roundToInt(), (frame.height * k).roundToInt())
         if (small !== frame) frame.recycle()
         try {
+            // Only the blurred background is drawn over the live preview (subject transparent),
+            // and only once a person is steadily detected; no subject means no blur at all.
             val bokehBitmap = if (wantBokeh) guard("live portrait", { liveBokehOk = false }) {
-                bokeh.prepare(small, 0, LIVE_LONG_SIDE, preferMulticlass = false)?.let { p ->
-                    try {
-                        bokeh.renderPreview(p, BokehProcessor.Params(settings.portraitAperture))
-                    } finally {
-                        p.release()
+                val p = bokeh.prepare(small, 0, LIVE_LONG_SIDE, preferMulticlass = false)
+                try {
+                    stabilizer.update(p?.mask)?.let { m ->
+                        p?.let { bokeh.renderBackgroundLayer(it, m, BokehProcessor.Params(settings.portraitAperture)) }
                     }
-                } ?: small.copy(Bitmap.Config.ARGB_8888, false)
+                } finally {
+                    p?.release()
+                }
             } else null
             val scene = if (wantScene) guard("scene", { sceneOk = false }) { scenes.detect(small).scene } else null
+            var top: Float? = null
             val comp = if (wantComposition) guard("composition", { compositionOk = false }) {
-                Composition.suggest(saliency.saliency(small).first)
+                val mask = saliency.saliency(small).first
+                top = subjectTop(mask)
+                Composition.suggest(mask)
             } else null
-            return Analysis(bokehBitmap, scene, comp)
+            return Analysis(bokehBitmap, scene, comp, top)
         } finally {
             small.recycle()
         }
+    }
+
+    /** Normalized first row where the salient subject covers a few percent of the width. */
+    private fun subjectTop(mask: dev.opencamera.ml.tasks.Mask): Float? {
+        for (y in 0 until mask.height) {
+            var n = 0
+            for (x in 0 until mask.width) if (mask.data[y * mask.width + x] > 0.5f) n++
+            if (n >= mask.width / 20 + 1) return y.toFloat() / mask.height
+        }
+        return null
     }
 
     private inline fun <T> guard(name: String, crossinline disable: () -> Unit, block: () -> T): T? = try {

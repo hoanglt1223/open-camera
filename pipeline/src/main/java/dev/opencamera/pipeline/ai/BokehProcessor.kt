@@ -127,6 +127,26 @@ class BokehProcessor(private val segmenter: Segmenter) {
         return out
     }
 
+    /**
+     * Live overlay: the blurred background with alpha = 1 - sharpness, so the subject stays
+     * transparent and the live preview underneath shows through sharp. [mask] must match the
+     * work size; caller recycles the result.
+     */
+    fun renderBackgroundLayer(prepared: Prepared, mask: Mask, params: Params): Bitmap? {
+        if (mask.width != prepared.work.width || mask.height != prepared.work.height) return null
+        val sharp = BokehMath.sharpness(mask, params.focusX, params.focusY)
+        val blurred = blurred(prepared, sharp, params) ?: return null
+        val px = IntArray(blurred.width * blurred.height)
+        blurred.getPixels(px, 0, blurred.width, 0, 0, blurred.width, blurred.height)
+        for (i in px.indices) {
+            val a = ((1f - sharp[i]).coerceIn(0f, 1f) * 255f).roundToInt()
+            px[i] = (a shl 24) or (px[i] and 0xFFFFFF)
+        }
+        blurred.setHasAlpha(true)
+        blurred.setPixels(px, 0, blurred.width, 0, 0, blurred.width, blurred.height)
+        return blurred
+    }
+
     fun process(full: Bitmap, rotation: Int, params: Params): Outcome {
         if (!NativeAi.available) return Outcome.Unavailable("native")
         val prepared = prepare(full, rotation) ?: return Outcome.NoSubject
