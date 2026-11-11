@@ -299,7 +299,10 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     private val secureMediaUris = ArrayDeque<Uri>()
 
     // QR
-    private val qrBottomSheetDialog by lazy { QrBottomSheetDialog(this) }
+    // Inflating the Material bottom sheet costs a few hundred ms; it is built when a code is found.
+    private val qrBottomSheetDialog by lazy {
+        QrBottomSheetDialog(this).apply { setOnDismissListener { viewModel.onQrDialogDismissed() } }
+    }
     private val proModeUi by lazy {
         ProModeUi(
             this,
@@ -725,11 +728,6 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         // Bind viewfinder and preview blur view
         previewBlurView.previewView = viewFinder
         onBackPressedDispatcher.addCallback(this, creativeBack)
-
-        // Observe QR dialog dismiss
-        qrBottomSheetDialog.setOnDismissListener {
-            viewModel.onQrDialogDismissed()
-        }
 
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {

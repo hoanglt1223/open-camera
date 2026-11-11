@@ -91,6 +91,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -172,7 +174,9 @@ object RecomposeCounts {
     }
 }
 
+// Non-restartable, so it runs whenever its caller runs instead of being skipped with it.
 @Composable
+@androidx.compose.runtime.NonRestartableComposable
 internal fun CountRecompositions(name: String) {
     if (RecomposeCounts.enabled) androidx.compose.runtime.SideEffect { RecomposeCounts.hit(name) }
 }
@@ -744,7 +748,8 @@ private fun ModeCarousel(state: CameraUiState, actions: CameraUiActions, ui: Ove
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     var drag by remember { mutableFloatStateOf(0f) }
     val pillWidth = remember { mutableFloatStateOf(0f) }
-    val pillAnimated by animateDpAsState(
+    // Animated values below are read in layout and draw, so the carousel does not recompose per frame.
+    val pillAnimated = animateDpAsState(
         with(LocalDensity.current) { pillWidth.floatValue.toDp() }, s.bouncy(), label = "pill",
     )
 
@@ -790,8 +795,10 @@ private fun ModeCarousel(state: CameraUiState, actions: CameraUiActions, ui: Ove
         // Selected-mode pill, fixed at the center; the labels slide under it.
         Box(
             Modifier
-                .height(36.dp)
-                .width(pillAnimated)
+                .layout { measurable, _ ->
+                    val p = measurable.measure(Constraints.fixed(pillAnimated.value.roundToPx().coerceAtLeast(0), 36.dp.roundToPx()))
+                    layout(p.width, p.height) { p.place(0, 0) }
+                }
                 .clip(RoundedCornerShape(50))
                 .then(
                     if (s.glass) Modifier.background(Color.White.copy(alpha = .12f))
@@ -803,7 +810,7 @@ private fun ModeCarousel(state: CameraUiState, actions: CameraUiActions, ui: Ove
             content = {
                 modes.forEachIndexed { i, mode ->
                     val on = i == selected
-                    val color by animateColorAsState(if (on) s.modeOn else s.muted, s.medium(), label = "mode")
+                    val color = animateColorAsState(if (on) s.modeOn else s.muted, s.medium(), label = "mode")
                     BasicText(
                         modeLabel(mode),
                         Modifier
@@ -815,11 +822,12 @@ private fun ModeCarousel(state: CameraUiState, actions: CameraUiActions, ui: Ove
                             ) { select(mode) }
                             .padding(horizontal = 14.dp, vertical = 14.dp),
                         style = TextStyle(
-                            color = color, fontSize = s.tokens.type.modeSize.sp, fontWeight = s.modeWeight,
+                            fontSize = s.tokens.type.modeSize.sp, fontWeight = s.modeWeight,
                             textAlign = TextAlign.Center, shadow = if (on && !s.glass) null else LabelShadow,
                         ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                        color = { color.value },
                     )
                 }
             },

@@ -13,7 +13,7 @@ import org.json.JSONObject
  * Persists [ProSettings] per camera id, plus the global Pro on/off switch.
  */
 class ProSettingsStore(context: Context) {
-    private val prefs = context.getSharedPreferences("pro_mode", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     var enabled: Boolean
         get() = prefs.getBoolean(KEY_ENABLED, false)
@@ -59,7 +59,8 @@ class ProSettingsStore(context: Context) {
 
     private fun key(cameraId: String) = "camera_$cameraId"
 
-    private companion object {
-        const val KEY_ENABLED = "enabled"
+    companion object {
+        const val PREFS_NAME = "pro_mode"
+        private const val KEY_ENABLED = "enabled"
     }
 }

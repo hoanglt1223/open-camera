@@ -11,11 +11,16 @@ import android.os.Build
 import dev.opencamera.app.repositories.PreferencesRepository
 
 class CameraSoundsUtils(private val preferencesRepository: PreferencesRepository) {
-    private val mediaActionSound = MediaActionSound().apply {
-        // Preload all sounds to reduce latency
-        load(MediaActionSound.SHUTTER_CLICK)
-        load(MediaActionSound.START_VIDEO_RECORDING)
-        load(MediaActionSound.STOP_VIDEO_RECORDING)
+    private val mediaActionSound = MediaActionSound().also { sound ->
+        // Preload all sounds to reduce latency; loading reads the sound files, so not on the main
+        // thread (play() loads on demand if a sound is not ready yet).
+        Thread({
+            runCatching {
+                sound.load(MediaActionSound.SHUTTER_CLICK)
+                sound.load(MediaActionSound.START_VIDEO_RECORDING)
+                sound.load(MediaActionSound.STOP_VIDEO_RECORDING)
+            }
+        }, "sound-preload").start()
     }
 
     fun playShutterClick() {
