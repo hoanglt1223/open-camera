@@ -6,6 +6,7 @@
 package dev.opencamera.app.ext
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.core.graphics.scale
 import dev.opencamera.app.models.Transform
 import kotlin.math.abs
@@ -299,4 +300,16 @@ internal fun Bitmap.scale(maxSideLen: Int): Bitmap {
     } else {
         scale(newWidth, newHeight)
     }
+}
+
+/**
+ * Decodes with a power-of-two [BitmapFactory.Options.inSampleSize] so the long side is at least
+ * [minLongSide], instead of decoding a 12-50 MP JPEG at full size.
+ */
+internal fun decodeSampled(open: () -> java.io.InputStream?, minLongSide: Int): Bitmap? {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    open()?.use { BitmapFactory.decodeStream(it, null, bounds) } ?: return null
+    var sample = 1
+    while (max(bounds.outWidth, bounds.outHeight) / (sample * 2) >= minLongSide) sample *= 2
+    return open()?.use { BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample }) }
 }

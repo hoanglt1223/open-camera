@@ -18,7 +18,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import dev.opencamera.app.R
-import dev.opencamera.ml.ImageTensors
+import dev.opencamera.app.ui.views.PreviewFrames
 import dev.opencamera.ml.MlRuntime
 import dev.opencamera.ml.tasks.Composition
 import dev.opencamera.ml.tasks.FaceMesh
@@ -35,11 +35,10 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.max
-import kotlin.math.roundToInt
 
 /**
- * Viewfinder ML: live portrait preview, scene chip and composition hint. Works on
- * [PreviewView.getBitmap] snapshots, so it adds no camera stream and cannot affect binding.
+ * Viewfinder ML: live portrait preview, scene chip and composition hint. Works on small
+ * asynchronous viewfinder copies ([PreviewFrames]), so it adds no camera stream and cannot affect binding.
  * Each feature turns itself off for the session (with one toast) after a failure.
  */
 class AiController(
@@ -90,6 +89,8 @@ class AiController(
                 } finally {
                     bokehView.isVisible = false
                     overlay.suggestion = null
+                    buffer?.recycle()
+                    buffer = null
                 }
             }
         }
@@ -115,7 +116,7 @@ class AiController(
                 delay(IDLE_MS)
                 continue
             }
-            val frame = runCatching { viewFinder.bitmap }.getOrNull()
+            val frame = grabFrame()
             if (frame == null) {
                 delay(IDLE_MS)
                 continue
@@ -152,11 +153,18 @@ class AiController(
         val subjectTop: Float?,
     )
 
-    private fun analyze(frame: Bitmap, wantBokeh: Boolean, wantScene: Boolean, wantComposition: Boolean): Analysis {
-        val k = LIVE_LONG_SIDE.toFloat() / max(frame.width, frame.height)
-        val small = ImageTensors.scaled(frame, (frame.width * k).roundToInt(), (frame.height * k).roundToInt())
-        if (small !== frame) frame.recycle()
-        try {
+    /** Reused [LIVE_LONG_SIDE] frame buffer; only touched by [loop], one frame at a time. */
+    private var buffer: Bitmap? = null
+
+    private suspend fun grabFrame(): Bitmap? {
+        val (w, h) = PreviewFrames.scaledSize(viewFinder, LIVE_LONG_SIDE) ?: return null
+        val b = buffer?.takeIf { it.width == w && it.height == h && !it.isRecycled }
+            ?: Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).also { buffer?.recycle(); buffer = it }
+        return b.takeIf { runCatching { PreviewFrames.copyInto(viewFinder, it) }.getOrDefault(false) }
+    }
+
+    private fun analyze(small: Bitmap, wantBokeh: Boolean, wantScene: Boolean, wantComposition: Boolean): Analysis {
+        run {
             // Only the blurred background is drawn over the live preview (subject transparent),
             // and only once a person is steadily detected; no subject means no blur at all.
             val bokehBitmap = if (wantBokeh) guard("live portrait", { liveBokehOk = false }) {
@@ -178,8 +186,6 @@ class AiController(
                 Composition.suggest(mask)
             } else null
             return Analysis(bokehBitmap, scene, comp, top)
-        } finally {
-            small.recycle()
         }
     }
 

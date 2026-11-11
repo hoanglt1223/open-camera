@@ -290,7 +290,8 @@ class ProModeUi(
             delay(FRAME_INTERVAL_MS)
             val s = settings
             if (!active || !(s.peaking || s.zebra || s.histogram || s.manualExposure)) continue
-            val full = viewFinder.bitmap ?: continue
+            // Small async copy (long side ~2x the analysis width) instead of a full-size readback on main.
+            val full = dev.opencamera.app.ui.views.PreviewFrames.copy(viewFinder, ANALYSIS_WIDTH * 2) ?: continue
             val frame = withContext(Dispatchers.Default) { analyze(full, s) }
             if (active) overlay.show(frame) else frame.mask?.recycle()
         }

@@ -6,7 +6,7 @@
 package dev.opencamera.app.ui.views
 
 import android.content.Context
-import android.graphics.BitmapFactory
+import android.graphics.Bitmap
 import android.net.Uri
 import android.util.AttributeSet
 import android.util.Log
@@ -18,6 +18,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import dev.opencamera.app.R
+import dev.opencamera.app.ext.decodeSampled
 import dev.opencamera.app.ext.smoothRotate
 import dev.opencamera.app.models.MediaType
 import dev.opencamera.app.models.Rotation
@@ -97,6 +98,21 @@ class CapturePreviewLayout(context: Context, attrs: AttributeSet?) : ConstraintL
         confirmButton.smoothRotate(compensationValue)
     }
 
+    private var decodes = 0
+
+    private fun previewLongSide() = maxOf(width, height, resources.displayMetrics.heightPixels)
+
+    /** Decodes on a background thread; a newer preview wins over a late result. */
+    private fun showDecoded(decode: () -> Bitmap?) {
+        imageView.setImageDrawable(null)
+        val generation = ++decodes
+        decodeExecutor.execute {
+            val bitmap = runCatching { decode() }
+                .onFailure { Log.w(LOG_TAG, "Preview decode failed", it) }.getOrNull()
+            post { if (generation == decodes) imageView.setImageBitmap(bitmap) }
+        }
+    }
+
     private fun startPreview() {
         assert((uri == null) != (photoInputStream == null)) {
             "Expected uri or photoInputStream, not both."
@@ -106,13 +122,15 @@ class CapturePreviewLayout(context: Context, attrs: AttributeSet?) : ConstraintL
                 if (uri != null) {
                     imageView.rotation = 0f
                     imageView.scaleX = 1f
-                    imageView.setImageURI(uri)
+                    val source = uri!!
+                    showDecoded { decodeSampled({ context.contentResolver.openInputStream(source) }, previewLongSide()) }
                 } else {
                     val inputStream = photoInputStream!!
                     val transform = ExifUtils.getTransform(inputStream)
                     inputStream.mark(Int.MAX_VALUE)
-                    val bitmap = BitmapFactory.decodeStream(inputStream)
+                    val bytes = inputStream.readBytes()
                     inputStream.reset()
+                    showDecoded { decodeSampled({ bytes.inputStream() }, previewLongSide()) }
                     Log.d(LOG_TAG, "Preview transform=$transform screenRotation=$screenRotation")
                     imageView.rotation =
                         transform.rotation.offset.toFloat() - screenRotation.offset
@@ -121,7 +139,6 @@ class CapturePreviewLayout(context: Context, attrs: AttributeSet?) : ConstraintL
                     } else {
                         1f
                     }
-                    imageView.setImageBitmap(bitmap)
                 }
             }
 
@@ -153,5 +170,6 @@ class CapturePreviewLayout(context: Context, attrs: AttributeSet?) : ConstraintL
 
     companion object {
         private const val LOG_TAG = "Aperture"
+        private val decodeExecutor = java.util.concurrent.Executors.newSingleThreadExecutor()
     }
 }

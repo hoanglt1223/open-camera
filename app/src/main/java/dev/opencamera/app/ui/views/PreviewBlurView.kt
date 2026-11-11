@@ -18,6 +18,7 @@ import android.view.SurfaceView
 import android.view.TextureView
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.camera.view.PreviewView
+import androidx.core.view.isVisible
 import dev.opencamera.app.ext.stackBlur
 
 /**
@@ -40,6 +41,8 @@ class PreviewBlurView @JvmOverloads constructor(
      * so a rebind does not stall the UI thread on a full-size synchronous PixelCopy.
      */
     fun freeze() {
+        animate().cancel()
+        alpha = 1f
         val pv = previewView?.takeUnless { it.height <= 0 || it.width <= 0 }
         if (pv == null) {
             setImageResource(android.R.color.black)
@@ -54,7 +57,8 @@ class PreviewBlurView @JvmOverloads constructor(
             when {
                 texture != null -> show(texture.getBitmap(w, h))
                 surface != null && surface.holder.surface?.isValid == true -> {
-                    setImageResource(android.R.color.black)
+                    // Transparent until the copy lands: the SurfaceView still shows its last frame.
+                    setImageDrawable(null)
                     val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
                     val generation = ++requests
                     PixelCopy.request(surface, bmp, { result ->
@@ -64,6 +68,16 @@ class PreviewBlurView @JvmOverloads constructor(
                 else -> show(pv.bitmap)
             }
         }.onFailure { setImageResource(android.R.color.black) }
+    }
+
+    /** Cross-fades from the frozen frame to the live preview. */
+    fun reveal() {
+        if (!isVisible) return
+        requests++
+        animate().alpha(0f).setDuration(REVEAL_MS).withEndAction {
+            isVisible = false
+            alpha = 1f
+        }.start()
     }
 
     private var requests = 0
@@ -81,5 +95,6 @@ class PreviewBlurView @JvmOverloads constructor(
     companion object {
         private const val RADIUS = 25f
         private const val SNAPSHOT_DIVISOR = 4
+        private const val REVEAL_MS = 180L
     }
 }
