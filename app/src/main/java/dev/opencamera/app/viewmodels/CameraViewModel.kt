@@ -230,7 +230,8 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
                 manualExposure = multiFrame.manualExposureActive,
                 rawCapable = PhotoOutputFormat.RAW in cfg.camera.supportedPhotoOutputFormats,
                 source = multiFrame.source,
-                rawLarger = rawLargerThanYuv(cfg.camera.cameraId),
+                // A RAW session cannot carry the live look, so only trade it for resolution without one.
+                rawLarger = !lookController.hasLook && rawLargerThanYuv(cfg.camera.cameraId),
             )
         )
     )
@@ -1241,6 +1242,7 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
     fun takePhoto(allowMultiFrame: Boolean = true) {
         // Bail out if a photo is already being taken
         if (cameraState.value == CameraState.TAKING_PHOTO) {
+            Log.i(LOG_TAG, "Shutter ignored: a photo is still being taken")
             return
         }
 
@@ -1416,7 +1418,11 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         if (cameraController.imageOutputFormat != ImageCapture.OUTPUT_FORMAT_JPEG) return false
         val cameraControl = cameraController.cameraControl ?: return false
         val cameraInfo = cameraController.cameraInfo ?: return false
-        if (multiFrame.analyzer.frameSize == null) return false
+        if (multiFrame.analyzer.frameSize == null) {
+            Log.w(LOG_TAG, "Creative ${creative.mode.value}: no analysis frames yet, regular photo")
+            return false
+        }
+        Log.i(LOG_TAG, "Creative ${creative.mode.value} capture")
 
         cameraState.value = CameraState.TAKING_PHOTO
         viewModelScope.launch {
@@ -1433,6 +1439,7 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
                     }
                 }
             } catch (e: CancellationException) {
+                cameraState.value = CameraState.IDLE
                 throw e
             } catch (e: Throwable) {
                 Log.e(LOG_TAG, "Creative capture failed", e)

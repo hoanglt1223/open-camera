@@ -169,8 +169,15 @@ class ProModeUi(
     private fun storeKey(c: ProCapabilities) =
         lensChip?.takeIf { it.cameraId == c.cameraId }?.lensId ?: c.cameraId
 
+    /** Manual exposure decides between the full-resolution and the regular JPEG session. */
+    var onManualExposureChanged: (() -> Unit)? = null
+
     private fun applyOptions() {
-        viewModel.multiFrame.manualExposureActive = active && settings.manualExposure
+        val manual = active && settings.manualExposure
+        if (viewModel.multiFrame.manualExposureActive != manual) {
+            viewModel.multiFrame.manualExposureActive = manual
+            onManualExposureChanged?.invoke()
+        }
         val control = control ?: return
         // set() drops keys from an earlier Pro state; add() layers the Pro keys on top.
         control.setCaptureRequestOptions(baseOptions ?: return)

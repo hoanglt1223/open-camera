@@ -2034,6 +2034,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         // Bind use cases to camera
         viewModel.cameraController.cameraSelector = cameraSelector
         val fullRes = viewModel.multiFrame.streamConfig
+        viewModel.lookController.setRawSession(fullRes == StreamConfig.FULL_RES_RAW)
         if (cameraConfiguration is CameraConfiguration.Photo && fullRes != StreamConfig.STANDARD) {
             viewModel.lookController.attachIfReady()
             val bound = FeatureGuard.attempt(LOG_TAG, "Binding $fullRes") {
@@ -2405,6 +2406,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             looks.lookId.collectLatest { id ->
                 lookPickerView.setSelected(id)
                 lookButton.text = looks.repository.descriptor(id)?.name ?: getString(R.string.look_button)
+                rebindIfAnalysisChanged()
             }
         }
     }
@@ -2608,6 +2610,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             viewModel.cameraMode.value == CameraMode.PHOTO
         }
         lifecycle.addObserver(assistController)
+        proModeUi.onManualExposureChanged = { rebindIfAnalysisChanged() }
         viewModel.multiFrame.previewZoomCompensation = { f ->
             viewFinder.scaleX = f
             viewFinder.scaleY = f

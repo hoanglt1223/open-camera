@@ -47,6 +47,9 @@ class LookController(
     private var applied: Pair<String, Float>? = null
     private var previewEffectBlocked = false
 
+    /** CameraX rejects effects next to RAW capture; the look is then applied to saved photos only. */
+    private var rawSession = false
+
     private var preloaded: Deferred<LookParams?>? = null
     private var preloadedKey: Pair<String, Float>? = null
 
@@ -84,7 +87,7 @@ class LookController(
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     fun attachIfReady() {
-        if (effectAttached || previewEffectBlocked) return
+        if (effectAttached || previewEffectBlocked || rawSession) return
         val d = preloaded ?: return
         val key = preloadedKey ?: return
         if (!d.isCompleted || key != (prefs.lookId to prefs.intensity)) return
@@ -99,6 +102,18 @@ class LookController(
         } catch (e: RuntimeException) {
             Log.w(TAG, "Preview look effect not supported, photos only", e)
             disablePreviewEffect()
+        }
+    }
+
+    /** True when a look is selected, so the preview effect matters. */
+    val hasLook get() = repository.descriptor(prefs.lookId) != null
+
+    /** Call before binding: drops the effect for a RAW session (without blocking it for later binds). */
+    fun setRawSession(on: Boolean) {
+        rawSession = on
+        if (on && effectAttached) {
+            runCatching { cameraController.setEffects(emptySet()) }
+            effectAttached = false
         }
     }
 
@@ -164,7 +179,7 @@ class LookController(
             }
             val p = processor ?: LookSurfaceProcessor().also { processor = it }
             p.setLook(params)
-            if (!effectAttached && !previewEffectBlocked) {
+            if (!effectAttached && !previewEffectBlocked && !rawSession) {
                 try {
                     cameraController.setEffects(setOf(LookEffect(p)))
                     effectAttached = true
