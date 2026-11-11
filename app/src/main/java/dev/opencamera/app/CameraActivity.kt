@@ -173,6 +173,28 @@ import dev.opencamera.app.utils.GoogleLensUtils
 import dev.opencamera.app.utils.PermissionsManager
 import dev.opencamera.app.utils.ShortcutsUtils
 import dev.opencamera.app.viewmodels.CameraViewModel
+import dev.opencamera.app.ui.overlay.CameraUiActions
+import dev.opencamera.app.ui.overlay.CameraUiState
+import dev.opencamera.app.ui.overlay.Control
+import dev.opencamera.app.ui.overlay.LegacyControl
+import dev.opencamera.app.ui.overlay.LensChipUi
+import dev.opencamera.app.ui.overlay.LookItem
+import dev.opencamera.app.ui.overlay.OverlayHost
+import dev.opencamera.app.ui.overlay.UiMode
+import dev.opencamera.app.ui.overlay.UiModes
+import dev.opencamera.app.ui.skin.SkinRepository
+import dev.opencamera.app.ui.skin.SkinTokens
+import dev.opencamera.app.pro.ProSettings
+import dev.opencamera.app.video.VideoMode
+import dev.opencamera.app.video.VideoModesActivity
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
+import android.graphics.Bitmap
+import android.graphics.RectF
+import android.view.View
+import android.view.ViewOutlineProvider
+import androidx.activity.OnBackPressedCallback
+import androidx.constraintlayout.widget.ConstraintSet
 import dev.opencamera.capture.MultiFrameSetting
 import java.io.ByteArrayInputStream
 import java.io.FileNotFoundException
@@ -249,6 +271,12 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     // System services
     private val keyguardManager by lazy { getSystemService(KeyguardManager::class.java) }
 
+    // Skinned Compose overlay; null or inactive means the classic View layout is in use.
+    private val uiState = MutableStateFlow(CameraUiState())
+    private var overlay: OverlayHost? = null
+    private val overlayActive get() = overlay?.active == true
+    private val skinRepository by lazy { SkinRepository.get(this) }
+
     /**
      * The currently shown URI.
      */
@@ -285,11 +313,14 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             override fun onFling(
                 e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float
             ): Boolean {
+
                 return e1?.let {
                     if (!handler.hasMessages(MSG_ON_PINCH_TO_ZOOM) &&
                         abs(it.x - e2.x) > 75 * resources.displayMetrics.density
                     ) {
-                        if (e2.x > it.x) {
+                        if (overlayActive) {
+                            overlaySwipe(forward = (e2.x < it.x) != isRtl)
+                        } else if (e2.x > it.x) {
                             // Left to right
                             viewModel.previousCameraMode()
                         } else {
@@ -497,6 +528,10 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                 rightMargin = insets.right
             }
 
+            val cutout = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout())
+            uiState.update { it.copy(insetTop = maxOf(insets.top, cutout.top), insetBottom = insets.bottom) }
+            if (overlayActive) layoutPreviewForSkin(skinRepository.skin.value)
+
             windowInsets
         }
 
@@ -524,6 +559,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         settingsButton.setOnClickListener { openSettings() }
         setupLookPicker()
         setupAi()
+        setupOverlay()
 
         // Set secondary bottom bar button callbacks
         proButton.setOnClickListener {
@@ -601,6 +637,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         }
 
         shutterButton.setOnClickListener {
+            uiState.update { it.copy(shutterPresses = it.shutterPresses + 1) }
+
             // Shutter animation
             when (viewModel.cameraMode.value) {
                 CameraMode.PHOTO -> startShutterAnimation(ShutterAnimation.PhotoCapture)
@@ -726,6 +764,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     }
 
     override fun onDestroy() {
+        overlay?.destroy()
         viewModel.multiFrame.previewZoomCompensation = null
 
         // Detach CameraController from ScreenFlashView
@@ -1305,7 +1344,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             viewModel.zoomState.collectLatest { zoomState ->
                 zoomState?.takeIf { it.minZoomRatio != it.maxZoomRatio }?.let {
                     zoomLevel.progress = it.linearZoom
-                    zoomLevel.isVisible = true
+                    zoomLevel.isVisible = !overlayActive
 
                     handler.removeMessages(MSG_HIDE_ZOOM_SLIDER)
                     handler.sendMessageDelayed(handler.obtainMessage(MSG_HIDE_ZOOM_SLIDER), 2000)
@@ -1319,9 +1358,10 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             viewModel.tapToFocusInfoState.collectLatest { tapToFocusInfoState ->
                 when (tapToFocusInfoState.focusState) {
                     CameraController.TAP_TO_FOCUS_STARTED -> {
-                        viewFinderFocus.x =
+                        // The tap point is in viewfinder coordinates; skins may inset the viewfinder.
+                        viewFinderFocus.x = viewFinder.left +
                             tapToFocusInfoState.tapPoint!!.x - (viewFinderFocus.width / 2)
-                        viewFinderFocus.y =
+                        viewFinderFocus.y = viewFinder.top +
                             tapToFocusInfoState.tapPoint!!.y - (viewFinderFocus.height / 2)
                         viewFinderFocus.isVisible = true
                         handler.removeMessages(MSG_HIDE_FOCUS_RING)
@@ -1537,18 +1577,21 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             viewModel.videoRecordEvent.collect { videoRecordEvent ->
                 when (videoRecordEvent) {
                     is VideoRecordEvent.Start -> runOnUiThread {
+                        uiState.update { it.copy(recordingPaused = false) }
                         startVideoRecordingStateAnimation(
                             VideoRecordingStateAnimation.Init
                         )
                     }
 
                     is VideoRecordEvent.Pause -> runOnUiThread {
+                        uiState.update { it.copy(recordingPaused = true) }
                         startVideoRecordingStateAnimation(
                             VideoRecordingStateAnimation.ResumeToPause
                         )
                     }
 
                     is VideoRecordEvent.Resume -> runOnUiThread {
+                        uiState.update { it.copy(recordingPaused = false) }
                         startVideoRecordingStateAnimation(
                             VideoRecordingStateAnimation.PauseToResume
                         )
@@ -2177,10 +2220,17 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             )
 
             if (keyguardLocked && !fromCapture) {
+                uiState.update { it.copy(galleryLocked = true) }
                 return@runOnUiThread
             }
 
             galleryButtonUri = uri
+            uiState.update {
+                it.copy(
+                    galleryUri = uri, galleryLocked = keyguardLocked,
+                    captures = if (fromCapture) it.captures + 1 else it.captures,
+                )
+            }
 
             // When keyguard is unlocked, we want media from MediaStore, else we only trust the
             // ones coming from the capture
@@ -2389,6 +2439,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                 looks.repository.descriptors.map { it.id to it.name } +
                 (COLOR_MATCH_ITEM to getString(R.string.look_color_match))
         lookPickerView.setLooks(items, looks.lookId.value)
+        uiState.update { s -> s.copy(looks = items.map { (id, name) -> LookItem(id, name) }) }
     }
 
     private fun setupLookPicker() {
@@ -2637,6 +2688,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     }
 
     private fun updateAiPortraitButton() {
+        uiState.update { it.copy(portrait = aiController.settings.portrait) }
         aiPortraitButton.setText(
             if (aiController.settings.portrait) R.string.ai_portrait_on else R.string.ai_portrait_off
         )
@@ -2705,9 +2757,363 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         }
         return true
     }
+    // ------------------------------------------------------------------ skinned overlay
+
+    private var legacyViewFinderParams: ConstraintLayout.LayoutParams? = null
+    private var legacyProgressParams: ConstraintLayout.LayoutParams? = null
+    private var legacySceneChipParams: ConstraintLayout.LayoutParams? = null
+    private var videoRecordingAvailable = true
+    private val isRtl get() = resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL
+
+    private val overlayBack = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() {
+            overlay?.ui?.back()
+        }
+    }
+
+    /**
+     * Puts the skinned Compose overlay over the preview. The View controls stay in the layout,
+     * hidden, and keep their logic: the overlay mirrors their state and clicks them. When the
+     * overlay cannot run (or fails later) the View controls come back.
+     */
+    private fun setupOverlay() {
+        val host = OverlayHost(
+            context = this,
+            lifecycle = lifecycle,
+            parent = mainLayout,
+            insertIndex = mainLayout.indexOfChild(screenFlashView),
+            repo = skinRepository,
+            state = uiState,
+            actions = overlayActions,
+            onSkin = { layoutPreviewForSkin(it) },
+            onLegacy = { showLegacyChrome() },
+            debugFail = OverlayHost.debugFailure(this, intent.getStringExtra(EXTRA_DEBUG_SKIN_FAIL)),
+        )
+        overlay = host
+        if (!host.start()) {
+            overlay = null
+            return
+        }
+        legacyViewFinderParams = ConstraintLayout.LayoutParams(viewFinder.layoutParams as ConstraintLayout.LayoutParams)
+        legacyProgressParams = ConstraintLayout.LayoutParams(multiFrameProgress.layoutParams as ConstraintLayout.LayoutParams)
+        legacySceneChipParams = ConstraintLayout.LayoutParams(aiSceneChip.layoutParams as ConstraintLayout.LayoutParams)
+        setLegacyChromeVisible(false)
+        proModeUi.externalUi = true
+        layoutPreviewForSkin(skinRepository.skin.value)
+
+        lensSelectorLayout.onButtonsChanged = { syncLensChips() }
+        mainLayout.viewTreeObserver.addOnGlobalLayoutListener { if (overlayActive) syncLegacyControls() }
+        viewFinder.addOnLayoutChangeListener { v, l, t, r, b, _, _, _, _ ->
+            if (overlayActive) uiState.update { it.copy(previewRect = RectF(l.toFloat(), t.toFloat(), r.toFloat(), b.toFloat())) }
+            v.invalidateOutline()
+        }
+        onBackPressedDispatcher.addCallback(this, overlayBack)
+        lifecycleScope.launch {
+            androidx.compose.runtime.snapshotFlow { host.ui.consumesBack }.collect { overlayBack.isEnabled = it }
+        }
+        lifecycleScope.launch {
+            videoRecordingAvailable = FeatureGuard.attempt(LOG_TAG, "Video availability") {
+                viewModel.isVideoRecordingAvailable()
+            } ?: true
+            uiState.update { it.derived() }
+            // Same probe as the More activity, so the sheet lists only modes it will open.
+            withContext(Dispatchers.Default) {
+                FeatureGuard.attempt(LOG_TAG, "More modes probe") {
+                    val provider = androidx.camera.lifecycle.ProcessCameraProvider.getInstance(this@CameraActivity).await()
+                    val info = dev.opencamera.app.video.VideoCapsProbe.cameraInfo(provider, true)
+                        ?: dev.opencamera.app.video.VideoCapsProbe.cameraInfo(provider, false)
+                    val facts = info?.let { dev.opencamera.app.video.VideoCapsProbe.facts(it) }
+                    dev.opencamera.app.video.VideoModes.supported(
+                        dev.opencamera.app.video.VideoCapsProbe.caps(this@CameraActivity, provider, facts)
+                    )
+                }
+            }?.let { modes -> uiState.update { it.copy(moreModes = modes) } }
+        }
+        lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) { bindOverlayState() }
+        }
+    }
+
+    private fun setLegacyChromeVisible(visible: Boolean) {
+        secondaryBottomBarLayout.isVisible = visible
+        (findViewById<View>(R.id.primaryBarLayout)).isVisible = visible
+        cameraModeSelectorLayout.isVisible = visible
+        if (!visible) {
+            secondaryTopBarLayout.isVisible = false
+            lookPickerView.isVisible = false
+            zoomLevel.isVisible = false
+        }
+    }
+
+    private fun showLegacyChrome() {
+        legacyViewFinderParams?.let { viewFinder.layoutParams = it }
+        legacyProgressParams?.let { multiFrameProgress.layoutParams = it }
+        legacySceneChipParams?.let { aiSceneChip.layoutParams = it }
+        viewFinder.clipToOutline = false
+        viewFinder.outlineProvider = ViewOutlineProvider.BACKGROUND
+        proModeUi.externalUi = false
+        overlayBack.isEnabled = false
+        setLegacyChromeVisible(true)
+    }
+
+    /** Preview box of the skin: below the top bar, preview-shaped, optionally inset and rounded. */
+    private fun layoutPreviewForSkin(tokens: SkinTokens) {
+        if (!overlayActive) return
+        val density = resources.displayMetrics.density
+        val shape = tokens.shape
+        val ratio = when (viewModel.cameraMode.value) {
+            CameraMode.VIDEO -> "9:16"
+            CameraMode.QR -> "3:4"
+            CameraMode.PHOTO -> if (viewModel.photoAspectRatio.value == AspectRatio.RATIO_16_9) "9:16" else "3:4"
+        }
+        viewFinder.updateLayoutParams<ConstraintLayout.LayoutParams> {
+            topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+            topToBottom = ConstraintLayout.LayoutParams.UNSET
+            bottomToTop = ConstraintLayout.LayoutParams.UNSET
+            bottomToBottom = ConstraintLayout.LayoutParams.UNSET
+            startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+            endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            topMargin = uiState.value.insetTop + (shape.previewTop * density).toInt()
+            marginStart = (shape.previewSide * density).toInt()
+            marginEnd = (shape.previewSide * density).toInt()
+            width = 0
+            height = 0
+            dimensionRatio = ratio
+        }
+        multiFrameProgress.updateLayoutParams<ConstraintLayout.LayoutParams> {
+            bottomToTop = ConstraintLayout.LayoutParams.UNSET
+            bottomToBottom = R.id.viewFinder
+        }
+        // The overlay owns the bottom of the preview (lens chips, Pro dials, looks).
+        aiSceneChip.updateLayoutParams<ConstraintLayout.LayoutParams> {
+            bottomToBottom = ConstraintLayout.LayoutParams.UNSET
+            topToTop = R.id.viewFinder
+            topMargin = (12 * density).toInt()
+        }
+        val radius = shape.previewRadius * density
+        viewFinder.outlineProvider = object : ViewOutlineProvider() {
+            override fun getOutline(view: View, outline: android.graphics.Outline) {
+                outline.setRoundRect(0, 0, view.width, view.height, radius)
+            }
+        }
+        viewFinder.clipToOutline = radius > 0f
+    }
+
+    private fun overlaySwipe(forward: Boolean) {
+        val s = uiState.value
+
+        if (s.cameraState != CameraState.IDLE || s.singleCapture) return
+        UiModes.swipe(s.uiMode, forward, s.modes)?.let {
+            mainLayout.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+            selectUiMode(it)
+        }
+    }
+
+    private fun CameraUiState.derived(): CameraUiState {
+        val pro = pro?.enabled == true && pro.available
+        return copy(
+            uiMode = UiModes.derive(cameraMode, pro, portrait, multiFrame),
+            modes = UiModes.available(
+                proAvailable = this.pro?.available == true,
+                videoAvailable = videoRecordingAvailable,
+                moreAvailable = !singleCapture,
+            ),
+        )
+    }
+
+    /** Night, Portrait and Pro are Photo with one feature on; leaving them turns it off. */
+    private fun selectUiMode(mode: UiMode) {
+        FeatureGuard.attempt(LOG_TAG, "Mode $mode") {
+            val mf = viewModel.multiFrame
+            val photo = mode == UiMode.PHOTO || mode == UiMode.NIGHT || mode == UiMode.PORTRAIT || mode == UiMode.PRO
+            if (!photo) {
+                viewModel.setCameraMode(if (mode == UiMode.VIDEO) CameraMode.VIDEO else CameraMode.QR)
+                return@attempt
+            }
+            if (viewModel.cameraMode.value != CameraMode.PHOTO) viewModel.setCameraMode(CameraMode.PHOTO)
+            val portrait = mode == UiMode.PORTRAIT
+            if (aiController.settings.portrait != portrait) {
+                aiController.settings.portrait = portrait
+                updateAiPortraitButton()
+            }
+            val proOn = mode == UiMode.PRO
+            if ((uiState.value.pro?.enabled == true) != proOn) proModeUi.setEnabled(proOn)
+            when {
+                mode == UiMode.NIGHT -> mf.setSetting(MultiFrameSetting.NIGHT)
+                mf.setting.value == MultiFrameSetting.NIGHT -> mf.setSetting(MultiFrameSetting.HDR_AUTO)
+            }
+        }
+    }
+
+    private fun syncLegacyControls() {
+        fun Button.mirror() = LegacyControl(text.toString(), isEnabled, isVisible)
+        val controls = mapOf(
+            Control.ASPECT to aspectRatioButton.mirror(),
+            Control.EFFECT to effectButton.mirror(),
+            Control.LOOK to lookButton.mirror(),
+            Control.VIDEO_QUALITY to videoQualityButton.mirror(),
+            Control.VIDEO_FPS to videoFrameRateButton.mirror(),
+            Control.VIDEO_DYNAMIC_RANGE to videoDynamicRangeButton.mirror(),
+            Control.MIC to micButton.mirror(),
+            Control.TIMER to timerButton.mirror(),
+            Control.PORTRAIT to aiPortraitButton.mirror(),
+            Control.MULTI_FRAME to multiFrameButton.mirror(),
+            Control.CREATIVE to creativeButton.mirror(),
+            Control.MOTION_PHOTO to motionPhotoButton.mirror(),
+            Control.PRE_SHOT to preShotButton.mirror(),
+            Control.GRID to gridButton.mirror(),
+        )
+        uiState.update {
+            it.copy(
+                controls = controls,
+                flashVisible = flashButton.isVisible,
+                flashEnabled = flashButton.isEnabled,
+                canFlip = !flipCameraButton.isInvisible,
+                shutterEnabled = shutterButton.isEnabled,
+                googleLens = isGoogleLensAvailable,
+            )
+        }
+    }
+
+    private fun syncLensChips() {
+        uiState.update { s -> s.copy(lensChips = lensSelectorLayout.snapshot().map { LensChipUi(it.first, it.second) }) }
+    }
+
+    private fun controlButton(control: Control): Button = when (control) {
+        Control.ASPECT -> aspectRatioButton
+        Control.EFFECT -> effectButton
+        Control.LOOK -> lookButton
+        Control.VIDEO_QUALITY -> videoQualityButton
+        Control.VIDEO_FPS -> videoFrameRateButton
+        Control.VIDEO_DYNAMIC_RANGE -> videoDynamicRangeButton
+        Control.MIC -> micButton
+        Control.TIMER -> timerButton
+        Control.PORTRAIT -> aiPortraitButton
+        Control.MULTI_FRAME -> multiFrameButton
+        Control.CREATIVE -> creativeButton
+        Control.MOTION_PHOTO -> motionPhotoButton
+        Control.PRE_SHOT -> preShotButton
+        Control.GRID -> gridButton
+    }
+
+    /** Mirrors the view model into [uiState]; each source only touches its own fields. */
+    private suspend fun bindOverlayState() = kotlinx.coroutines.coroutineScope {
+        val sync = { mainLayout.post { if (overlayActive) syncLegacyControls() } }
+        launch {
+            viewModel.cameraMode.collect { mode ->
+                uiState.update { it.copy(cameraMode = mode).derived() }
+                layoutPreviewForSkin(skinRepository.skin.value)
+                sync()
+            }
+        }
+        launch { viewModel.photoAspectRatio.collect { layoutPreviewForSkin(skinRepository.skin.value) } }
+        launch {
+            viewModel.cameraState.collect { cs ->
+                uiState.update { it.copy(cameraState = cs) }
+                sync()
+            }
+        }
+        launch { viewModel.isShutterButtonEnabled.collect { sync() } }
+        launch { viewModel.isFlashButtonEnabled.collect { sync() } }
+        launch { viewModel.isVideoQualityButtonEnabled.collect { sync() } }
+        launch { viewModel.isVideoFrameRateButtonEnabled.collect { sync() } }
+        launch { viewModel.isVideoDynamicRangeButtonEnabled.collect { sync() } }
+        launch { viewModel.isVideoMicButtonEnabled.collect { sync() } }
+        launch { viewModel.flashMode.collect { f -> uiState.update { it.copy(flash = f) } } }
+        launch { viewModel.gridMode.collect { g -> uiState.update { it.copy(grid = g) } } }
+        launch { viewModel.timerMode.collect { m -> uiState.update { it.copy(timer = m) } } }
+        launch { viewModel.multiFrame.setting.collect { m -> uiState.update { it.copy(multiFrame = m).derived() } } }
+        launch { viewModel.creative.mode.collect { m -> uiState.update { it.copy(creative = m) } } }
+        launch { viewModel.motionPhoto.motionPhoto.collect { m -> uiState.update { it.copy(motionPhoto = m) } } }
+        launch { viewModel.lookController.lookId.collect { id -> uiState.update { it.copy(lookId = id) } } }
+        launch {
+            // Debug builds can pin the glyph angle (the device may be fixed on a stand).
+            val pinned = OverlayHost.debugFailure(this@CameraActivity, intent.getStringExtra(EXTRA_DEBUG_GLYPH_ROTATION))
+                ?.toIntOrNull()
+            viewModel.screenRotation.collect { r ->
+                uiState.update { it.copy(glyphRotation = pinned ?: (r.compensationValue % 360)) }
+            }
+        }
+        launch { viewModel.videoRecordingDuration.collect { d -> uiState.update { it.copy(recordingNanos = d) } } }
+        launch {
+            viewModel.inSingleCaptureMode.collect { single -> uiState.update { it.copy(singleCapture = single).derived() } }
+        }
+        launch {
+            viewModel.zoomState.collect { z ->
+                z ?: return@collect
+                uiState.update { it.copy(zoomRatio = z.zoomRatio, minZoom = z.minZoomRatio, maxZoom = z.maxZoomRatio) }
+            }
+        }
+        launch { proModeUi.uiState.collect { p -> uiState.update { it.copy(pro = p).derived() } } }
+        launch { skinRepository.blurEnabled.collect { b -> uiState.update { it.copy(blurEnabled = b) } } }
+    }
+
+    private val overlayActions = object : CameraUiActions {
+        private inline fun act(what: String, block: () -> Unit) {
+            FeatureGuard.attempt(LOG_TAG, "Overlay $what") { block() }
+        }
+
+        override fun shutter() = act("shutter") {
+            if (shutterButton.isEnabled || viewModel.cameraState.value.isRecordingVideo) shutterButton.performClick()
+        }
+
+        override fun selectMode(mode: UiMode) = selectUiMode(mode)
+
+        override fun openMoreMode(mode: VideoMode) = act("more") {
+            dismissKeyguardAndRun {
+                startActivity(
+                    Intent(this@CameraActivity, VideoModesActivity::class.java)
+                        .putExtra(VideoModesActivity.EXTRA_MODE, mode.name)
+                )
+            }
+        }
+
+        override fun setCreative(mode: CreativeMode) = act("creative") {
+            if (mode != CreativeMode.OFF) selectUiMode(UiMode.PHOTO)
+            viewModel.creative.setMode(mode)
+        }
+
+        override fun setMultiFrame(setting: MultiFrameSetting) = act("multi-frame") {
+            selectUiMode(UiMode.PHOTO)
+            viewModel.multiFrame.setSetting(setting)
+        }
+
+        override fun colorMatch() = act("color match") {
+            startActivity(Intent(this@CameraActivity, ColorMatchActivity::class.java))
+        }
+
+        override fun flash() = act("flash") { flashButton.performClick() }
+        override fun flashLong() = act("flash long") { flashButton.performLongClick() }
+        override fun control(control: Control) = act("control $control") { controlButton(control).performClick() }
+        override fun lensChip(index: Int) = act("lens") { lensSelectorLayout.clickAt(index) }
+        override fun zoomTo(ratio: Float) = act("zoom") { viewModel.cameraController.setZoomRatio(ratio) }
+        override fun flip() = act("flip") { flipCameraButton.performClick() }
+        override fun gallery() = act("gallery") { galleryButtonCardView.performClick() }
+        override fun pauseResume() = act("pause") { videoRecordingStateButton.performClick() }
+        override fun selectLook(id: String) = act("look") { lookPickerView.onLookSelected?.invoke(id) }
+        override fun allSettings() = act("settings") { openSettings() }
+        override fun googleLens() = act("lens app") { googleLensButton.performClick() }
+        override fun proSettings(settings: ProSettings) = act("pro") { proModeUi.onSettingsChanged(settings) }
+        override fun proAfLock(locked: Boolean) = act("af lock") { proModeUi.onAfLockChanged(locked) }
+        override fun proFormat() = act("format") { proModeUi.onCycleFormat() }
+        override fun proReset() = act("pro reset") { proModeUi.onReset() }
+        override fun setSkin(id: String) = act("skin") { skinRepository.select(id) }
+        override fun setBlur(enabled: Boolean) = act("blur") { skinRepository.setBlurEnabled(enabled) }
+
+        override fun previewSnapshot(): Bitmap? = FeatureGuard.attempt(LOG_TAG, "Preview snapshot") {
+            viewFinder.bitmap?.let { full ->
+                Bitmap.createScaledBitmap(full, (full.width / 4).coerceAtLeast(1), (full.height / 4).coerceAtLeast(1), true)
+                    .also { if (it !== full) full.recycle() }
+            }
+        }
+    }
     companion object {
         private val LOG_TAG = CameraActivity::class.simpleName!!
         private const val COLOR_MATCH_ITEM = "__color_match__"
+
+        /** Debug builds: "all" or a skin id makes the skin throw, to exercise the fallback chain. */
+        const val EXTRA_DEBUG_SKIN_FAIL = "debug_skin_fail"
+        const val EXTRA_DEBUG_GLYPH_ROTATION = "debug_glyph_rotation"
         private const val LOOK_PRELOAD_WAIT_MS = 1200L
         private const val FULL_RES_STREAM_TIMEOUT_MS = 4000L
         private const val CAPTURE_RESULT_WAIT_MS = 800L

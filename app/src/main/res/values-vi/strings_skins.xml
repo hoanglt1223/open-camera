@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="appearance_header">Giao diện</string>
+    <string name="ui_skin">Giao diện máy ảnh</string>
+    <string name="ui_skin_glass">Glass</string>
+    <string name="ui_skin_origin">Origin</string>
+    <string name="ui_blur">Hiệu ứng kính mờ</string>
+    <string name="ui_blur_summary">Nền mờ phía sau các bảng. Máy yếu tự dùng mức mờ nhẹ hơn.</string>
+    <string name="ui_skin_reset">Đã đặt lại giao diện máy ảnh sau một lỗi</string>
+    <string name="ui_skin_legacy">Đã tắt giao diện mới sau một lỗi, dùng giao diện cũ</string>
+
+    <string name="ui_mode_night">Đêm</string>
+    <string name="ui_mode_portrait">Chân dung</string>
+    <string name="ui_mode_pro">Pro</string>
+    <string name="ui_hdr">HDR</string>
+    <string name="ui_motion_photo">Ảnh động</string>
+    <string name="ui_timer">Hẹn giờ</string>
+    <string name="ui_mic">Micrô</string>
+    <string name="ui_settings">Cài đặt</string>
+    <string name="ui_all_settings">Tất cả cài đặt</string>
+    <string name="ui_more_title">Thêm chế độ</string>
+    <string name="ui_close">Đóng</string>
+    <string name="ui_take_photo">Chụp ảnh</string>
+    <string name="ui_start_recording">Bắt đầu quay</string>
+    <string name="ui_stop_recording">Dừng quay</string>
+    <string name="ui_pause_recording">Tạm dừng quay</string>
+    <string name="ui_resume_recording">Tiếp tục quay</string>
+    <string name="ui_zoom_chip">Thu phóng %1$s lần</string>
+    <string name="ui_creative_clear">Đang bật %1$s, chạm để tắt</string>
+    <string name="ui_pro_ev_locked">EV theo phơi sáng thủ công</string>
+    <string name="ui_flash_off">Tắt</string>
+    <string name="ui_flash_auto">Tự động</string>
+    <string name="ui_flash_on">Bật</string>
+    <string name="ui_flash_torch">Đèn pin</string>
+    <string name="ui_flash_screen">Đèn màn hình</string>
+    <string name="ui_row_aspect">Tỉ lệ khung hình</string>
+    <string name="ui_row_effect">Hiệu ứng</string>
+    <string name="ui_row_video_quality">Chất lượng video</string>
+    <string name="ui_row_video_fps">Tốc độ khung hình</string>
+    <string name="ui_row_video_dynamic_range">Dải động</string>
+    <string name="ui_row_creative">Chế độ sáng tạo</string>
+    <string name="ui_row_pre_shot">Chụp trước</string>
+    <string name="ui_row_grid">Lưới</string>
+</resources>

@@ -1,0 +1,1010 @@
+/*
+ * SPDX-FileCopyrightText: Open Camera contributors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+package dev.opencamera.app.ui.overlay
+
+import android.graphics.Bitmap
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.runtime.State
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathFillType
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil3.SingletonImageLoader
+import coil3.request.ImageRequest
+import coil3.toBitmap
+import coil3.video.VideoFrameDecoder
+import dev.opencamera.app.R
+import dev.opencamera.app.models.CameraMode
+import dev.opencamera.app.models.CameraState
+import dev.opencamera.app.models.FlashMode
+import dev.opencamera.app.models.Rotation
+import dev.opencamera.app.models.TimerMode
+import dev.opencamera.app.modes.CreativeMode
+import dev.opencamera.app.utils.TimeUtils
+import dev.opencamera.capture.MultiFrameSetting
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.exp
+import kotlin.math.floor
+import kotlin.math.ln
+
+enum class Sheet { NONE, MORE, SETTINGS }
+
+/** Overlay-local state that the activity also reads (back press closes sheets first). */
+@Stable
+class OverlayUiState {
+    var sheet by mutableStateOf(Sheet.NONE)
+    var looksOpen by mutableStateOf(false)
+
+    val consumesBack get() = sheet != Sheet.NONE || looksOpen
+
+    fun back() {
+        if (sheet != Sheet.NONE) sheet = Sheet.NONE else looksOpen = false
+    }
+}
+
+/** Animated glyph rotation, read in the draw phase so rotating never recomposes. */
+val LocalGlyphRotation = staticCompositionLocalOf<State<Float>> { mutableFloatStateOf(0f) }
+
+fun Modifier.uprightGlyph(rotation: State<Float>) = graphicsLayer { rotationZ = rotation.value }
+
+@Composable
+fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiState) {
+    val s = skin
+    var rotationTarget by remember { mutableFloatStateOf(state.glyphRotation.toFloat() % 360f) }
+    LaunchedEffect(state.glyphRotation) {
+        rotationTarget += Rotation.getDifference(rotationTarget, state.glyphRotation.toFloat())
+    }
+    val rotation = animateFloatAsState(rotationTarget, s.medium(), label = "glyphs")
+    val recording = state.cameraState.isRecordingVideo
+
+    androidx.compose.runtime.CompositionLocalProvider(LocalGlyphRotation provides rotation) {
+        Box(Modifier.fillMaxSize()) {
+            PreviewChrome(state)
+
+            Column(
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = with(LocalDensity.current) { state.insetTop.toDp() } + 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                TopBar(state, actions, ui)
+                Spacer(Modifier.height(8.dp))
+                AnimatedVisibility(recording, enter = fadeIn(s.medium()), exit = fadeOut(s.medium())) {
+                    RecordingPill(state)
+                }
+                AnimatedVisibility(
+                    !recording && state.cameraMode == CameraMode.PHOTO && state.creative != CreativeMode.OFF,
+                    enter = fadeIn(s.medium()), exit = fadeOut(s.medium()),
+                ) {
+                    CreativeChip(state.creative) { actions.setCreative(CreativeMode.OFF) }
+                }
+            }
+
+            Column(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(bottom = with(LocalDensity.current) { state.insetBottom.toDp() } + 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                AnimatedVisibility(
+                    ui.looksOpen && state.cameraMode == CameraMode.PHOTO,
+                    enter = fadeIn(s.medium()) + slideInVertically(s.medium()) { it / 3 },
+                    exit = fadeOut(s.medium()) + slideOutVertically(s.medium()) { it / 3 },
+                ) {
+                    LooksStrip(state, actions)
+                }
+                val pro = state.pro
+                if (state.uiMode == UiMode.PRO && pro != null && pro.available) {
+                    ProPanel(pro, actions)
+                } else if (!ui.looksOpen || state.cameraMode != CameraMode.PHOTO) {
+                    LensRow(state, actions)
+                }
+                Spacer(Modifier.height(4.dp))
+                Box(Modifier.height(48.dp), contentAlignment = Alignment.Center) {
+                    androidx.compose.animation.AnimatedVisibility(
+                        !recording && !state.singleCapture,
+                        enter = fadeIn(s.medium()), exit = fadeOut(s.medium()),
+                    ) {
+                        ModeCarousel(state, actions, ui)
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                BottomRow(state, actions)
+            }
+
+            Sheets(state, actions, ui)
+        }
+    }
+}
+
+/** Rounded preview corners (masks over the SurfaceView) and the Glass bottom scrim. */
+@Composable
+private fun BoxScope.PreviewChrome(state: CameraUiState) {
+    val s = skin
+    val rect = state.previewRect
+    val radiusPx = with(LocalDensity.current) { s.tokens.shape.previewRadius.dp.toPx() }
+    Canvas(Modifier.matchParentSize()) {
+        if (s.glass) {
+            val top = size.height * 0.55f
+            drawRect(
+                Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = .72f)), startY = top),
+                topLeft = Offset(0f, top), size = Size(size.width, size.height - top),
+            )
+        }
+        if (rect != null && radiusPx > 0f) {
+            val path = Path().apply {
+                fillType = PathFillType.EvenOdd
+                addRect(androidx.compose.ui.geometry.Rect(rect.left, rect.top, rect.right, rect.bottom))
+                addRoundRect(
+                    androidx.compose.ui.geometry.RoundRect(
+                        rect.left, rect.top, rect.right, rect.bottom, CornerRadius(radiusPx, radiusPx),
+                    )
+                )
+            }
+            drawPath(path, Color.Black)
+        }
+    }
+}
+
+// ---------------------------------------------------------------- top bar
+
+@Composable
+private fun TopBar(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiState) {
+    val s = skin
+    val recording = state.cameraState.isRecordingVideo
+    val idle = state.cameraState == CameraState.IDLE
+    val container = if (s.tokens.shape.topBarCapsule) {
+        Modifier
+            .clip(RoundedCornerShape(50))
+            .background(s.surface)
+            .border(1.dp, s.stroke, RoundedCornerShape(50))
+            .padding(horizontal = 6.dp)
+    } else {
+        Modifier.fillMaxWidth().padding(horizontal = 12.dp)
+    }
+    Row(
+        container.heightIn(min = 48.dp),
+        horizontalArrangement = if (s.tokens.shape.topBarCapsule) Arrangement.spacedBy(2.dp) else Arrangement.SpaceAround,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (state.flashVisible) {
+            val (glyph, badge, on) = when (state.flash) {
+                FlashMode.OFF -> Triple(Glyphs.flashOff, null, false)
+                FlashMode.AUTO -> Triple(Glyphs.flash, "A", false)
+                FlashMode.ON -> Triple(Glyphs.flash, null, true)
+                FlashMode.TORCH -> Triple(Glyphs.torch, null, true)
+                FlashMode.SCREEN -> Triple(Glyphs.flash, "S", true)
+            }
+            TopIcon(
+                glyph, stringResource(R.string.flash_button_description), stringResource(flashLabel(state.flash)),
+                active = on, badge = badge, enabled = state.flashEnabled,
+                onLongClick = actions::flashLong, onClick = actions::flash,
+            )
+        }
+        if (recording) return@Row
+        when (state.cameraMode) {
+            CameraMode.PHOTO -> {
+                val mf = state.multiFrame
+                TopIcon(
+                    when (mf) {
+                        MultiFrameSetting.NIGHT -> Glyphs.night
+                        MultiFrameSetting.ASTRO -> Glyphs.star
+                        else -> Glyphs.hdr
+                    },
+                    stringResource(R.string.ui_hdr), state.controls[Control.MULTI_FRAME]?.label ?: "",
+                    active = mf != MultiFrameSetting.OFF && mf != MultiFrameSetting.HDR_AUTO,
+                    badge = if (mf == MultiFrameSetting.HDR_AUTO) "A" else null,
+                    struck = mf == MultiFrameSetting.OFF,
+                    onClick = { actions.control(Control.MULTI_FRAME) },
+                )
+                TopIcon(
+                    if (state.motionPhoto) Glyphs.live else Glyphs.liveOff,
+                    stringResource(R.string.ui_motion_photo), state.controls[Control.MOTION_PHOTO]?.label ?: "",
+                    active = state.motionPhoto, onClick = { actions.control(Control.MOTION_PHOTO) },
+                )
+                TimerIcon(state, actions, idle)
+                TopIcon(
+                    Glyphs.looks, stringResource(R.string.look_button), state.controls[Control.LOOK]?.label ?: "",
+                    active = ui.looksOpen || state.lookId.isNotEmpty() && state.lookId != "none",
+                    onClick = { ui.looksOpen = !ui.looksOpen },
+                )
+            }
+
+            CameraMode.VIDEO -> {
+                listOf(Control.VIDEO_QUALITY, Control.VIDEO_FPS).forEach { c ->
+                    state.controls[c]?.takeIf { it.visible }?.let { ctl ->
+                        TopText(ctl.label, stringResource(controlName(c)), ctl.enabled && idle) { actions.control(c) }
+                    }
+                }
+                state.controls[Control.MIC]?.takeIf { it.visible }?.let { ctl ->
+                    TopText(ctl.label, stringResource(R.string.ui_mic), ctl.enabled) { actions.control(Control.MIC) }
+                }
+                TimerIcon(state, actions, idle)
+            }
+
+            CameraMode.QR -> Unit
+        }
+        TopIcon(
+            Glyphs.settings, stringResource(R.string.ui_settings), null, enabled = idle,
+            onClick = { ui.sheet = Sheet.SETTINGS },
+        )
+    }
+}
+
+@Composable
+private fun TimerIcon(state: CameraUiState, actions: CameraUiActions, idle: Boolean) = TopIcon(
+    Glyphs.timer, stringResource(R.string.ui_timer), state.controls[Control.TIMER]?.label ?: "",
+    active = state.timer != TimerMode.OFF,
+    badge = when (state.timer) {
+        TimerMode.OFF -> null
+        TimerMode.ON_3S -> "3"
+        TimerMode.ON_10S -> "10"
+    },
+    enabled = idle, onClick = { actions.control(Control.TIMER) },
+)
+
+private fun flashLabel(mode: FlashMode) = when (mode) {
+    FlashMode.OFF -> R.string.ui_flash_off
+    FlashMode.AUTO -> R.string.ui_flash_auto
+    FlashMode.ON -> R.string.ui_flash_on
+    FlashMode.TORCH -> R.string.ui_flash_torch
+    FlashMode.SCREEN -> R.string.ui_flash_screen
+}
+
+@Composable
+private fun TopIcon(
+    glyph: androidx.compose.ui.graphics.vector.ImageVector,
+    description: String,
+    stateText: String?,
+    active: Boolean = false,
+    badge: String? = null,
+    struck: Boolean = false,
+    enabled: Boolean = true,
+    onLongClick: (() -> Unit)? = null,
+    onClick: () -> Unit,
+) {
+    val s = skin
+    val view = LocalView.current
+    val tint by animateColorAsState(if (active) s.accentText else s.fg, s.fast(), label = "tint")
+    Box(
+        Modifier
+            .size(48.dp)
+            .semantics {
+                contentDescription = description
+                if (stateText != null) stateDescription = stateText
+            }
+            .pressable(enabled, onLongClick?.let { { Haptics.longPress(view); it() } }) {
+                Haptics.segment(view)
+                onClick()
+            }
+            .graphicsLayer { alpha = if (enabled) 1f else 0.4f },
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(Modifier.uprightGlyph(LocalGlyphRotation.current), contentAlignment = Alignment.Center) {
+            Glyph(glyph, tint, size = 22.dp)
+            if (struck && glyph == Glyphs.hdr) {
+                Canvas(Modifier.size(22.dp)) {
+                    drawLine(tint, Offset(2f, 2f), Offset(size.width - 2f, size.height - 2f), strokeWidth = 4f)
+                }
+            }
+            if (badge != null) {
+                BasicText(
+                    badge,
+                    Modifier.offset(11.dp, (-9).dp),
+                    style = TextStyle(color = tint, fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TopText(label: String, description: String, enabled: Boolean, onClick: () -> Unit) {
+    val s = skin
+    val view = LocalView.current
+    Box(
+        Modifier
+            .heightIn(min = 48.dp)
+            .widthIn(min = 48.dp)
+            .semantics { contentDescription = description; stateDescription = label }
+            .pressable(enabled) { Haptics.segment(view); onClick() }
+            .graphicsLayer { alpha = if (enabled) 1f else 0.4f },
+        contentAlignment = Alignment.Center,
+    ) {
+        BasicText(
+            label,
+            Modifier.uprightGlyph(LocalGlyphRotation.current),
+            style = TextStyle(color = s.fg, fontSize = 12.sp, fontWeight = FontWeight.SemiBold),
+            maxLines = 1,
+        )
+    }
+}
+
+/** Click (and optional long click) without ripple; a slight scale-down while pressed. */
+@Composable
+fun Modifier.pressable(enabled: Boolean = true, onLongClick: (() -> Unit)? = null, onClick: () -> Unit): Modifier {
+    val source = remember { MutableInteractionSource() }
+    val pressed by source.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.9f else 1f, skin.fast(), label = "press")
+    val base = this.graphicsLayer { scaleX = scale; scaleY = scale }
+    return if (onLongClick != null) {
+        base.combinedClickableCompat(source, enabled, onLongClick, onClick)
+    } else {
+        base.clickable(source, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
+    }
+}
+
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+private fun Modifier.combinedClickableCompat(
+    source: MutableInteractionSource, enabled: Boolean, onLongClick: () -> Unit, onClick: () -> Unit,
+) = this.then(
+    Modifier.combinedClickable(
+        interactionSource = source, indication = null, enabled = enabled, role = Role.Button,
+        onLongClick = onLongClick, onClick = onClick,
+    )
+)
+
+@Composable
+private fun RecordingPill(state: CameraUiState) {
+    val s = skin
+    val blink = rememberInfiniteTransition(label = "rec")
+    val dot by blink.animateFloat(
+        1f, 0f, infiniteRepeatable(tween(500, easing = LinearEasing), RepeatMode.Reverse), label = "dot",
+    )
+    val text = TimeUtils.convertNanosToString(state.recordingNanos)
+    Row(
+        Modifier
+            .clip(RoundedCornerShape(50))
+            .background(if (state.recordingPaused) s.surface else s.record)
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .semantics { liveRegion = LiveRegionMode.Polite; contentDescription = text },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier
+                .size(8.dp)
+                .graphicsLayer { alpha = if (state.recordingPaused) 1f else dot }
+                .background(Color.White, CircleShape)
+        )
+        Spacer(Modifier.width(6.dp))
+        BasicText(text, style = TextStyle(color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold))
+    }
+}
+
+@Composable
+private fun CreativeChip(mode: CreativeMode, onClear: () -> Unit) {
+    val s = skin
+    val label = stringResource(mode.label)
+    val clear = stringResource(R.string.ui_creative_clear, label)
+    Row(
+        Modifier
+            .heightIn(min = 48.dp)
+            .semantics { contentDescription = clear }
+            .pressable(onClick = onClear),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            Modifier.clip(RoundedCornerShape(50)).background(s.surface).padding(start = 12.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BasicText(label, style = TextStyle(color = s.accentText, fontSize = 13.sp, fontWeight = FontWeight.SemiBold))
+            Spacer(Modifier.width(4.dp))
+            Glyph(Glyphs.close, s.fg, size = 16.dp)
+        }
+    }
+}
+
+// ---------------------------------------------------------------- lens chips + zoom ring
+
+@Composable
+private fun LensRow(state: CameraUiState, actions: CameraUiActions) {
+    val s = skin
+    val view = LocalView.current
+    val scope = rememberCoroutineScope()
+    var ring by remember { mutableStateOf(false) }
+    var hideJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    val zoom by androidx.compose.runtime.rememberUpdatedState(state.zoomRatio)
+    val minZ by androidx.compose.runtime.rememberUpdatedState(state.minZoom)
+    val maxZ by androidx.compose.runtime.rememberUpdatedState(state.maxZoom)
+    var dragZoom by remember { mutableFloatStateOf(1f) }
+    val canZoom = state.maxZoom > state.minZoom
+    val pxPerStop = with(LocalDensity.current) { 140.dp.toPx() }
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .then(if (!canZoom) Modifier else Modifier.pointerInput("ring") {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = {
+                        hideJob?.cancel()
+                        dragZoom = zoom
+                        ring = true
+                        Haptics.longPress(view)
+                    },
+                    onDragEnd = { hideJob = scope.launch { delay(1200); ring = false } },
+                    onDragCancel = { hideJob = scope.launch { delay(1200); ring = false } },
+                ) { change, amount ->
+                    change.consume()
+                    val dx = if (rtl) -amount.x else amount.x
+                    val before = dragZoom
+                    dragZoom = (dragZoom * exp(dx / pxPerStop)).coerceIn(minZ, maxZ)
+                    if (floor(before * 2) != floor(dragZoom * 2)) Haptics.tick(view)
+                    actions.zoomTo(dragZoom)
+                }
+            }),
+        contentAlignment = Alignment.Center,
+    ) {
+        val ringAlpha by animateFloatAsState(if (ring) 1f else 0f, s.medium(), label = "ring")
+        if (ringAlpha > 0f) ZoomRing(state, Modifier.matchParentSize().graphicsLayer { alpha = ringAlpha })
+        if (state.lensChips.isNotEmpty()) {
+            Row(
+                Modifier
+                    .graphicsLayer { alpha = 1f - ringAlpha }
+                    .clip(RoundedCornerShape(50))
+                    .background(if (s.glass) s.chip else Color.Black.copy(alpha = .4f))
+                    .padding(horizontal = 2.dp)
+                    .selectableGroup(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                state.lensChips.forEachIndexed { i, chip -> LensChip(chip) { Haptics.segment(view); actions.lensChip(i) } }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LensChip(chip: LensChipUi, onClick: () -> Unit) {
+    val s = skin
+    val scale by animateFloatAsState(if (chip.selected) 1.12f else 1f, s.bouncy(), label = "chip")
+    val label = if (chip.selected) "${chip.label}×" else chip.label
+    val description = stringResource(R.string.ui_zoom_chip, chip.label)
+    Box(
+        Modifier
+            .size(48.dp)
+            .selectable(
+                selected = chip.selected, role = Role.RadioButton, onClick = onClick,
+                interactionSource = remember { MutableInteractionSource() }, indication = null,
+            )
+            .semantics { contentDescription = description },
+        contentAlignment = Alignment.Center,
+    ) {
+        val bg = when {
+            !chip.selected -> if (s.glass) Color.Transparent else Color.Black.copy(alpha = .3f)
+            s.glass -> Color.White.copy(alpha = .18f)
+            else -> Color.White
+        }
+        Box(
+            Modifier
+                .size(40.dp)
+                .graphicsLayer { scaleX = scale; scaleY = scale }
+                .uprightGlyph(LocalGlyphRotation.current)
+                .background(bg, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            BasicText(
+                label,
+                style = TextStyle(
+                    color = when {
+                        !chip.selected -> s.fg
+                        s.glass -> s.accent
+                        else -> Color(0xFF111111)
+                    },
+                    fontSize = 12.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center,
+                ),
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+/** Arc dial with a tick every 0.1x (log scale) and the current ratio. Drawn, not composed. */
+@Composable
+private fun ZoomRing(state: CameraUiState, modifier: Modifier) {
+    val s = skin
+    val zoom by androidx.compose.runtime.rememberUpdatedState(state.zoomRatio)
+    val minZ = state.minZoom.coerceAtLeast(0.1f)
+    val maxZ = state.maxZoom.coerceAtLeast(minZ + 0.01f)
+    Box(modifier, contentAlignment = Alignment.TopCenter) {
+        Canvas(Modifier.fillMaxSize()) {
+            val w = size.width
+            val pxPerLog = w / 2.2f
+            val center = ln(zoom)
+            var r = (floor(minZ * 10) / 10f).coerceAtLeast(0.1f)
+            while (r <= maxZ + 1e-3f) {
+                val x = w / 2 + (ln(r) - center) * pxPerLog
+                if (x in 0f..w) {
+                    val major = abs(r - Math.round(r)) < 1e-3f || abs(r * 2 - Math.round(r * 2)) < 1e-3f
+                    val fade = 1f - abs(x - w / 2) / (w / 2)
+                    drawLine(
+                        s.fg.copy(alpha = fade * if (major) 1f else .5f),
+                        Offset(x, size.height - if (major) 22.dp.toPx() else 14.dp.toPx()),
+                        Offset(x, size.height - 6.dp.toPx()),
+                        strokeWidth = if (major) 2f else 1.2f,
+                    )
+                }
+                r = Math.round((r + 0.1f) * 10) / 10f
+            }
+            drawLine(s.accent, Offset(w / 2, size.height - 28.dp.toPx()), Offset(w / 2, size.height - 4.dp.toPx()), strokeWidth = 4f)
+        }
+        BasicText(
+            "%.1f×".format(state.zoomRatio),
+            Modifier.padding(top = 2.dp).semantics { liveRegion = LiveRegionMode.Polite },
+            style = TextStyle(color = s.accentText, fontSize = 14.sp, fontWeight = FontWeight.Bold),
+        )
+    }
+}
+
+// ---------------------------------------------------------------- mode carousel
+
+@Composable
+private fun modeLabel(mode: UiMode) = stringResource(
+    when (mode) {
+        UiMode.MORE -> R.string.camera_mode_more
+        UiMode.NIGHT -> R.string.ui_mode_night
+        UiMode.PORTRAIT -> R.string.ui_mode_portrait
+        UiMode.PHOTO -> R.string.camera_mode_photo
+        UiMode.VIDEO -> R.string.camera_mode_video
+        UiMode.PRO -> R.string.ui_mode_pro
+        UiMode.QR -> R.string.camera_mode_qr
+    }
+)
+
+@Composable
+private fun ModeCarousel(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiState) {
+    val s = skin
+    val view = LocalView.current
+    val modes = state.modes
+    val selected = modes.indexOf(state.uiMode).coerceAtLeast(0)
+    val position = animateFloatAsState(selected.toFloat(), s.bouncy(), label = "carousel")
+    val enabled = state.cameraState == CameraState.IDLE
+    val threshold = with(LocalDensity.current) { 40.dp.toPx() }
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    var drag by remember { mutableFloatStateOf(0f) }
+    val pillWidth = remember { mutableFloatStateOf(0f) }
+    val pillAnimated by animateDpAsState(
+        with(LocalDensity.current) { pillWidth.floatValue.toDp() }, s.bouncy(), label = "pill",
+    )
+
+    val select: (UiMode) -> Unit = { mode ->
+        if (mode == UiMode.MORE) ui.sheet = Sheet.MORE
+        else if (mode != state.uiMode) {
+            Haptics.segment(view)
+            actions.selectMode(mode)
+        }
+    }
+    val currentMode by androidx.compose.runtime.rememberUpdatedState(state.uiMode)
+    val modesNow by androidx.compose.runtime.rememberUpdatedState(modes)
+    val enabledNow by androidx.compose.runtime.rememberUpdatedState(enabled)
+    val selectNow by androidx.compose.runtime.rememberUpdatedState(select)
+
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .pointerInput("carousel") {
+                detectHorizontalDragGestures(
+                    onDragStart = { drag = 0f },
+                    onDragEnd = {
+                        if (abs(drag) > threshold && enabledNow) {
+                            val forward = (drag < 0) != rtl
+                            UiModes.swipe(currentMode, forward, modesNow)?.let(selectNow)
+                        }
+                    },
+                ) { change, amount -> change.consume(); drag += amount }
+            }
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .drawWithContent {
+                drawContent()
+                drawRect(
+                    Brush.horizontalGradient(
+                        0f to Color.Transparent, 0.2f to Color.Black, 0.8f to Color.Black, 1f to Color.Transparent,
+                    ),
+                    blendMode = BlendMode.DstIn,
+                )
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        // Selected-mode pill, fixed at the center; the labels slide under it.
+        Box(
+            Modifier
+                .height(36.dp)
+                .width(pillAnimated)
+                .clip(RoundedCornerShape(50))
+                .then(
+                    if (s.glass) Modifier.background(Color.White.copy(alpha = .12f))
+                    else Modifier.background(s.accentBrush)
+                )
+        )
+        Layout(
+            modifier = Modifier.fillMaxSize().selectableGroup(),
+            content = {
+                modes.forEachIndexed { i, mode ->
+                    val on = i == selected
+                    val color by animateColorAsState(if (on) s.modeOn else s.muted, s.medium(), label = "mode")
+                    BasicText(
+                        modeLabel(mode),
+                        Modifier
+                            .heightIn(min = 48.dp)
+                            .widthIn(max = 140.dp)
+                            .selectable(
+                                selected = on, enabled = enabled, role = Role.Tab,
+                                interactionSource = remember { MutableInteractionSource() }, indication = null,
+                            ) { select(mode) }
+                            .padding(horizontal = 14.dp, vertical = 14.dp),
+                        style = TextStyle(
+                            color = color, fontSize = s.tokens.type.modeSize.sp, fontWeight = s.modeWeight,
+                            textAlign = TextAlign.Center, shadow = if (on && !s.glass) null else LabelShadow,
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            },
+        ) { measurables, constraints ->
+            val placeables = measurables.map { it.measure(constraints.copy(minWidth = 0, minHeight = 0)) }
+            val starts = FloatArray(placeables.size)
+            var x = 0f
+            placeables.forEachIndexed { i, p -> starts[i] = x; x += p.width }
+            fun center(i: Int) = starts[i] + placeables[i].width / 2f
+            if (placeables.isNotEmpty()) pillWidth.floatValue = placeables[selected].width.toFloat()
+            layout(constraints.maxWidth, constraints.maxHeight) {
+                if (placeables.isEmpty()) return@layout
+                val pos = position.value.coerceIn(0f, placeables.lastIndex.toFloat())
+                val a = floor(pos).toInt()
+                val b = (a + 1).coerceAtMost(placeables.lastIndex)
+                val c = center(a) + (center(b) - center(a)) * (pos - a)
+                val shift = constraints.maxWidth / 2f - c
+                placeables.forEachIndexed { i, p ->
+                    p.placeRelative((starts[i] + shift).toInt(), (constraints.maxHeight - p.height) / 2)
+                }
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------- bottom row
+
+@Composable
+private fun BottomRow(state: CameraUiState, actions: CameraUiActions) {
+    val s = skin
+    val view = LocalView.current
+    val recording = state.cameraState.isRecordingVideo
+    val idle = state.cameraState == CameraState.IDLE
+    Row(
+        Modifier.fillMaxWidth().height(104.dp).padding(horizontal = 28.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(56.dp), contentAlignment = Alignment.Center) {
+            when {
+                state.cameraMode == CameraMode.QR && state.googleLens -> RoundButton(
+                    Glyphs.scan, stringResource(R.string.google_lens_button_description), true, onClick = actions::googleLens,
+                )
+
+                !recording && !state.singleCapture && state.cameraMode != CameraMode.QR -> Thumb(state, idle, actions::gallery)
+            }
+        }
+        Box(Modifier.size((s.tokens.shape.shutter + 8).dp), contentAlignment = Alignment.Center) {
+            if (state.cameraMode != CameraMode.QR) Shutter(state) {
+                when {
+                    state.cameraMode == CameraMode.VIDEO && !recording -> Haptics.recordStart(view)
+                    recording -> Haptics.recordStop(view)
+                    else -> Haptics.shutter(view)
+                }
+                actions.shutter()
+            }
+        }
+        Box(Modifier.size(56.dp), contentAlignment = Alignment.Center) {
+            if (recording) {
+                RoundButton(
+                    if (state.recordingPaused) Glyphs.play else Glyphs.pause,
+                    stringResource(if (state.recordingPaused) R.string.ui_resume_recording else R.string.ui_pause_recording),
+                    true,
+                ) { Haptics.segment(view); actions.pauseResume() }
+            } else if (state.canFlip) {
+                val spin = remember { Animatable(0f) }
+                val scope = rememberCoroutineScope()
+                RoundButton(Glyphs.flip, stringResource(R.string.flip_camera_button_description), idle, spinState = spin.asState()) {
+                    Haptics.segment(view)
+                    scope.launch { spin.animateTo(spin.value + 180f, s.slow()) }
+                    actions.flip()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RoundButton(
+    glyph: androidx.compose.ui.graphics.vector.ImageVector,
+    description: String,
+    enabled: Boolean,
+    spinState: State<Float>? = null,
+    onClick: () -> Unit,
+) {
+    val s = skin
+    val rotation = LocalGlyphRotation.current
+    Box(
+        Modifier
+            .size(52.dp)
+            .semantics { contentDescription = description }
+            .pressable(enabled, onClick = onClick)
+            .graphicsLayer { alpha = if (enabled) 1f else .4f }
+            .background(if (s.glass) Color.White.copy(alpha = .16f) else s.chip, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Glyph(
+            glyph, s.fg,
+            Modifier.graphicsLayer { rotationZ = rotation.value + (spinState?.value ?: 0f) },
+            size = 26.dp,
+        )
+    }
+}
+
+@Composable
+private fun Shutter(state: CameraUiState, onClick: () -> Unit) {
+    val s = skin
+    val recording = state.cameraState.isRecordingVideo
+    val video = state.cameraMode == CameraMode.VIDEO
+    val busy = state.cameraState == CameraState.TAKING_PHOTO
+    val size = s.tokens.shape.shutter.dp
+    val pulse = remember { Animatable(1f) }
+    LaunchedEffect(state.shutterPresses) {
+        if (state.shutterPresses == 0 || video) return@LaunchedEffect
+        pulse.animateTo(0.86f, tween(s.motion.fastMs))
+        pulse.animateTo(1f, s.medium())
+    }
+    val coreColor by animateColorAsState(if (video) s.record else Color.White, s.medium(), label = "core")
+    val coreSize by animateDpAsState(if (recording) 28.dp else size - 16.dp, s.medium(), label = "coreSize")
+    val coreRadius by animateDpAsState(if (recording) 6.dp else size, s.medium(), label = "coreRadius")
+    val description = stringResource(
+        when {
+            recording -> R.string.ui_stop_recording
+            video -> R.string.ui_start_recording
+            else -> R.string.ui_take_photo
+        }
+    )
+    val spin = rememberInfiniteTransition(label = "busy")
+    val sweep by spin.animateFloat(0f, 360f, infiniteRepeatable(tween(900, easing = LinearEasing)), label = "sweep")
+    val ring = s.tokens.shape.shutterRing.dp
+    val videoRing = Brush.sweepGradient(listOf(Color(0xFFFF3D60), Color(0xFFFF8A4C), Color(0xFFFF3D60)))
+    val ringBrush = if (s.glass) Brush.linearGradient(listOf(Color.White, Color.White)) else if (video) videoRing else s.accentBrush
+    Box(
+        Modifier
+            .size(size)
+            .semantics { contentDescription = description }
+            .pressable(state.shutterEnabled || recording, onClick = onClick)
+            .graphicsLayer { alpha = if (state.shutterEnabled || recording) 1f else .5f }
+            .drawBehind {
+                val w = ring.toPx()
+                drawCircle(ringBrush, radius = this.size.minDimension / 2 - w / 2, style = Stroke(w))
+                if (busy) {
+                    drawArc(
+                        s.accent, sweep, 90f, false,
+                        topLeft = Offset(w / 2, w / 2), size = Size(this.size.width - w, this.size.height - w),
+                        style = Stroke(w * 1.2f),
+                    )
+                }
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier
+                .size(coreSize)
+                .graphicsLayer { scaleX = pulse.value; scaleY = pulse.value }
+                .clip(RoundedCornerShape(coreRadius))
+                .background(coreColor)
+        )
+    }
+}
+
+@Composable
+private fun Thumb(state: CameraUiState, enabled: Boolean, onClick: () -> Unit) {
+    val s = skin
+    val context = LocalContext.current
+    val bitmap by produceState<Bitmap?>(null, state.galleryUri) {
+        val uri = state.galleryUri ?: run { value = null; return@produceState }
+        value = runCatching {
+            val request = ImageRequest.Builder(context).data(uri).size(144)
+                .decoderFactory(VideoFrameDecoder.Factory()).build()
+            SingletonImageLoader.get(context).execute(request).image?.toBitmap()
+        }.getOrNull()
+    }
+    val pop = remember { Animatable(1f) }
+    LaunchedEffect(state.captures) {
+        if (state.captures == 0) return@LaunchedEffect
+        pop.snapTo(0.4f)
+        pop.animateTo(1f, s.bouncy())
+    }
+    val shape = if (s.glass) RoundedCornerShape(12.dp) else CircleShape
+    Box(
+        Modifier
+            .size(48.dp)
+            .semantics { contentDescription = context.getString(R.string.gallery_button_description) }
+            .pressable(enabled, onClick = onClick)
+            .uprightGlyph(LocalGlyphRotation.current)
+            .graphicsLayer { scaleX = pop.value; scaleY = pop.value }
+            .clip(shape)
+            .background(s.chip)
+            .then(if (s.glass) Modifier.border(2.dp, s.stroke, shape) else Modifier.border(2.dp, s.accentBrush, shape)),
+        contentAlignment = Alignment.Center,
+    ) {
+        val b = bitmap
+        if (b != null && !state.galleryLocked) {
+            Image(b.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        } else {
+            Glyph(if (state.galleryLocked) Glyphs.lock else Glyphs.image, s.fg, size = 22.dp)
+        }
+    }
+}
+
+// ---------------------------------------------------------------- looks strip
+
+@Composable
+private fun LooksStrip(state: CameraUiState, actions: CameraUiActions) {
+    val s = skin
+    val view = LocalView.current
+    LazyRow(
+        Modifier.fillMaxWidth().height(96.dp).selectableGroup(),
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        itemsIndexed(state.looks, key = { _, it -> it.id }) { i, look ->
+            val on = look.id == state.lookId
+            val shape = if (s.glass) RoundedCornerShape(s.radiusS) else CircleShape
+            Column(
+                Modifier
+                    .width(64.dp)
+                    .selectable(
+                        on, role = Role.RadioButton,
+                        interactionSource = remember { MutableInteractionSource() }, indication = null,
+                    ) { Haptics.segment(view); actions.selectLook(look.id) }
+                    .uprightGlyph(LocalGlyphRotation.current),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Box(
+                    Modifier
+                        .size(60.dp)
+                        .clip(shape)
+                        .background(lookSwatch(look.id, i))
+                        .border(2.dp, if (on) s.accentBrush else Brush.linearGradient(listOf(Color.Transparent, Color.Transparent)), shape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (look.id == LOOK_COLOR_MATCH) Glyph(Glyphs.palette, Color.White, size = 26.dp)
+                }
+                Spacer(Modifier.height(4.dp))
+                BasicText(
+                    look.name, style = TextStyle(color = if (on) s.fg else s.muted, fontSize = 11.sp, textAlign = TextAlign.Center),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+const val LOOK_COLOR_MATCH = "__color_match__"
+
+/** Keeps labels readable over a bright preview (contrast against white frames). */
+val LabelShadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = .75f), Offset(0f, 1f), 6f)
+
+/** A stand-in swatch per look (landscape-like gradient tinted by the look id). */
+private fun lookSwatch(id: String, index: Int): Brush {
+    if (id == "none") return Brush.verticalGradient(listOf(Color(0xFF6A8FB8), Color(0xFFC9B28D), Color(0xFF3B2D24)))
+    if (id == LOOK_COLOR_MATCH) return Brush.sweepGradient(listOf(Color(0xFFFF7A45), Color(0xFF4C8DFF), Color(0xFF34C759), Color(0xFFFF7A45)))
+    val hue = ((id.hashCode() and 0x7fffffff) % 360).toFloat()
+    val mono = id.contains("mono") || id.contains("noir") || id.contains("bw")
+    val top = if (mono) Color(0xFF9A9A9A) else Color.hsv(hue, .45f, .85f)
+    val bottom = if (mono) Color(0xFF2A2A2A) else Color.hsv((hue + 30f + index * 7) % 360f, .55f, .35f)
+    return Brush.verticalGradient(listOf(top, bottom))
+}
+
+@Composable
+fun SheetTitle(text: String) {
+    BasicText(
+        text, Modifier.padding(bottom = 12.dp),
+        style = TextStyle(color = skin.fg, fontSize = skin.tokens.type.titleSize.sp, fontWeight = FontWeight.SemiBold),
+    )
+}
+
+

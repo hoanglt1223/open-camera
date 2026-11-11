@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <!-- Appearance settings -->
+    <string name="appearance_header">Appearance</string>
+    <string name="ui_skin">Camera skin</string>
+    <string name="ui_skin_glass">Glass</string>
+    <string name="ui_skin_origin">Origin</string>
+    <string name="ui_blur">Glass blur</string>
+    <string name="ui_blur_summary">Blurred backdrop behind sheets. Weak devices use a lighter blur automatically.</string>
+    <string name="ui_skin_reset">Camera skin reset after an error</string>
+    <string name="ui_skin_legacy">Camera skins disabled after an error, using the classic layout</string>
+
+    <!-- Overlay -->
+    <string name="ui_mode_night">Night</string>
+    <string name="ui_mode_portrait">Portrait</string>
+    <string name="ui_mode_pro">Pro</string>
+    <string name="ui_hdr">HDR</string>
+    <string name="ui_motion_photo">Motion photo</string>
+    <string name="ui_timer">Timer</string>
+    <string name="ui_mic">Microphone</string>
+    <string name="ui_settings">Settings</string>
+    <string name="ui_all_settings">All settings</string>
+    <string name="ui_more_title">More modes</string>
+    <string name="ui_close">Close</string>
+    <string name="ui_take_photo">Take photo</string>
+    <string name="ui_start_recording">Start recording</string>
+    <string name="ui_stop_recording">Stop recording</string>
+    <string name="ui_pause_recording">Pause recording</string>
+    <string name="ui_resume_recording">Resume recording</string>
+    <string name="ui_zoom_chip">Zoom %1$s times</string>
+    <string name="ui_creative_clear">%1$s on, tap to turn off</string>
+    <string name="ui_pro_ev_locked">EV follows manual exposure</string>
+    <string name="ui_flash_off">Off</string>
+    <string name="ui_flash_auto">Auto</string>
+    <string name="ui_flash_on">On</string>
+    <string name="ui_flash_torch">Torch</string>
+    <string name="ui_flash_screen">Screen flash</string>
+    <string name="ui_row_aspect">Aspect ratio</string>
+    <string name="ui_row_effect">Effect</string>
+    <string name="ui_row_video_quality">Video quality</string>
+    <string name="ui_row_video_fps">Frame rate</string>
+    <string name="ui_row_video_dynamic_range">Dynamic range</string>
+    <string name="ui_row_creative">Creative mode</string>
+    <string name="ui_row_pre_shot">Pre-shot</string>
+    <string name="ui_row_grid">Grid</string>
+
+    <string-array name="ui_skin_entries" translatable="false">
+        <item>@string/ui_skin_glass</item>
+        <item>@string/ui_skin_origin</item>
+    </string-array>
+    <string-array name="ui_skin_values" translatable="false">
+        <item>glass</item>
+        <item>origin</item>
+    </string-array>
+</resources>

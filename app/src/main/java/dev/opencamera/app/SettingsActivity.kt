@@ -29,6 +29,7 @@ import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
+import dev.opencamera.app.ui.skin.SkinRepository
 import androidx.preference.SwitchPreference
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.MaterialToolbar
@@ -210,6 +211,13 @@ class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
                     }
             }
             shutterSound?.isVisible = !CameraSoundsUtils.mustPlaySounds
+
+            // Picking a skin by hand gives the skin layer another chance after a fallback.
+            findPreference<ListPreference>(SkinRepository.KEY_SKIN)?.onPreferenceChangeListener =
+                Preference.OnPreferenceChangeListener { _, _ ->
+                    SkinRepository.get(requireContext()).crashGuard.clear()
+                    true
+                }
 
             // Photo capture mode
             photoCaptureMode.onPreferenceChangeListener = photoCaptureModePreferenceChangeListener
