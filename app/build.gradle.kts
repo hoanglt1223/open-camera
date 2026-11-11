@@ -10,6 +10,7 @@ import org.lineageos.generatebp.models.Module
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.lineageos.generatebp)
 }
 
@@ -48,7 +49,7 @@ android {
 
         debug {
             // Append .dev to package name so we won't conflict with AOSP build.
-            applicationIdSuffix = ".dev"
+            applicationIdSuffix = providers.gradleProperty("openCamera.debugIdSuffix").getOrElse(".dev")
         }
     }
 
@@ -61,6 +62,10 @@ android {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
         }
+    }
+
+    buildFeatures {
+        compose = true
     }
 
     lint {
@@ -88,6 +93,10 @@ dependencies {
     implementation(libs.litert.gpu.api)
     implementation(libs.onnxruntime.android)
     implementation(libs.androidx.activity.ktx)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.camera.camera2)

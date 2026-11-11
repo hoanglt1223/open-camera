@@ -35,7 +35,11 @@ import dev.opencamera.app.models.PhotoOutputFormat
 import dev.opencamera.app.repositories.PreferencesRepository
 import dev.opencamera.app.viewmodels.CameraViewModel
 import dev.opencamera.profiles.LensChip
+import dev.opencamera.app.ui.overlay.ProUiState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -80,6 +84,16 @@ class ProModeUi(
     private var lensChip: LensChip? = null
 
     private val active get() = store.enabled && caps != null && configuration is CameraConfiguration.Photo
+
+    /** The skinned overlay draws the toggle and the dials; the View toggle and panel stay hidden. */
+    var externalUi = false
+        set(value) {
+            field = value
+            render()
+        }
+
+    private val _uiState = MutableStateFlow<ProUiState?>(null)
+    val uiState: StateFlow<ProUiState?> = _uiState.asStateFlow()
 
     fun attach() {
         mainLayout.addView(overlay, ConstraintLayout.LayoutParams(0, 0).apply {
@@ -158,7 +172,7 @@ class ProModeUi(
         render()
     }
 
-    private fun setEnabled(enabled: Boolean) {
+    fun setEnabled(enabled: Boolean) {
         store.enabled = enabled
         if (!enabled && afLocked) onAfLockChanged(false)
         applyOptions()
@@ -191,7 +205,7 @@ class ProModeUi(
 
     private fun render() {
         val photo = configuration is CameraConfiguration.Photo && caps != null
-        toggle.isVisible = photo
+        toggle.isVisible = photo && !externalUi
         toggle.background = GradientDrawable().apply {
             cornerRadius = 18 * density
             setColor(if (store.enabled) 0xFF26A69A.toInt() else 0x66000000)
@@ -201,7 +215,8 @@ class ProModeUi(
             activity.getString(R.string.pro_toggle_description),
             activity.getString(if (store.enabled) R.string.pro_state_on else R.string.pro_state_off),
         )
-        panel.isVisible = active
+        panel.isVisible = active && !externalUi
+        _uiState.value = ProUiState(store.enabled, photo, caps, settings, afLocked, formatLabel())
         overlay.isVisible = active
         if (!active) overlay.show(null)
         caps?.takeIf { active }?.let { panel.bind(it, settings, afLocked, formatLabel()) }

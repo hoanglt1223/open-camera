@@ -47,6 +47,19 @@ class LensSelectorLayout @JvmOverloads constructor(
     var onResetZoomRatioCallback: () -> Unit = {}
     var onLensChipCallback: (chip: LensChip, camera: Camera) -> Unit = { _, _ -> }
 
+    /** Called after the buttons or their selection changed; the skinned overlay mirrors them. */
+    var onButtonsChanged: (() -> Unit)? = null
+
+    /** Label (without the selection mark) and selection of each button, in order. */
+    fun snapshot(): List<Pair<String, Boolean>> = children.map {
+        val b = it as Button
+        b.text.toString().removeSuffix("\u00d7") to b.isSelected
+    }.toList()
+
+    fun clickAt(index: Int) {
+        getChildAt(index)?.performClick()
+    }
+
     /** Device profile zoom stops; replaces the per-camera buttons of [setCamera]. */
     fun setChips(activeCamera: Camera, chips: List<Pair<LensChip, Camera>>) {
         this.activeCamera = activeCamera
@@ -152,6 +165,11 @@ class LensSelectorLayout @JvmOverloads constructor(
     }
 
     private fun updateButtonsAttributes() {
+        updateButtonsAttributesInternal()
+        onButtonsChanged?.invoke()
+    }
+
+    private fun updateButtonsAttributesInternal() {
         if (buttonToChip.isNotEmpty()) {
             val active = LensPlan.activeChip(
                 buttonToChip.values.map { it.first }, activeCamera.cameraId, currentZoomRatio

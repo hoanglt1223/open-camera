@@ -29,3 +29,9 @@ Third-party libraries added for the extra capture modes (all Apache License 2.0)
   Used for document edge detection/rectification and panorama alignment.
 - AndroidX Media3 Transformer and Effect 1.10.0 - Apache-2.0. Used for post-processing
   (log grade LUT, gyro stabilization, short-video music).
+
+Camera UI skins (Glass, Origin):
+- Jetpack Compose UI, Foundation and Animation (Compose BOM 2025.06.01), Copyright The
+  Android Open Source Project, Apache License 2.0. Used for the skinned camera controls.
+- The skins use the system font; no font files are bundled. Glyphs are drawn for this
+  project; no third-party icons, logos or brand assets are used.

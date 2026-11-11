@@ -73,7 +73,8 @@ class ProOverlayView(context: Context) : View(context) {
         }
 
         f.meterText?.let {
-            canvas.drawText(it, margin, height - margin, textPaint)
+            // Top left, beside the histogram: the bottom of the preview holds the controls.
+            canvas.drawText(it, margin, margin + 56 * density + textPaint.textSize, textPaint)
         }
     }
 }

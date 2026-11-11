@@ -8,6 +8,28 @@
 
     <PreferenceCategory
         app:iconSpaceReserved="false"
+        app:title="@string/appearance_header">
+
+        <ListPreference
+            app:defaultValue="glass"
+            app:entries="@array/ui_skin_entries"
+            app:entryValues="@array/ui_skin_values"
+            app:iconSpaceReserved="false"
+            app:key="ui_skin"
+            app:title="@string/ui_skin"
+            app:useSimpleSummaryProvider="true" />
+
+        <SwitchPreference
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="ui_blur"
+            app:summary="@string/ui_blur_summary"
+            app:title="@string/ui_blur" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
         app:title="@string/general_header">
 
         <SwitchPreference
