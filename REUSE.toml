@@ -53,3 +53,8 @@ path = "app/libs/com/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "Google LLC (LiteRT); Microsoft Corporation (ONNX Runtime)"
 SPDX-License-Identifier = "Apache-2.0 AND MIT"
+[[annotations]]
+path = "pipeline/third_party/LibRaw/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2008-2025 LibRaw LLC"
+SPDX-License-Identifier = "LGPL-2.1-only OR CDDL-1.0"

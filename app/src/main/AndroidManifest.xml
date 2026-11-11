@@ -7,6 +7,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="dev.opencamera.app">
 
+    <!-- HeifWriter needs API 28; the editor only offers HEIF export there. -->
+    <uses-sdk tools:overrideLibrary="androidx.heifwriter" />
+
     <uses-feature android:name="android.hardware.camera.any" />
     <uses-feature
         android:name="android.hardware.camera.autofocus"
@@ -21,6 +24,10 @@
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
+    <!-- Editor: open photos shared without a read grant (Android 13+). -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- Editor: keep the GPS of the original when exporting with "keep all metadata". -->
+    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- Optional model downloads only; the camera works offline. -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -57,6 +64,21 @@
             android:name=".processing.ProcessingService"
             android:exported="false"
             android:foregroundServiceType="dataSync|mediaProcessing" />
+
+        <service
+            android:name=".develop.DevelopBatchService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|mediaProcessing" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.develop.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/develop_file_paths" />
+        </provider>
 
         <activity
             android:name=".CameraActivity"
@@ -195,6 +217,31 @@
                 <action android:name="android.intent.action.EDIT" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="image/jpeg" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".develop.DevelopActivity"
+            android:exported="true"
+            android:label="@string/develop_title"
+            android:theme="@style/Theme.Material3.Dark.NoActionBar"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden">
+            <intent-filter android:label="@string/develop_edit_with">
+                <action android:name="android.intent.action.EDIT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+            <intent-filter android:label="@string/develop_edit_with">
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+            <intent-filter android:label="@string/develop_edit_with">
+                <action android:name="android.intent.action.EDIT" />
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/octet-stream" />
             </intent-filter>
         </activity>
 
