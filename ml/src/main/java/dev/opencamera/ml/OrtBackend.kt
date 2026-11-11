@@ -29,6 +29,10 @@ class OrtBackend(private val threads: Int = 4) : InferenceBackend {
         val env = OrtEnvironment.getEnvironment()
         val options = OrtSession.SessionOptions().apply {
             setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
+            // Inputs change size per call (e.g. inpainting crops); the arena and memory patterns
+            // would otherwise keep the largest peak for the life of the session.
+            setCPUArenaAllocator(false)
+            setMemoryPatternOptimization(false)
             when (accelerator) {
                 // Default CPU provider (MLAS). The XNNPACK provider aborted the process on
                 // U2-Net-p on SM7225 (uncaught native exception), so it is not used.
@@ -40,9 +44,10 @@ class OrtBackend(private val threads: Int = 4) : InferenceBackend {
         val session = try {
             when (source) {
                 is ModelSource.Path -> env.createSession(source.file.path, options)
-                is ModelSource.Buffer -> env.createSession(source.buffer.duplicate().let { b ->
-                    ByteArray(b.remaining()).also { b.get(it) }
-                }, options)
+                is ModelSource.Buffer -> source.buffer.duplicate().let { b ->
+                    if (b.isDirect) env.createSession(b, options)
+                    else env.createSession(ByteArray(b.remaining()).also { b.get(it) }, options)
+                }
             }
         } catch (e: Throwable) {
             options.close()
@@ -65,12 +70,17 @@ class OrtBackend(private val threads: Int = 4) : InferenceBackend {
             (session.inputInfo[name]?.info as? TensorInfo)?.type == OnnxJavaType.UINT8
         }
 
+        private val byteInputs = arrayOfNulls<ByteBuffer>(inputNames.size)
+
         override fun run(inputs: List<Tensor>): List<Tensor> {
             require(inputs.size == inputNames.size) { "Model takes ${inputNames.size} inputs, got ${inputs.size}" }
             val tensors = inputs.mapIndexed { i, t ->
                 val shape = t.shape.map { it.toLong() }.toLongArray()
                 inputNames[i] to if (uint8Inputs[i]) {
-                    val bytes = ByteBuffer.allocateDirect(t.size).order(ByteOrder.nativeOrder())
+                    val bytes = byteInputs[i]?.takeIf { it.capacity() >= t.size }
+                        ?: ByteBuffer.allocateDirect(t.size).order(ByteOrder.nativeOrder()).also { byteInputs[i] = it }
+                    bytes.clear()
+                    bytes.limit(t.size)
                     for (v in t.data) bytes.put((v + 0.5f).toInt().coerceIn(0, 255).toByte())
                     bytes.rewind()
                     OnnxTensor.createTensor(env, bytes, shape, OnnxJavaType.UINT8)

@@ -74,7 +74,9 @@ class LookSurfaceProcessor : SurfaceProcessor {
             EGL14.eglMakeCurrent(display, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_CONTEXT)
             EGL14.eglDestroySurface(display, pbuffer)
             EGL14.eglDestroyContext(display, context)
-            EGL14.eglTerminate(display)
+            // The default display is shared by every GL user in the process; terminating it here
+            // would invalidate the editor's contexts.
+            EGL14.eglReleaseThread()
             thread.quitSafely()
         }
     }

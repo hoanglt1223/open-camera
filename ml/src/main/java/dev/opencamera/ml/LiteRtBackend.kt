@@ -33,8 +33,7 @@ class LiteRtBackend(private val threads: Int = 4) : InferenceBackend {
         when (accelerator) {
             Accelerator.CPU -> options.setNumThreads(threads).setUseXNNPACK(true)
             Accelerator.GPU -> {
-                val compat = CompatibilityList()
-                delegate = GpuDelegate(compat.bestOptionsForThisDevice)
+                delegate = GpuDelegate(CompatibilityList().use { it.bestOptionsForThisDevice })
                 options.addDelegate(delegate)
             }
             Accelerator.NNAPI -> {
@@ -59,6 +58,17 @@ class LiteRtBackend(private val threads: Int = 4) : InferenceBackend {
         private val delegate: Delegate?,
         override val accelerator: Accelerator,
     ) : InferenceSession {
+        private val inCache = HashMap<Int, ByteBuffer>()
+        private val outCache = HashMap<Int, ByteBuffer>()
+
+        private fun buffer(cache: HashMap<Int, ByteBuffer>, i: Int, bytes: Int): ByteBuffer {
+            val b = cache[i]?.takeIf { it.capacity() >= bytes }
+                ?: ByteBuffer.allocateDirect(bytes).order(ByteOrder.nativeOrder()).also { cache[i] = it }
+            b.clear()
+            b.limit(bytes)
+            return b
+        }
+
         override fun run(inputs: List<Tensor>): List<Tensor> {
             require(inputs.size == interpreter.inputTensorCount) {
                 "Model takes ${interpreter.inputTensorCount} inputs, got ${inputs.size}"
@@ -71,11 +81,11 @@ class LiteRtBackend(private val threads: Int = 4) : InferenceBackend {
                 }
             }
             if (resized) interpreter.allocateTensors()
-            val inBuffers = inputs.mapIndexed { i, t -> encode(interpreter.getInputTensor(i), t) }.toTypedArray<Any>()
+            val inBuffers = inputs.mapIndexed { i, t -> encode(interpreter.getInputTensor(i), t, buffer(inCache, i, interpreter.getInputTensor(i).numBytes())) }.toTypedArray<Any>()
             val outBuffers = HashMap<Int, Any>()
             for (i in 0 until interpreter.outputTensorCount) {
                 val o = interpreter.getOutputTensor(i)
-                outBuffers[i] = ByteBuffer.allocateDirect(o.numBytes()).order(ByteOrder.nativeOrder())
+                outBuffers[i] = buffer(outCache, i, o.numBytes())
             }
             interpreter.runForMultipleInputsOutputs(inBuffers, outBuffers)
             return (0 until interpreter.outputTensorCount).map { i ->
@@ -88,8 +98,7 @@ class LiteRtBackend(private val threads: Int = 4) : InferenceBackend {
             (delegate as? AutoCloseable)?.close()
         }
 
-        private fun encode(spec: org.tensorflow.lite.Tensor, t: Tensor): ByteBuffer {
-            val buf = ByteBuffer.allocateDirect(spec.numBytes()).order(ByteOrder.nativeOrder())
+        private fun encode(spec: org.tensorflow.lite.Tensor, t: Tensor, buf: ByteBuffer): ByteBuffer {
             when (spec.dataType()) {
                 DataType.FLOAT32 -> buf.asFloatBuffer().put(t.data)
                 DataType.UINT8, DataType.INT8 -> {
