@@ -281,10 +281,12 @@ class ColorMatchActivity : AppCompatActivity() {
     }
 
     private fun export(uri: Uri) {
-        val text = CubeWriter.write(bakedLut(), lookName.text?.toString().orEmpty().ifEmpty { "Colour match" })
+        val lut = bakedLut()
+        val name = lookName.text?.toString().orEmpty().ifEmpty { "Colour match" }
         lifecycleScope.launch {
             val ok = withContext(Dispatchers.IO) {
                 runCatching {
+                    val text = CubeWriter.write(lut, name)
                     contentResolver.openOutputStream(uri, "wt")?.use { it.write(text.toByteArray()) } ?: error("No stream")
                 }.onFailure { Log.e(TAG, "Export failed", it) }.isSuccess
             }

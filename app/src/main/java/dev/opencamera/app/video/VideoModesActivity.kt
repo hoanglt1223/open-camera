@@ -106,6 +106,15 @@ class VideoModesActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_MODE = "mode"
         private const val TAG = "VideoModes"
+        private const val OPTION_BIND_DEBOUNCE_MS = 200L
+
+        @Volatile
+        private var hevcCache: Boolean? = null
+        private val highSpeedCache = java.util.concurrent.ConcurrentHashMap<String, List<HighSpeedConfig>>()
+
+        /** Camera characteristics read once per camera id (binder call). */
+        private fun highSpeedConfigs(context: android.content.Context, cameraId: String): List<HighSpeedConfig> =
+            highSpeedCache.getOrPut(cameraId) { HighSpeedSession.configs(context, cameraId) }
         private const val DOC_DETECT_INTERVAL_NS = 300_000_000L
         private const val MAX_PAGE_SIDE = 2480
     }
@@ -141,7 +150,7 @@ class VideoModesActivity : AppCompatActivity() {
     private val gyro by lazy {
         GyroSensor(this) { t, x, y, z ->
             gyroPath.add(t, x, y, z)
-            sweepGuide.onGyro(t, x, y)
+            synchronized(sweepGuide) { sweepGuide.onGyro(t, x, y) }
         }
     }
 
@@ -221,6 +230,7 @@ class VideoModesActivity : AppCompatActivity() {
             }
             setupCamera()
         }
+        if (hevcCache == null) lifecycleScope.launch(Dispatchers.Default) { hevcAvailable() }
     }
 
     override fun onResume() {
@@ -238,7 +248,7 @@ class VideoModesActivity : AppCompatActivity() {
             directHighSpeedPaused = false
             lifecycleScope.launch {
                 delay(500)
-                if (mode == VideoMode.SLOW_MOTION) bindMode()
+                if (mode == VideoMode.SLOW_MOTION) requestBind()
             }
         }
     }
@@ -271,12 +281,20 @@ class VideoModesActivity : AppCompatActivity() {
 
     // --- Camera setup and binding ---
 
-    private fun setupCamera() {
+    /** Probes the camera off the main thread (recorder capabilities, codecs), then binds. */
+    private suspend fun setupCamera() {
         val p = provider ?: return
+        bindJob?.cancel()
         val info = VideoCapsProbe.cameraInfo(p, back)
             ?: VideoCapsProbe.cameraInfo(p, !back)?.also { back = !back }
-        facts = info?.let { FeatureGuard.attempt(TAG, "probe") { VideoCapsProbe.facts(it) } }
-        val c = VideoCapsProbe.caps(this, p, facts)
+        val app = applicationContext
+        val (f, c) = withContext(Dispatchers.Default) {
+            val f = info?.let { FeatureGuard.attempt(TAG, "probe") { VideoCapsProbe.facts(it) } }
+            f?.cameraId?.let { highSpeedConfigs(app, it) }
+            hevcAvailable()
+            f to VideoCapsProbe.caps(app, p, f)
+        }
+        facts = f
         caps = c
         modes = VideoModes.supported(c).filter { it !in failedModes }
         if (modes.isEmpty()) {
@@ -286,7 +304,23 @@ class VideoModesActivity : AppCompatActivity() {
         }
         if (mode !in modes) mode = modes.first()
         buildModeRow()
+        kotlinx.coroutines.android.awaitFrame()
         bindMode()
+    }
+
+    private var bindJob: Job? = null
+
+    /**
+     * Binds in a coroutine of its own after the tap has drawn; quick option changes within
+     * [delayMs] collapse into one bind with the latest settings.
+     */
+    private fun requestBind(delayMs: Long = 0) {
+        bindJob?.cancel()
+        bindJob = lifecycleScope.launch {
+            delay(delayMs)
+            kotlinx.coroutines.android.awaitFrame()
+            bindMode()
+        }
     }
 
     private fun selector() = VideoCapsProbe.selector(back)
@@ -324,7 +358,8 @@ class VideoModesActivity : AppCompatActivity() {
         }
         mode = modes.first()
         buildModeRow()
-        bindMode()
+        // The next mode binds in a later frame, so a chain of failures never blocks one frame.
+        requestBind()
     }
 
     private fun resetModeState() {
@@ -344,11 +379,12 @@ class VideoModesActivity : AppCompatActivity() {
         statusText.text = ""
     }
 
-    private fun hevcAvailable() = runCatching {
+    /** Codec list scan (20-100 ms); done once per process, normally off the main thread. */
+    private fun hevcAvailable(): Boolean = hevcCache ?: runCatching {
         MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos.any { info ->
             info.isEncoder && info.supportedTypes.any { it.equals(MediaFormat.MIMETYPE_VIDEO_HEVC, true) }
         }
-    }.getOrDefault(false)
+    }.getOrDefault(false).also { hevcCache = it }
 
     private fun bitrateFor(qualityName: String?, fps: Int, level: BitrateLevel): Int {
         val base = when (qualityName) {
@@ -463,7 +499,7 @@ class VideoModesActivity : AppCompatActivity() {
     /** Camera2 constrained high-speed session; its open is async and drops the mode on failure. */
     private fun bindDirectHighSpeed(): Boolean {
         val id = facts?.cameraId ?: return false
-        val config = HighSpeedSession.configs(this, id).firstOrNull() ?: return false
+        val config = highSpeedConfigs(applicationContext, id).firstOrNull() ?: return false
         val s = FeatureGuard.attempt(TAG, "high speed session") { HighSpeedSession(applicationContext, id, config) }
             ?: return false
         highSpeed = s
@@ -676,10 +712,13 @@ class VideoModesActivity : AppCompatActivity() {
                 when (s) {
                     is TimeFreezeSession -> overlay.freezeLine = s.progress
                     is PanoramaSession -> {
-                        overlay.sweep = sweepGuide.sweptDeg / sweepGuide.maxSweepDeg
-                        overlay.pitchDeg = sweepGuide.pitchDeg
+                        val advice = synchronized(sweepGuide) {
+                            overlay.sweep = sweepGuide.sweptDeg / sweepGuide.maxSweepDeg
+                            overlay.pitchDeg = sweepGuide.pitchDeg
+                            sweepGuide.advice()
+                        }
                         statusText.text = getString(
-                            when (sweepGuide.advice()) {
+                            when (advice) {
                                 SweepGuide.Advice.TOO_HIGH -> R.string.video_modes_pano_lower
                                 SweepGuide.Advice.TOO_LOW -> R.string.video_modes_pano_raise
                                 else -> R.string.video_modes_pano_turn
@@ -889,7 +928,7 @@ class VideoModesActivity : AppCompatActivity() {
                 { retime(uri, (slowPlan as SlowMotionPlan.Retimed).factor) }
             }
             mode == VideoMode.PRO_VIDEO && (activeAttempt?.log == true || useGyroEis()) -> {
-                { runPost(uri, proJob(), "VID_POST") }
+                { runPost(uri, withContext(Dispatchers.IO) { proJob() }, "VID_POST") }
             }
             mode == VideoMode.SHORT_VIDEO && musicUri != null -> {
                 { runPost(uri, VideoPostProcessor.Job(music = musicUri, keepOriginalAudio = settings.keepOriginalAudio), "SHORT_MUSIC") }
@@ -919,6 +958,7 @@ class VideoModesActivity : AppCompatActivity() {
         }
     }
 
+    /** Blocking: parses the look LUT; call off the main thread. */
     private fun proJob(): VideoPostProcessor.Job {
         val cube = if (activeAttempt?.log == true) {
             val prefs = LookPreferences(this)
@@ -994,7 +1034,7 @@ class VideoModesActivity : AppCompatActivity() {
                 settings.slowShutterSeconds * 1000L,
             )
             VideoMode.PANORAMA -> {
-                sweepGuide.reset()
+                synchronized(sweepGuide) { sweepGuide.reset() }
                 PanoramaSession(sweepGuide, focal)
             }
             else -> error("no frame session for $mode")
@@ -1029,7 +1069,7 @@ class VideoModesActivity : AppCompatActivity() {
                 if (m != mode) {
                     mode = m
                     buildModeRow()
-                    bindMode()
+                    requestBind()
                 }
             })
         }
@@ -1042,7 +1082,7 @@ class VideoModesActivity : AppCompatActivity() {
         fun opt(text: String, action: () -> Unit) = optionsRow.addView(chip(text, false, action))
         fun update(rebind: Boolean, change: (VideoSettings) -> VideoSettings) {
             settings = change(settings).also { it.save(this) }
-            if (rebind) bindMode() else refreshOptions()
+            if (rebind) requestBind(OPTION_BIND_DEBOUNCE_MS) else refreshOptions()
         }
         fun <T> next(list: List<T>, current: T) = list[(list.indexOf(current) + 1).mod(list.size)]
 
@@ -1212,7 +1252,7 @@ class VideoModesActivity : AppCompatActivity() {
         flipButton = chip(getString(R.string.video_modes_flip), false) {
             if (busy || recording != null || session != null) return@chip
             back = !back
-            setupCamera()
+            lifecycleScope.launch { setupCamera() }
         }
         shutter = Button(this).apply {
             setOnClickListener { onShutter() }
