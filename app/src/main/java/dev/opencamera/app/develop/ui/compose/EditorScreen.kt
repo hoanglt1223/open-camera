@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -114,7 +115,7 @@ fun EditorScreen(a: DevelopActivity) {
         val dock: @Composable () -> Unit = { Dock(a, onExport = { sheet = Sheet.EXPORT }) }
         if (wide) {
             Row(Modifier.fillMaxSize().safeDrawingPadding()) {
-                Column(Modifier.width(56.dp).fillMaxHeight(), verticalArrangement = Arrangement.Center) { top() }
+                Column(Modifier.width(80.dp).fillMaxHeight().verticalScroll(androidx.compose.foundation.rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) { top() }
                 PhotoArea(a, Modifier.weight(1f).fillMaxHeight().padding(if (s.glass) 0.dp else 8.dp))
                 Column(Modifier.width(292.dp).fillMaxHeight().background(if (s.glass) s.surface else Color(0xFF121214)), verticalArrangement = Arrangement.Bottom) { dock() }
             }
@@ -167,7 +168,6 @@ private fun TopBar(a: DevelopActivity, vertical: Boolean, onSheet: (Sheet) -> Un
         EditorIcon(EditorGlyphs.redo, stringResource(R.string.develop_redo), enabled = ui.canRedo.value, filled = s.glass) {
             a.history.redo()?.let { a.onStackChanged(true) }
         }
-        if (ui.raw.value) RawBadge()
         EditorIcon(EditorGlyphs.history, stringResource(R.string.editor_history), filled = s.glass) { onSheet(Sheet.HISTORY) }
         EditorIcon(EditorGlyphs.compare, stringResource(R.string.editor_compare), filled = s.glass, onHold = { on -> if (on) a.startHold() else a.endHold() }) {
             a.toggleCompare()
@@ -217,7 +217,7 @@ private fun DoneButton(onClick: () -> Unit) {
             .padding(horizontal = 14.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center,
     ) {
-        BasicText(stringResource(R.string.editor_done), style = TextStyle(color = Color(0xFF111111), fontSize = 14.sp, fontWeight = FontWeight.Bold))
+        BasicText(stringResource(R.string.editor_done), maxLines = 1, softWrap = false, style = TextStyle(color = Color(0xFF111111), fontSize = 14.sp, fontWeight = FontWeight.Bold))
     }
 }
 
@@ -251,6 +251,7 @@ private fun PhotoArea(a: DevelopActivity, modifier: Modifier) {
                 for (t in taps) drawCircle(s.accent, 10.dp.toPx(), pt(t), style = Stroke(2.dp.toPx()))
             }
         }
+        if (ui.raw.value) Box(Modifier.align(Alignment.BottomStart).padding(12.dp)) { RawBadge() }
         if (ui.showingOriginal.value) {
             BasicText(
                 stringResource(R.string.editor_original),
@@ -376,7 +377,7 @@ internal fun ParamDial(a: DevelopActivity, key: String, label: String = paramLab
     val step = dialStep(key)
     RulerDial(
         label = label, value = a.stack[key], min = p.min, max = p.max, step = step, default = p.default,
-        format = { formatValue(it, step, if (key == Params.CROP_ANGLE) "°" else "") },
+        format = { formatValue(it, step, if (key == Params.CROP_ANGLE) "°" else "", signed = p.min < 0f) },
         onChange = { v -> a.change(set(a.stack, v), label, "slider-$key") },
         onCommit = { a.seal() },
     )

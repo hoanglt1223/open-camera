@@ -27,14 +27,11 @@ class RetouchDevelopTool(val retouch: RetouchTool) : DevelopTool {
     override fun label(context: Context): String = context.getString(RetouchTools.labelOf(id))
 
     override fun apply(image: Bitmap, step: ToolStep, scale: Float, assets: File): Bitmap {
-        val params = RetouchTools.params(step) ?: return image
-        // Tools may edit in place; the registry already hands over a private copy.
-        return try {
-            retouch.apply(image, params).bitmap
-        } catch (e: Exception) {
-            Log.w("RetouchDevelopTool", "$id skipped: ${e.message}")
-            image
-        }
+        val params = RetouchTools.params(step) ?: throw IllegalArgumentException("bad $id params")
+        // Tools edit in place; decoded export sources are immutable (or hardware) bitmaps.
+        val src = if (image.isMutable && image.config == Bitmap.Config.ARGB_8888) image else image.copy(Bitmap.Config.ARGB_8888, true)
+        // Failures propagate so ToolRegistry skips this step and reports it to the user.
+        return retouch.apply(src, params).bitmap.also { Log.d("RetouchDevelopTool", "$id applied") }
     }
 }
 

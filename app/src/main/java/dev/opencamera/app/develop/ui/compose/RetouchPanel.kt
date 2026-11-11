@@ -318,7 +318,7 @@ private fun ReshapeControls(a: DevelopActivity, tool: RetouchTool, values: andro
 internal fun RetouchGridOverlay(grid: RetouchGrid) {
     val s = skin
     val view = LocalView.current
-    Column(Modifier.fillMaxSize().background(Color(0xF0000000)).safeDrawingPadding().pointerInput(Unit) { detectTapGestures { } }) {
+    Column(Modifier.fillMaxSize().background(Color.Black).safeDrawingPadding().pointerInput(Unit) { detectTapGestures { } }) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             BasicText(stringResource(if (grid.zoomed < 0) R.string.editor_results else R.string.editor_before_after), Modifier.weight(1f),
                 style = TextStyle(color = s.fg, fontSize = 17.sp, fontWeight = FontWeight.SemiBold))

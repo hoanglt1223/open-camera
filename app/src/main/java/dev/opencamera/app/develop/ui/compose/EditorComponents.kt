@@ -277,13 +277,13 @@ fun RulerDial(
 }
 
 /** Formats a slider value as the editor shows it (signed, unit per parameter). */
-fun formatValue(v: Float, step: Float, unit: String = ""): String {
+fun formatValue(v: Float, step: Float, unit: String = "", signed: Boolean = true): String {
     val text = when {
         step < 0.05f -> String.format(java.util.Locale.getDefault(), "%.2f", v)
         step < 0.5f -> String.format(java.util.Locale.getDefault(), "%.1f", v)
         else -> v.roundToInt().toString()
     }
-    return (if (v > 0f && !text.startsWith("+")) "+$text" else text) + unit
+    return (if (signed && v > 0f && !text.startsWith("+")) "+$text" else text) + unit
 }
 
 /** Dock title + small action row used by panels. */

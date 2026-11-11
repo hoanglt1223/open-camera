@@ -33,7 +33,7 @@ interface DevelopTool {
     /**
      * Applies [step] to [image] (ARGB_8888, upright, uncropped). [scale] is image width / the
      * full source width, so pixel-sized params can be scaled; [assets] holds the step's files.
-     * Must not throw for bad params: return the input unchanged instead.
+     * May throw; [ToolRegistry.applyAll] then skips the step and reports it.
      */
     fun apply(image: Bitmap, step: ToolStep, scale: Float, assets: File): Bitmap
 
