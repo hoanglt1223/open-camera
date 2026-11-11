@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M5,5H19V19H5Z M9.67,5V19 M14.33,5V19 M5,9.67H19 M5,14.33H19"
+        android:strokeWidth="1.6"
+        android:strokeColor="@android:color/white"
+        android:fillColor="#00000000" />
+</vector>

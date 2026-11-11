@@ -164,7 +164,8 @@ import dev.opencamera.app.ui.looks.LookPickerView
 import dev.opencamera.app.modes.ColorMatchActivity
 import dev.opencamera.app.modes.CreativeMode
 import dev.opencamera.app.ui.views.LensSelectorLayout
-import dev.opencamera.app.ui.views.LevelerView
+import dev.opencamera.app.ui.assist.AssistController
+import dev.opencamera.app.ui.assist.AssistOverlayView
 import dev.opencamera.app.ui.views.PreviewBlurView
 import dev.opencamera.app.ui.views.VerticalSlider
 import dev.opencamera.app.utils.ExifUtils
@@ -202,7 +203,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     private val gridView by lazy { findViewById<GridView>(R.id.gridView) }
     private val islandView by lazy { findViewById<IslandView>(R.id.islandView) }
     private val lensSelectorLayout by lazy { findViewById<LensSelectorLayout>(R.id.lensSelectorLayout) }
-    private val levelerView by lazy { findViewById<LevelerView>(R.id.levelerView) }
+    private val assistOverlay by lazy { findViewById<AssistOverlayView>(R.id.assistOverlay) }
+    private lateinit var assistController: AssistController
     private val mainLayout by lazy { findViewById<ConstraintLayout>(R.id.mainLayout) }
     private val micButton by lazy { findViewById<Button>(R.id.micButton) }
     private val multiFrameButton by lazy { findViewById<Button>(R.id.multiFrameButton) }
@@ -724,6 +726,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     }
 
     override fun onDestroy() {
+        viewModel.multiFrame.previewZoomCompensation = null
+
         // Detach CameraController from ScreenFlashView
         screenFlashView.setController(null)
 
@@ -1088,6 +1092,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                         GridMode.ON_3 -> R.drawable.ic_grid_3x3
                         GridMode.ON_4 -> R.drawable.ic_grid_4x4
                         GridMode.ON_GOLDEN_RATIO -> R.drawable.ic_grid_goldenratio
+                        GridMode.DIAGONAL -> R.drawable.ic_grid_diagonal
+                        GridMode.SQUARE -> R.drawable.ic_grid_square
                     },
                     0,
                     0
@@ -1098,6 +1104,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                         GridMode.ON_3 -> R.string.grid_on_3
                         GridMode.ON_4 -> R.string.grid_on_4
                         GridMode.ON_GOLDEN_RATIO -> R.string.grid_on_goldenratio
+                        GridMode.DIAGONAL -> R.string.grid_on_diagonal
+                        GridMode.SQUARE -> R.string.grid_on_square
                     }
                 )
             }
@@ -1234,7 +1242,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
         launch {
             viewModel.levelerEnabled.collectLatest { levelerEnabled ->
-                levelerView.isVisible = levelerEnabled
+                assistController.levelEnabled = levelerEnabled
             }
         }
 
@@ -2596,10 +2604,22 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     }
 
     private fun setupAi() {
+        assistController = AssistController(this, assistOverlay) {
+            viewModel.cameraMode.value == CameraMode.PHOTO
+        }
+        lifecycle.addObserver(assistController)
+        viewModel.multiFrame.previewZoomCompensation = { f ->
+            viewFinder.scaleX = f
+            viewFinder.scaleY = f
+        }
         aiController = AiController(
             this, viewFinder, aiBokehView, aiCompositionOverlay, aiSceneChip,
             isPhotoMode = { viewModel.cameraMode.value == CameraMode.PHOTO && !viewModel.inSingleCaptureMode.value },
             onScenePreset = ::applyScenePreset,
+            hintsWanted = { assistController.showHints },
+            onComposition = { s, top ->
+                assistController.onComposition(s?.subjectX, s?.subjectY, s?.targetX, s?.targetY, top)
+            },
         )
         aiController.start()
         viewModel.lookController.captureOps = { aiController.captureOps() }

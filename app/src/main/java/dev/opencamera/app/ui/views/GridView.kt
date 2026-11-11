@@ -44,20 +44,12 @@ class GridView(context: Context?, attributeSet: AttributeSet?) : View(context, a
 
         val previewView = previewView ?: return
 
-        val size = when (mode) {
-            GridMode.OFF -> 0
-            GridMode.ON_3 -> 3
-            GridMode.ON_4 -> 4
-            GridMode.ON_GOLDEN_RATIO -> 3
-        }
+        if (mode == GridMode.OFF) return
 
-        if (size <= 0) {
-            return
-        }
-
+        // No surface yet (camera rebinding): skip this frame instead of crashing.
         val surface = previewView.children.firstOrNull {
             it is TextureView || it is SurfaceView
-        } ?: throw Exception("Unable to get preview image surface!")
+        } ?: return
 
         val width = (surface.scaleX * surface.width).roundToInt().coerceIn(0, previewView.width)
         val height = (surface.scaleY * surface.height).roundToInt().coerceIn(0, previewView.height)
@@ -65,31 +57,8 @@ class GridView(context: Context?, attributeSet: AttributeSet?) : View(context, a
         val wOffset = (this.width - width) / 2F
         val hOffset = (this.height - height) / 2F
 
-        val unitDiv = if (mode == GridMode.ON_GOLDEN_RATIO) GOLDEN_RATIO_UNIT else size.toFloat()
-
-        val widthSection = width / unitDiv
-        val heightSection = height / unitDiv
-
-        for (i in size - 1 downTo 1) {
-            val position =
-                if (mode == GridMode.ON_GOLDEN_RATIO && i == 2) 1 + GOLDEN_RATIO
-                else i.toFloat()
-
-            canvas.drawLine(
-                (widthSection * position) + wOffset, hOffset,
-                (widthSection * position) + wOffset, height + hOffset,
-                paint
-            )
-            canvas.drawLine(
-                wOffset, (heightSection * position) + hOffset,
-                width + wOffset, (heightSection * position) + hOffset,
-                paint
-            )
+        for (l in GridGeometry.lines(mode, width.toFloat(), height.toFloat())) {
+            canvas.drawLine(l[0] + wOffset, l[1] + hOffset, l[2] + wOffset, l[3] + hOffset, paint)
         }
-    }
-
-    companion object {
-        private const val GOLDEN_RATIO = 0.618f
-        private const val GOLDEN_RATIO_UNIT = 2 + GOLDEN_RATIO
     }
 }

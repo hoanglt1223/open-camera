@@ -95,8 +95,8 @@
         app:layout_constraintStart_toStartOf="@+id/viewFinder"
         app:layout_constraintTop_toTopOf="@+id/viewFinder" />
 
-    <dev.opencamera.app.ui.views.LevelerView
-        android:id="@+id/levelerView"
+    <dev.opencamera.app.ui.assist.AssistOverlayView
+        android:id="@+id/assistOverlay"
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="@+id/viewFinder"

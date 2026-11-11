@@ -107,6 +107,8 @@ class PreferencesRepository(
                 GridMode.ON_3 -> "on_3"
                 GridMode.ON_4 -> "on_4"
                 GridMode.ON_GOLDEN_RATIO -> "on_goldenratio"
+                GridMode.DIAGONAL -> "diagonal"
+                GridMode.SQUARE -> "square"
             }
         },
     ).asPreferenceHolder()

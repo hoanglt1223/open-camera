@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="grid_on_diagonal">GRID ╳</string>
+    <string name="grid_on_square">GRID □</string>
+    <string name="grid_setting_title">Grid</string>
+    <string-array name="grid_mode_entries">
+        <item>Off</item>
+        <item>Rule of thirds (3×3)</item>
+        <item>4×4</item>
+        <item>Golden ratio</item>
+        <item>Diagonal</item>
+        <item>Square</item>
+    </string-array>
+    <string-array name="grid_mode_values" translatable="false">
+        <item>off</item>
+        <item>on_3</item>
+        <item>on_4</item>
+        <item>on_goldenratio</item>
+        <item>diagonal</item>
+        <item>square</item>
+    </string-array>
+    <string name="composition_hints_title">Composition hints</string>
+    <string name="composition_hints_summary">Subtle arrows toward a better framing: subject on a thirds point, straight horizon, headroom. Tap a hint to hide hints until the app restarts</string>
+</resources>

@@ -38,6 +38,22 @@
             app:summary="@string/leveler_summary"
             app:title="@string/leveler_title" />
 
+        <ListPreference
+            app:defaultValue="off"
+            app:entries="@array/grid_mode_entries"
+            app:entryValues="@array/grid_mode_values"
+            app:iconSpaceReserved="false"
+            app:key="last_grid_mode"
+            app:title="@string/grid_setting_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <SwitchPreference
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:key="assist_composition_hints"
+            app:summary="@string/composition_hints_summary"
+            app:title="@string/composition_hints_title" />
+
         <Preference
             app:fragment="dev.opencamera.app.SettingsActivity$GesturesSettingsFragment"
             app:iconSpaceReserved="false"
