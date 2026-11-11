@@ -76,6 +76,7 @@ import coil3.video.VideoFrameDecoder
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.guava.await
@@ -554,6 +555,9 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         lensSelectorLayout.onResetZoomRatioCallback = {
             viewModel.resetZoom()
         }
+        lensSelectorLayout.onLensChipCallback = { chip, camera ->
+            viewModel.selectLensChip(chip, camera)
+        }
 
         // Set capture preview callback
         capturePreviewLayout.onChoiceCallback = { input ->
@@ -761,13 +765,19 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         }
 
         launch {
-            viewModel.lenses.collectLatest { (activeCamera, availableCameras) ->
-                // Update lens selector
+            combine(viewModel.lenses, viewModel.lensChips, ::Pair).collectLatest {
+                    (lenses, chips) ->
+                val (activeCamera, availableCameras) = lenses
+                // Update lens selector: device profile stops when available, else the camera list
                 activeCamera?.let {
-                    lensSelectorLayout.setCamera(
-                        it,
-                        availableCameras,
-                    )
+                    if (chips.isNotEmpty() && chips.any { (_, camera) -> camera == it }) {
+                        lensSelectorLayout.setChips(it, chips)
+                    } else {
+                        lensSelectorLayout.setCamera(
+                            it,
+                            availableCameras,
+                        )
+                    }
                 }
             }
         }

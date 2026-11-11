@@ -20,6 +20,8 @@ import dev.opencamera.app.ext.smoothRotate
 import dev.opencamera.app.models.Camera
 import dev.opencamera.app.models.CameraState
 import dev.opencamera.app.models.Rotation
+import dev.opencamera.profiles.LensChip
+import dev.opencamera.profiles.LensPlan
 import java.util.Locale
 
 class LensSelectorLayout @JvmOverloads constructor(
@@ -36,21 +38,47 @@ class LensSelectorLayout @JvmOverloads constructor(
 
     private val buttonToCamera = mutableMapOf<Button, Camera>()
     private val buttonToZoomRatio = mutableMapOf<Button, Float>()
+    private val buttonToChip = mutableMapOf<Button, Pair<LensChip, Camera>>()
 
     private var screenRotation = Rotation.ROTATION_0
 
     var onCameraChangeCallback: (camera: Camera) -> Unit = {}
     var onZoomRatioChangeCallback: (zoomRatio: Float) -> Unit = {}
     var onResetZoomRatioCallback: () -> Unit = {}
+    var onLensChipCallback: (chip: LensChip, camera: Camera) -> Unit = { _, _ -> }
 
-    fun setCamera(activeCamera: Camera, availableCameras: Collection<Camera>) {
+    /** Device profile zoom stops; replaces the per-camera buttons of [setCamera]. */
+    fun setChips(activeCamera: Camera, chips: List<Pair<LensChip, Camera>>) {
         this.activeCamera = activeCamera
+        clearButtons()
 
+        for (entry in chips) {
+            val button = inflateButton().apply {
+                setOnClickListener { view ->
+                    buttonToChip[view]?.let { (chip, camera) -> onLensChipCallback(chip, camera) }
+                }
+            }
+            addView(button)
+            buttonToChip[button] = entry
+            buttonToApproximateZoomRatio[button] = entry.first.ratio
+        }
+
+        updateButtonsAttributes()
+    }
+
+    private fun clearButtons() {
         removeAllViews()
         buttonToApproximateZoomRatio.clear()
 
         buttonToCamera.clear()
         buttonToZoomRatio.clear()
+        buttonToChip.clear()
+    }
+
+    fun setCamera(activeCamera: Camera, availableCameras: Collection<Camera>) {
+        this.activeCamera = activeCamera
+
+        clearButtons()
 
         usesLogicalZoomRatio = activeCamera.logicalZoomRatios.size > 1
 
@@ -124,7 +152,18 @@ class LensSelectorLayout @JvmOverloads constructor(
     }
 
     private fun updateButtonsAttributes() {
-        if (usesLogicalZoomRatio) {
+        if (buttonToChip.isNotEmpty()) {
+            val active = LensPlan.activeChip(
+                buttonToChip.values.map { it.first }, activeCamera.cameraId, currentZoomRatio
+            )
+            for ((button, entry) in buttonToChip) {
+                val selected = entry.first == active
+                button.isSelected = selected
+                val label = entry.first.label.removeSuffix("x")
+                button.text = if (selected) "$label\u00d7" else label
+                button.rotation = screenRotation.compensationValue.toFloat()
+            }
+        } else if (usesLogicalZoomRatio) {
             buttonToZoomRatio.asSequence().let {
                 val firstButton = it.first().key
                 val lastButton = it.last().key

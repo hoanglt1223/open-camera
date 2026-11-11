@@ -1,0 +1,92 @@
+/*
+ * SPDX-FileCopyrightText: Open Camera contributors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+// Builds build/generated/profiles-assets/profiles.bundle.json from open-camera-profiles.
+// Source, first match wins:
+//   -PopenCamera.profiles.dir=<path> or openCamera.profiles.dir in local.properties: a local checkout
+//   openCamera.profiles.version (gradle.properties): a pinned release tag, downloaded from
+//   openCamera.profiles.url (%s = tag) and cached in build/profiles-cache.
+// Without either the bundle is an empty array and the app relies on the scanned profile.
+// Groovy on purpose: Android lint crashes analysing applied Kotlin script plugins.
+
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.util.zip.ZipInputStream
+
+tasks.register("bundleDeviceProfiles") {
+    def localProperties = new Properties()
+    def localFile = rootProject.file("local.properties")
+    if (localFile.exists()) localFile.withInputStream { localProperties.load(it) }
+    def setting = { String name -> findProperty(name) ?: localProperties.getProperty(name) }
+
+    def profilesDir = setting("openCamera.profiles.dir")
+    def dataDir = profilesDir ? new File(rootProject.file(profilesDir), "data") : null
+    def version = setting("openCamera.profiles.version")
+    def url = setting("openCamera.profiles.url")
+    // Facts the app does not read at runtime; they stay in the profiles repository.
+    def dropped = ["provenance", "notes", "aliases", "year", "testedBuilds"] as Set
+    def outDir = layout.buildDirectory.dir("generated/profiles-assets")
+    def cacheDir = layout.buildDirectory.dir("profiles-cache")
+
+    if (dataDir != null) {
+        inputs.dir(dataDir).withPropertyName("profiles")
+    } else {
+        inputs.property("version", version ?: "")
+        inputs.property("url", url ?: "")
+    }
+    outputs.dir(outDir)
+
+    doLast {
+        def texts = []
+        if (dataDir != null) {
+            if (!dataDir.isDirectory()) {
+                throw new GradleException("openCamera.profiles.dir has no data/: $dataDir")
+            }
+            fileTree(dataDir) { include "**/*.json" }.files.sort { it.path }.each {
+                texts << [it.path, it.getText("UTF-8")]
+            }
+        } else if (version && url) {
+            def zip = cacheDir.get().file("${version}.zip").asFile
+            if (!zip.exists()) {
+                zip.parentFile.mkdirs()
+                try {
+                    URI.create(String.format(url, version)).toURL().withInputStream { input ->
+                        zip.withOutputStream { it << input }
+                    }
+                } catch (Exception e) {
+                    zip.delete()
+                    logger.warn("Device profiles $version not downloaded: ${e.message}")
+                }
+            }
+            if (zip.exists()) {
+                new ZipInputStream(zip.newInputStream()).withCloseable { stream ->
+                    def entry
+                    while ((entry = stream.nextEntry) != null) {
+                        if (!entry.directory && entry.name ==~ /[^\/]+\/data\/.+\.json/) {
+                            texts << [entry.name, new String(stream.readAllBytes(), "UTF-8")]
+                        }
+                    }
+                }
+                texts.sort { it[0] }
+            }
+        } else {
+            logger.warn("No device profiles configured; bundling an empty database")
+        }
+
+        def bom = String.valueOf((char) 0xFEFF)
+        def slurper = new JsonSlurper()
+        def profiles = texts.collect { name, text ->
+            def profile = slurper.parseText(text.startsWith(bom) ? text.substring(1) : text)
+            if (profile.schemaVersion != 1) {
+                throw new GradleException("$name: unsupported schemaVersion")
+            }
+            profile.findAll { key, value -> !(key in dropped) }
+        }
+        def out = outDir.get().asFile
+        out.mkdirs()
+        new File(out, "profiles.bundle.json").setText(JsonOutput.toJson(profiles), "UTF-8")
+        logger.lifecycle("Bundled ${profiles.size()} device profiles")
+    }
+}

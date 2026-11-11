@@ -16,6 +16,7 @@ object ProfileJson {
     fun toJson(p: DeviceProfile): JSONObject = JSONObject().apply {
         put("schemaVersion", DeviceProfile.SCHEMA_VERSION)
         put("id", p.id)
+        p.name?.let { put("name", it) }
         put("match", JSONObject().apply {
             put("brand", p.match.brand)
             put("device", JSONArray(p.match.device))
@@ -26,7 +27,7 @@ object ProfileJson {
             p.match.minSdk?.let { put("minSdk", it) }
             p.match.maxSdk?.let { put("maxSdk", it) }
         })
-        put("cameras", JSONArray(p.cameras.map { c ->
+        if (p.cameras.isNotEmpty()) put("cameras", JSONArray(p.cameras.map { c ->
             JSONObject().apply {
                 put("id", c.id)
                 put("facing", c.facing.key)
@@ -40,12 +41,27 @@ object ProfileJson {
                 if (c.hidden) put("hidden", true)
             }
         }))
-        put("zoomStops", JSONArray(p.zoomStops.map { s ->
+        if (p.zoomStops.isNotEmpty()) put("zoomStops", JSONArray(p.zoomStops.map { s ->
             JSONObject().apply {
                 put("ratio", s.ratio.json())
                 put("cameraId", s.cameraId)
                 put("mode", s.mode.key)
                 put("label", s.label)
+            }
+        }))
+        if (p.lenses.isNotEmpty()) put("lenses", JSONArray(p.lenses.map { l ->
+            JSONObject().apply {
+                put("role", l.role.key)
+                l.equivFocalMm?.let { put("equivFocalMm", it.json()) }
+                l.ratio?.let {
+                    put("ratio", it.json())
+                    put("ratioOrigin", if (l.official) OFFICIAL_RATIO_ORIGIN else "derived")
+                }
+                val runtime = listOfNotNull(
+                    "equivFocalMm".takeIf { l.equivFocalMm == null },
+                    "ratio".takeIf { l.ratio == null && l.role in LensCatalog.STOP_ROLES },
+                )
+                if (runtime.isNotEmpty()) put("runtimeFields", JSONArray(runtime))
             }
         }))
         put("quirks", JSONArray(p.quirks.map { it.name }.sorted()))
@@ -60,6 +76,7 @@ object ProfileJson {
         val m = o.getJSONObject("match")
         return DeviceProfile(
             id = o.getString("id"),
+            name = o.optString("name").ifEmpty { null },
             match = ProfileMatch(
                 brand = m.getString("brand"),
                 device = m.optJSONArray("device").strings(),
@@ -68,7 +85,7 @@ object ProfileJson {
                 minSdk = if (m.has("minSdk")) m.getInt("minSdk") else null,
                 maxSdk = if (m.has("maxSdk")) m.getInt("maxSdk") else null,
             ),
-            cameras = o.getJSONArray("cameras").objects().map { c ->
+            cameras = o.optJSONArray("cameras").objects().map { c ->
                 val sensor = c.getJSONArray("sensorMm")
                 val pixels = c.optJSONArray("pixelArray")
                 CameraEntry(
@@ -86,7 +103,7 @@ object ProfileJson {
                     hidden = c.optBoolean("hidden", false),
                 )
             },
-            zoomStops = o.getJSONArray("zoomStops").objects().map { s ->
+            zoomStops = o.optJSONArray("zoomStops").objects().map { s ->
                 ZoomStop(
                     ratio = s.getDouble("ratio").toFloat(),
                     cameraId = s.getString("cameraId"),
@@ -94,7 +111,16 @@ object ProfileJson {
                     label = s.getString("label"),
                 )
             },
-            quirks = o.optJSONArray("quirks").strings().map(Quirk::fromKey).toSet(),
+            lenses = o.optJSONArray("lenses").objects().map { l ->
+                CatalogLens(
+                    role = LensRole.fromKey(l.getString("role")),
+                    equivFocalMm = if (l.has("equivFocalMm")) l.getDouble("equivFocalMm").toFloat() else null,
+                    ratio = if (l.has("ratio")) l.getDouble("ratio").toFloat() else null,
+                    official = l.optString("ratioOrigin").startsWith("official") ||
+                        l.optString("ratioOrigin") == "display_convention",
+                )
+            },
+            quirks = o.optJSONArray("quirks").strings().mapNotNull(Quirk::fromKey).toSet(),
             source = ProfileSource.fromKey(o.getString("source")),
             testedBuilds = o.optJSONArray("testedBuilds").strings(),
             knownBugs = o.optJSONArray("knownBugs").strings(),
@@ -110,5 +136,8 @@ object ProfileJson {
     private fun JSONArray?.strings(): List<String> =
         if (this == null) emptyList() else List(length()) { getString(it) }
 
-    private fun JSONArray.objects(): List<JSONObject> = List(length()) { getJSONObject(it) }
+    private fun JSONArray?.objects(): List<JSONObject> =
+        if (this == null) emptyList() else List(length()) { getJSONObject(it) }
+
+    private const val OFFICIAL_RATIO_ORIGIN = "official_ui_stop"
 }

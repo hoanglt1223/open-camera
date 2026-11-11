@@ -153,6 +153,10 @@
 
     <!-- Advanced Preferences -->
     <string name="processing_title">Processing</string>
+    <string name="device_profile_title">Device profile</string>
+    <string name="device_profile_best_match">Best match for this phone</string>
+    <string name="device_profile_auto">Scanned on this phone only</string>
+    <string name="device_profile_off">Off: plain camera list</string>
     <string name="export_device_profile_title">Export device profile</string>
     <string name="export_device_profile_summary">Share the lens profile of this device as JSON (no serial numbers or location)</string>
 
