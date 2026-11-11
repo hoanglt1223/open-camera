@@ -4,8 +4,9 @@
      SPDX-License-Identifier: Apache-2.0
 -->
 <resources>
-    <!-- Enable auxiliary cameras selector. -->
-    <bool name="config_enableAuxCameras">false</bool>
+    <!-- Enable auxiliary cameras selector. On: lens chips (0.6x, macro...) map device-profile
+         zoom stops onto the aux camera ids, which must therefore be openable. -->
+    <bool name="config_enableAuxCameras">true</bool>
 
     <!-- List of ID of auxiliary cameras that must be ignored by the app. -->
     <string-array name="config_ignoredAuxCameraIds">
