@@ -42,7 +42,7 @@ class DevelopEngine(private val listener: Listener) {
         fun onGpuUnavailable(reason: String)
     }
 
-    data class RenderStats(val ms: Long, val outWidth: Int, val outHeight: Int, val gpu: Boolean)
+    data class RenderStats(val ms: Long, val outWidth: Int, val outHeight: Int, val gpu: Boolean, val draft: Boolean = false)
 
     private val thread = HandlerThread("develop-gl").apply { start() }
     private val gl = Handler(thread.looper)
@@ -99,6 +99,7 @@ class DevelopEngine(private val listener: Listener) {
             g.develop(DevelopUniforms.from(EditStack(), null), s, s.lin, 16, FULL, Geometry.frame(EditStack(), 16, 16), FULL, 16, 16, t, 16, 16)
             g.finish()
             g.deleteTexture(t); g.release(s)
+            b.recycle()
         }
         Log.i(TAG, "GL prewarm ${SystemClock.elapsedRealtime() - t0} ms")
     }
@@ -107,7 +108,9 @@ class DevelopEngine(private val listener: Listener) {
         val t00 = SystemClock.elapsedRealtime()
         releaseSource()
         proxy = bitmap
-        val px = IntArray(bitmap.width * bitmap.height).also { bitmap.getPixels(it, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height) }
+        // Same-size proxies (each retouch step) reuse the pixel array instead of a new 19 MB one.
+        val px = (proxyPixels?.takeIf { it.size == bitmap.width * bitmap.height } ?: IntArray(bitmap.width * bitmap.height))
+            .also { bitmap.getPixels(it, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height) }
         proxyPixels = px
         val ta = SystemClock.elapsedRealtime()
         // Haze colour only matters for dehaze; a coarse sample is enough.
@@ -136,6 +139,7 @@ class DevelopEngine(private val listener: Listener) {
                     max(1, bitmap.height * 256 / max(bitmap.width, bitmap.height)), true)
                 thumbSource = g.createSource(small)
                 g.finish()
+                if (small !== bitmap) small.recycle()
                 Log.i(TAG, "Source ${bitmap.width}x${bitmap.height} ${bitmap.config} ready in ${SystemClock.elapsedRealtime() - t0} ms")
             } catch (e: Throwable) {
                 fallBack(e)
@@ -242,9 +246,11 @@ class DevelopEngine(private val listener: Listener) {
         val src = source
         if (g != null && src != null) {
             try {
-                // Draft: no more pixels than the view shows.
+                // Draft: no more pixels than the view shows, and at most DRAFT_LONG_SIDE so a drag
+                // keeps the frame budget on mid-range GPUs; the full proxy follows on release.
                 val vlong = view?.let { max(it.width, it.height) } ?: 0
-                val ds = if (draft && vlong > 0) minOf(1f, vlong.toFloat() / max(frame.outWidth, frame.outHeight)) else 1f
+                val dlong = if (vlong > 0) minOf(vlong, DRAFT_LONG_SIDE) else DRAFT_LONG_SIDE
+                val ds = if (draft) minOf(1f, dlong.toFloat() / max(frame.outWidth, frame.outHeight)) else 1f
                 val tw = max(1, (frame.outWidth * ds).roundToInt())
                 val th = max(1, (frame.outHeight * ds).roundToInt())
                 if (output == 0 || outW != tw || outH != th) {
@@ -255,19 +261,21 @@ class DevelopEngine(private val listener: Listener) {
                 val tu = SystemClock.elapsedRealtime()
                 // Effects sized relative to the output (vignette, grain) use the full proxy size.
                 g.develop(u, src, src.lin, src.width, FULL, frame, FULL, frame.outWidth, frame.outHeight, output, outW, outH)
-                g.finish()
+                // Waiting here only splits the timing log; a draft goes straight on to present.
+                if (!draft) g.finish()
                 val td = SystemClock.elapsedRealtime()
                 present()
                 g.finish()
                 if (timings.size == 5 || timings.isEmpty()) Log.i(TAG, "split: ${outW}x$outH prep ${tu - t0} develop ${td - tu} present ${SystemClock.elapsedRealtime() - td} ms")
                 val ms = SystemClock.elapsedRealtime() - t0
                 record(ms)
-                val stats = RenderStats(ms, frame.outWidth, frame.outHeight, true)
+                val stats = RenderStats(ms, frame.outWidth, frame.outHeight, true, draft)
                 main.post { listener.onRendered(stats, null) }
                 if (SystemClock.elapsedRealtime() - lastHistogram > HISTOGRAM_INTERVAL_MS && synchronized(this) { pending == null }) {
                     lastHistogram = SystemClock.elapsedRealtime()
                     val small = g.readScaled(output, outW, outH, 256)
                     val px = IntArray(small.width * small.height).also { small.getPixels(it, 0, small.width, 0, 0, small.width, small.height) }
+                    small.recycle()
                     val h = Histogram.of(px)
                     main.post { listener.onHistogram(h) }
                 }
@@ -400,5 +408,6 @@ class DevelopEngine(private val listener: Listener) {
         private const val TAG = "DevelopEngine"
         private val FULL = floatArrayOf(0f, 0f, 1f, 1f)
         private const val HISTOGRAM_INTERVAL_MS = 150L
+        private const val DRAFT_LONG_SIDE = 1440
     }
 }

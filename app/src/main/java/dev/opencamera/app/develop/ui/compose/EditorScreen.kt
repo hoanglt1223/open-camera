@@ -95,6 +95,7 @@ import dev.opencamera.app.ui.overlay.Glyph
 import dev.opencamera.app.ui.overlay.Haptics
 import dev.opencamera.app.ui.overlay.pressable
 import dev.opencamera.app.ui.overlay.skin
+import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -444,7 +445,12 @@ private fun AdjustPanel(a: DevelopActivity) {
 @Composable
 private fun LooksPanel(a: DevelopActivity) {
     a.ui.revision.intValue
-    var presets by remember { mutableStateOf(runCatching { a.presets.all() }.getOrDefault(emptyList())) }
+    var presets by remember { mutableStateOf(emptyList<Preset>()) }
+    val presetScope = rememberCoroutineScope()
+    val reloadPresets: () -> Unit = {
+        presetScope.launch { presets = withContext(Dispatchers.IO) { runCatching { a.presets.all() }.getOrDefault(emptyList()) } }
+    }
+    LaunchedEffect(Unit) { reloadPresets() }
     val thumbs = remember { mutableStateMapOf<String, Bitmap>() }
     var current by remember { mutableStateOf<Preset?>(null) }
     var base by remember { mutableStateOf(a.stack) }
@@ -488,8 +494,8 @@ private fun LooksPanel(a: DevelopActivity) {
     }
     val dialogs = DevelopDialogs(a)
     val more = listOf(
-        stringResource(R.string.develop_preset_save) to { dialogs.savePreset { presets = a.presets.all() } },
-        stringResource(R.string.develop_preset_import) to { dialogs.importPreset { presets = a.presets.all() } },
+        stringResource(R.string.develop_preset_save) to { dialogs.savePreset { reloadPresets() } },
+        stringResource(R.string.develop_preset_import) to { dialogs.importPreset { reloadPresets() } },
         stringResource(R.string.develop_copy) to { dialogs.copyEdits() },
         stringResource(R.string.develop_paste) to { dialogs.pasteEdits() },
         stringResource(R.string.develop_batch) to { dialogs.pickBatch() },

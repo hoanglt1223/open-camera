@@ -5,7 +5,9 @@
 
 package dev.opencamera.ml
 
+import android.content.ComponentCallbacks2
 import android.content.Context
+import android.content.res.Configuration
 import android.os.Build
 import android.os.SystemClock
 import android.util.Log
@@ -33,7 +35,9 @@ class MlRuntime private constructor(context: Context) {
         val medianMs get() = runMs.sorted().let { if (it.isEmpty()) Double.NaN else it[it.size / 2] }
     }
 
-    private class Loaded(val session: InferenceSession, val executor: ExecutorService, val openMs: Long)
+    private class Loaded(val session: InferenceSession, val executor: ExecutorService, val openMs: Long) {
+        @Volatile var lastUsed = SystemClock.elapsedRealtime()
+    }
 
     private val app = context.applicationContext
     val registry = ModelRegistry.get(app)
@@ -43,6 +47,30 @@ class MlRuntime private constructor(context: Context) {
     private val executors = HashMap<String, ExecutorService>()
     private val strikes = HashMap<String, Int>()
     private val disabled = HashSet<String>()
+
+    private val idleReaper = Executors.newSingleThreadScheduledExecutor { r ->
+        Thread(r, "ml-idle").apply { isDaemon = true }
+    }
+
+    init {
+        // Sessions (ORT arenas, GPU delegates) hold hundreds of MB; drop them when the app is
+        // hidden or memory is low, and after a model sat unused for a while. They reopen on demand.
+        app.registerComponentCallbacks(object : ComponentCallbacks2 {
+            override fun onTrimMemory(level: Int) {
+                if (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) releaseAll()
+            }
+            override fun onConfigurationChanged(newConfig: Configuration) = Unit
+            @Deprecated("Deprecated in Java")
+            override fun onLowMemory() = releaseAll()
+        })
+        idleReaper.scheduleWithFixedDelay(::releaseIdle, IDLE_CHECK_S, IDLE_CHECK_S, TimeUnit.SECONDS)
+    }
+
+    private fun releaseIdle() {
+        val now = SystemClock.elapsedRealtime()
+        synchronized(this) { loaded.filterValues { now - it.lastUsed > IDLE_RELEASE_MS }.keys.toList() }
+            .forEach { Log.i(TAG, "Releasing idle model $it"); release(it) }
+    }
 
     var preference: BackendSelector.Preference
         get() = runCatching {
@@ -68,7 +96,7 @@ class MlRuntime private constructor(context: Context) {
         val executor = executorFor(modelId)
         // Opening (and the first-use benchmark) can take seconds on GPU; it has its own,
         // longer limit so a slow first load is not counted against the model.
-        val loaded = try {
+        try {
             executor.submit<Loaded> { sessionFor(spec) }.get(OPEN_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         } catch (e: TimeoutException) {
             strike(modelId, 1)
@@ -76,7 +104,13 @@ class MlRuntime private constructor(context: Context) {
         } catch (e: ExecutionException) {
             throw wrap(modelId, e.cause ?: e)
         }
-        val future = executor.submit<List<Tensor>> { loaded.session.run(inputs) }
+        // Looked up again on the model thread: a release queued after the open closes the
+        // session on this same thread, so the run then reopens it instead of using a closed one.
+        val future = executor.submit<List<Tensor>> {
+            val l = sessionFor(spec)
+            l.lastUsed = SystemClock.elapsedRealtime()
+            try { l.session.run(inputs) } finally { l.lastUsed = SystemClock.elapsedRealtime() }
+        }
         try {
             return future.get(timeoutMs ?: spec.timeoutMs, TimeUnit.MILLISECONDS)
         } catch (e: TimeoutException) {
@@ -219,6 +253,8 @@ class MlRuntime private constructor(context: Context) {
         const val PREF_ACCELERATOR = "ml_accelerator"
         private const val MAX_STRIKES = 2
         private const val OPEN_TIMEOUT_MS = 30_000L
+        private const val IDLE_RELEASE_MS = 30_000L
+        private const val IDLE_CHECK_S = 10L
 
         @Volatile
         private var instance: MlRuntime? = null

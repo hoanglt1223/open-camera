@@ -127,10 +127,13 @@ class SourceLoader(private val context: Context) {
 
     /** Upright full-resolution image for export, capped at [maxPixels]. */
     fun loadFull(info: Info, maxPixels: Long): Bitmap {
+        // A RAW with four times the cap is developed at half size: the result is downscaled to
+        // the cap anyway, and the full-size buffers would quadruple the peak.
+        val halfRaw = info.width.toLong() * info.height >= 4 * maxPixels
         val bmp = when (info.kind) {
             Kind.RASTER -> decodeRaster(info.uri, 0, maxPixels)
-            Kind.DNG -> developDng(info.uri, half = false)
-            Kind.CAMERA_RAW -> developCameraRaw(info.uri, half = false)
+            Kind.DNG -> developDng(info.uri, half = halfRaw)
+            Kind.CAMERA_RAW -> developCameraRaw(info.uri, half = halfRaw)
         }
         val px = bmp.width.toLong() * bmp.height
         if (px <= maxPixels) return bmp
@@ -150,7 +153,11 @@ class SourceLoader(private val context: Context) {
                 val px = w.toLong() * h * s * s
                 if (px > maxPixels) s *= kotlin.math.sqrt(maxPixels / px).toFloat()
                 if (s < 1f) d.setTargetSize(max(1, (w * s).roundToInt()), max(1, (h * s).roundToInt()))
-            }.let { if (it.config != Bitmap.Config.ARGB_8888 && it.config != Bitmap.Config.RGBA_F16) it.copy(Bitmap.Config.ARGB_8888, false) else it }
+            }.let {
+                if (it.config != Bitmap.Config.ARGB_8888 && it.config != Bitmap.Config.RGBA_F16) {
+                    it.copy(Bitmap.Config.ARGB_8888, false).also { c -> if (c !== it) it.recycle() }
+                } else it
+            }
         }
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
@@ -162,6 +169,7 @@ class SourceLoader(private val context: Context) {
         } ?: throw UnsupportedImageException("Cannot decode image")
         val rot = rotation(uri)
         val upright = if (rot == 0) bmp else Bitmap.createBitmap(bmp, 0, 0, bmp.width, bmp.height, Matrix().apply { postRotate(rot.toFloat()) }, true)
+            .also { if (it !== bmp) bmp.recycle() }
         return if (longSide > 0) scaleTo(upright, longSide) else upright
     }
 
@@ -189,27 +197,39 @@ class SourceLoader(private val context: Context) {
         if (!LibRawDecoder.available) throw UnsupportedImageException("Camera RAW support is not installed")
         val pfd: ParcelFileDescriptor = resolver.openFileDescriptor(uri, "r") ?: throw FileNotFoundException("Cannot open $uri")
         val d = pfd.use { LibRawDecoder.decode("/proc/self/fd/${it.fd}", half) }
-        val bmp = linearBitmap(d.width, d.height) { i -> (d.rgb16[i].toInt() and 0xFFFF) / 65535f }
-        // LibRaw flip: 3 = 180, 5 = 90 CCW, 6 = 90 CW.
+        // LibRaw flip: 3 = 180, 5 = 90 CCW, 6 = 90 CW. Rotated while converting, so no second
+        // full-size bitmap is made for the upright copy.
         val deg = when (d.flip) { 3 -> 180; 5 -> 270; 6 -> 90; else -> 0 }
-        return orient(bmp, deg, 1)
+        val rgb16 = d.rgb16
+        return linearBitmap(d.width, d.height, deg) { i -> (rgb16[i].toInt() and 0xFFFF) / 65535f }
     }
 
-    /** Linear extended-sRGB half-float bitmap from interleaved RGB (converted in parallel, off the Java heap). */
-    private fun linearBitmap(w: Int, h: Int, rgb: (Int) -> Float): Bitmap {
+    /**
+     * Linear extended-sRGB half-float bitmap from interleaved RGB (converted in parallel, off the
+     * Java heap), rotated clockwise by [degrees] (0, 90, 180, 270).
+     */
+    private fun linearBitmap(w: Int, h: Int, degrees: Int, rgb: (Int) -> Float): Bitmap {
         val buf = ByteBuffer.allocateDirect(w * h * 8).order(ByteOrder.nativeOrder())
         val shorts = buf.asShortBuffer()
         val one = RawDevelop.toHalf(1f)
+        val ow = if (degrees == 90 || degrees == 270) h else w
+        val oh = if (degrees == 90 || degrees == 270) w else h
         (0 until h).chunked(maxOf(1, h / 32)).parallelStream().forEach { band ->
             for (y in band) for (x in 0 until w) {
                 val i = y * w + x
-                shorts.put(i * 4, RawDevelop.toHalf(rgb(i * 3)))
-                shorts.put(i * 4 + 1, RawDevelop.toHalf(rgb(i * 3 + 1)))
-                shorts.put(i * 4 + 2, RawDevelop.toHalf(rgb(i * 3 + 2)))
-                shorts.put(i * 4 + 3, one)
+                val o = when (degrees) {
+                    90 -> x * ow + (h - 1 - y)
+                    180 -> (h - 1 - y) * ow + (w - 1 - x)
+                    270 -> (w - 1 - x) * ow + y
+                    else -> i
+                }
+                shorts.put(o * 4, RawDevelop.toHalf(rgb(i * 3)))
+                shorts.put(o * 4 + 1, RawDevelop.toHalf(rgb(i * 3 + 1)))
+                shorts.put(o * 4 + 2, RawDevelop.toHalf(rgb(i * 3 + 2)))
+                shorts.put(o * 4 + 3, one)
             }
         }
-        return halfBitmap(w, h, buf)
+        return halfBitmap(ow, oh, buf)
     }
 
     private fun halfBitmap(w: Int, h: Int, buf: ByteBuffer): Bitmap {
