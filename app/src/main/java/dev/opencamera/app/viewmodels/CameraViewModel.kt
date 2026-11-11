@@ -1745,8 +1745,8 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
 
     fun setCameraMode(
         cameraMode: CameraMode,
-    ) = viewModelScope.launch {
-        updateConfiguration<CameraConfiguration> { cameraConfiguration ->
+    ): kotlinx.coroutines.Job = viewModelScope.launch {
+        updateConfiguration<CameraConfiguration>(retry = { setCameraMode(cameraMode); Unit }) { cameraConfiguration ->
             if (cameraConfiguration.cameraMode == cameraMode) {
                 return@updateConfiguration cameraConfiguration
             }
@@ -2310,6 +2310,7 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
      *   return a new one.
      */
     private inline fun <reified T : CameraConfiguration> updateConfiguration(
+        noinline retry: (() -> Unit)? = null,
         block: (T) -> CameraConfiguration,
     ): Boolean {
         if (!canRestartCamera()) {
@@ -2317,7 +2318,11 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         }
 
         if (!rebindMutex.tryLock()) {
-            return false
+            // Another update is still running (it may suspend, e.g. while picking a camera).
+            // Keep only the newest request and run it once that update released the lock.
+            if (retry == null) return false
+            pendingConfigurationUpdate = retry
+            return true
         }
 
         return try {
@@ -2334,8 +2339,16 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
             } ?: false
         } finally {
             rebindMutex.unlock()
+            pendingConfigurationUpdate?.let { next ->
+                pendingConfigurationUpdate = null
+                viewModelScope.launch { next() }
+            }
         }
     }
+
+    /** The latest configuration change that arrived while another one held [rebindMutex]. */
+    @PublishedApi
+    internal var pendingConfigurationUpdate: (() -> Unit)? = null
 
     companion object {
         private val LOG_TAG = CameraViewModel::class.simpleName!!

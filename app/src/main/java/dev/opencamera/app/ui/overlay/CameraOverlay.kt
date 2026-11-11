@@ -5,6 +5,8 @@
 
 package dev.opencamera.app.ui.overlay
 
+import kotlin.math.cos
+import kotlin.math.sin
 import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -410,9 +412,19 @@ private fun TopText(label: String, description: String, enabled: Boolean, onClic
             .graphicsLayer { alpha = if (enabled) 1f else 0.4f },
         contentAlignment = Alignment.Center,
     ) {
+        val rotation = LocalGlyphRotation.current
         BasicText(
             label,
-            Modifier.uprightGlyph(LocalGlyphRotation.current),
+            Modifier.graphicsLayer {
+                rotationZ = rotation.value
+                // Turned sideways, a wide label ("1080p", "MIC ON") must still fit the bar height.
+                val rad = Math.toRadians(rotation.value.toDouble())
+                val extent = abs(sin(rad)) * size.width + abs(cos(rad)) * size.height
+                val limit = 44.dp.toPx()
+                val fit = if (extent > limit) (limit / extent).toFloat() else 1f
+                scaleX = fit
+                scaleY = fit
+            },
             style = TextStyle(color = s.fg, fontSize = 12.sp, fontWeight = FontWeight.SemiBold),
             maxLines = 1,
         )
