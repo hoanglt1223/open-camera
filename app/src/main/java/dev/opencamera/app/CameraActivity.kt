@@ -37,7 +37,14 @@ import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import android.graphics.ImageFormat
+import android.hardware.camera2.CameraCharacteristics
+import android.util.Size
+import androidx.camera.camera2.interop.Camera2CameraInfo
 import androidx.camera.camera2.interop.CaptureRequestOptions
+import androidx.camera.view.CameraControllerInterop
+import dev.opencamera.capture.StreamConfig
+import kotlinx.coroutines.withTimeoutOrNull
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.ExperimentalZeroShutterLag
@@ -191,7 +198,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     private val preShotButton by lazy { findViewById<Button>(R.id.preShotButton) }
 
     /** Whether the last bind included the analysis stream; null before the first setting is seen. */
-    private var boundWithAnalysis: Boolean? = null
+    /** Analysis stream and session layout of the last bind; a change needs a rebind. */
+    private var boundStreams: Pair<Boolean, StreamConfig?>? = null
     private val previewBlurView by lazy { findViewById<PreviewBlurView>(R.id.previewBlurView) }
     private val proButton by lazy { findViewById<ImageButton>(R.id.proButton) }
     private val screenFlashView by lazy { findViewById<ScreenFlashView>(R.id.screenFlashView) }
@@ -759,6 +767,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
         launch {
             viewModel.cameraConfiguration.collectLatest { cameraConfiguration ->
+                // Let the first bind carry the preview look instead of rebinding when it loads.
+                viewModel.lookController.awaitPreload(LOOK_PRELOAD_WAIT_MS)
                 bindCameraUseCases(cameraConfiguration)
             }
         }
@@ -1107,6 +1117,21 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         launch {
             viewModel.motionPhoto.preShot.collectLatest { on ->
                 preShotButton.setText(if (on) R.string.pre_shot_on else R.string.pre_shot_off)
+                rebindIfAnalysisChanged()
+            }
+        }
+
+        launch {
+            viewModel.flashMode.collectLatest { rebindIfAnalysisChanged() }
+        }
+
+        launch {
+            viewModel.multiFrame.configCap.collectLatest { rebindIfAnalysisChanged() }
+        }
+
+        launch {
+            viewModel.fullResNotice.collect { res ->
+                Toast.makeText(this@CameraActivity, res, Toast.LENGTH_SHORT).show()
                 rebindIfAnalysisChanged()
             }
         }
@@ -1647,13 +1672,82 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         Toast.makeText(this, R.string.stream_fallback_failed, Toast.LENGTH_LONG).show()
     }
 
-    /** The analysis stream is only bound while a multi-frame, creative or motion feature needs it. */
+    /**
+     * The analysis stream is only bound while a multi-frame, creative or motion feature needs it,
+     * and the session layout follows the active mode, flash and fallback cap.
+     */
     private fun rebindIfAnalysisChanged() {
-        val wanted = viewModel.wantsAnalysisStream
-        val previous = boundWithAnalysis
-        boundWithAnalysis = wanted
+        val config = viewModel.cameraConfiguration.replayCache.lastOrNull()
+        val wanted = viewModel.wantsAnalysisStream to
+            (config as? CameraConfiguration.Photo)?.let { viewModel.desiredStreamConfig(it) }
+        val previous = boundStreams
+        boundStreams = wanted
         if (previous != null && previous != wanted && viewModel.cameraState.value == CameraState.IDLE) {
-            viewModel.cameraConfiguration.replayCache.lastOrNull()?.let { bindCameraUseCases(it) }
+            config?.let { bindCameraUseCases(it) }
+        }
+    }
+
+    /**
+     * Use cases of the full-resolution photo session: preview + maximum YUV (no JPEG stream),
+     * or preview + RAW_SENSOR + a small YUV stream for metering. The analysis use case carries
+     * a capture callback for per-frame exposure when the controller allows it.
+     */
+    private fun fullResUseCases(cfg: CameraConfiguration.Photo, config: StreamConfig): Int {
+        val controller = viewModel.cameraController
+        val mf = viewModel.multiFrame
+        val aspect = AspectRatioStrategy(cfg.photoAspectRatio, AspectRatioStrategy.FALLBACK_RULE_AUTO)
+        val selector = ResolutionSelector.Builder()
+            .setAspectRatioStrategy(aspect)
+            .setResolutionStrategy(
+                if (config == StreamConfig.FULL_RES_RAW) {
+                    ResolutionStrategy(METERING_STREAM_SIZE, ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER)
+                } else {
+                    ResolutionStrategy.HIGHEST_AVAILABLE_STRATEGY
+                }
+            )
+            .build()
+        if (config == StreamConfig.FULL_RES_RAW) controller.imageOutputFormat = ImageCapture.OUTPUT_FORMAT_RAW
+        controller.imageAnalysisResolutionSelector = selector
+        controller.setImageAnalysisAnalyzer(mf.analysisExecutor, mf.analyzer)
+        CameraControllerInterop.attachAnalysisCaptureCallback(
+            controller, selector, mf.analysisExecutor, mf.analyzer, mf.resultTracker,
+        )
+        return if (config == StreamConfig.FULL_RES_RAW) {
+            CameraController.IMAGE_CAPTURE or CameraController.IMAGE_ANALYSIS
+        } else {
+            CameraController.IMAGE_ANALYSIS
+        }
+    }
+
+    /**
+     * After a full-resolution bind: the YUV stream must really be full size (some HALs shrink
+     * it), and the RAW session needs a RAW size. Otherwise the next layout of the chain is bound.
+     */
+    @androidx.annotation.OptIn(ExperimentalCamera2Interop::class)
+    private fun verifyFullResStream(cfg: CameraConfiguration, config: StreamConfig) {
+        lifecycleScope.launch {
+            val ok = FeatureGuard.attempt(LOG_TAG, "Checking the $config stream") {
+                viewModel.cameraController.initializationFuture.await()
+                val info = viewModel.cameraController.cameraInfo ?: return@attempt false
+                if (config == StreamConfig.FULL_RES_RAW) {
+                    val map = Camera2CameraInfo.from(info)
+                        .getCameraCharacteristic(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+                    val size = map?.getOutputSizes(ImageFormat.RAW_SENSOR)?.maxByOrNull { it.width * it.height }
+                    viewModel.multiFrame.rawSize = size
+                    size != null
+                } else {
+                    val size = withTimeoutOrNull(FULL_RES_STREAM_TIMEOUT_MS) {
+                        while (viewModel.multiFrame.analyzer.frameSize == null) delay(50)
+                        viewModel.multiFrame.analyzer.frameSize
+                    }
+                    Log.i(LOG_TAG, "Full-resolution YUV stream: $size")
+                    size != null && size.width.toLong() * size.height >= FULL_RES_MIN_PIXELS
+                }
+            } ?: false
+            if (ok || viewModel.multiFrame.streamConfig != config) return@launch
+            viewModel.multiFrame.demote(config)
+            Toast.makeText(this@CameraActivity, R.string.full_res_fallback, Toast.LENGTH_SHORT).show()
+            if (viewModel.cameraState.value == CameraState.IDLE) bindCameraUseCases(cfg)
         }
     }
 
@@ -1668,6 +1762,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             Log.e(LOG_TAG, "Bind failed for $cameraConfiguration, reopening in baseline mode", e)
             viewModel.lookController.disablePreviewEffect()
             viewModel.multiFrame.analyzer.resetStream()
+            viewModel.multiFrame.streamConfig = StreamConfig.STANDARD
             FeatureGuard.attempt(LOG_TAG, "Baseline bind") {
                 viewModel.cameraController.imageOutputFormat = ImageCapture.OUTPUT_FORMAT_JPEG
                 viewModel.cameraController.cameraSelector = CameraSelector.Builder()
@@ -1696,6 +1791,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
         // Unbind previous use cases
         viewModel.cameraController.unbind()
+        viewModel.multiFrame.streamConfig = StreamConfig.STANDARD
 
         // Hide grid until preview is ready
         gridView.alpha = 0f
@@ -1768,9 +1864,13 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
                 viewModel.multiFrame.analyzer.resetStream()
                 viewModel.motionPhoto.reset()
-                // RAW adds its own stream; skip the YUV burst stream to stay within the
-                // device's stream combinations (bursts are JPEG-only anyway).
-                if (viewModel.wantsAnalysisStream &&
+                viewModel.multiFrame.resultTracker.clear()
+                val streamConfig = viewModel.desiredStreamConfig(cameraConfiguration)
+                boundStreams = viewModel.wantsAnalysisStream to streamConfig
+                viewModel.multiFrame.streamConfig = streamConfig
+                if (streamConfig != StreamConfig.STANDARD) {
+                    fullResUseCases(cameraConfiguration, streamConfig)
+                } else if (viewModel.wantsAnalysisStream &&
                     cameraConfiguration.photoOutputFormat == PhotoOutputFormat.JPEG &&
                     cameraConfiguration.extensionMode == ExtensionMode.NONE &&
                     cameraConfiguration.camera.cameraFacing != CameraFacing.FRONT
@@ -1865,7 +1965,25 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
         // Bind use cases to camera
         viewModel.cameraController.cameraSelector = cameraSelector
-        bindWithFallback(cameraUseCases)
+        val fullRes = viewModel.multiFrame.streamConfig
+        if (cameraConfiguration is CameraConfiguration.Photo && fullRes != StreamConfig.STANDARD) {
+            viewModel.lookController.attachIfReady()
+            val bound = FeatureGuard.attempt(LOG_TAG, "Binding $fullRes") {
+                viewModel.cameraController.setEnabledUseCases(cameraUseCases)
+                viewModel.cameraController.bindToLifecycle(this)
+            } != null
+            if (!bound) {
+                // Next layout of the chain: RAW -> full-res YUV -> regular JPEG session.
+                viewModel.multiFrame.demote(fullRes)
+                Toast.makeText(this, R.string.full_res_fallback, Toast.LENGTH_SHORT).show()
+                bindCameraUseCasesOrThrow(cameraConfiguration)
+                return
+            }
+            verifyFullResStream(cameraConfiguration, fullRes)
+        } else {
+            viewModel.lookController.attachIfReady()
+            bindWithFallback(cameraUseCases)
+        }
 
         // Wait for camera to be ready
         lifecycleScope.launch {
@@ -2364,6 +2482,10 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     companion object {
         private val LOG_TAG = CameraActivity::class.simpleName!!
         private const val COLOR_MATCH_ITEM = "__color_match__"
+        private const val LOOK_PRELOAD_WAIT_MS = 1200L
+        private const val FULL_RES_STREAM_TIMEOUT_MS = 4000L
+        private const val FULL_RES_MIN_PIXELS = 6_000_000L
+        private val METERING_STREAM_SIZE = Size(1280, 960)
 
         private const val MSG_HIDE_ZOOM_SLIDER = 0
         private const val MSG_HIDE_FOCUS_RING = 1

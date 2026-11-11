@@ -24,8 +24,10 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import dev.opencamera.app.R
+import dev.opencamera.app.multiframe.BurstRecovery
 import dev.opencamera.pipeline.StillProcessor
 import dev.opencamera.pipeline.creative.MotionPhotoFormat
+import dev.opencamera.pipeline.queue.BurstArchive
 import dev.opencamera.pipeline.queue.Job
 import dev.opencamera.pipeline.queue.JobState
 import dev.opencamera.pipeline.queue.ProcessingQueue
@@ -111,6 +113,10 @@ class ProcessingService : Service() {
     }
 
     private fun process(job: Job) {
+        if (job.sourceUri.startsWith(BurstRecovery.SCHEME)) {
+            processBurst(job)
+            return
+        }
         when (job.state) {
             JobState.RUNNING -> {
                 val out = render(job)
@@ -156,6 +162,26 @@ class ProcessingService : Service() {
             return out
         } finally {
             tmp.delete()
+        }
+    }
+
+    /**
+     * Merges a burst archived by a process that died before its merge finished. The merged
+     * photo then gets the look/frame step like any other capture.
+     */
+    private fun processBurst(job: Job) {
+        if (job.state == JobState.WRITTEN) {
+            queue.markDone(job.id)
+            return
+        }
+        val dir = File(BurstRecovery.root(this), job.sourceUri.removePrefix(BurstRecovery.SCHEME))
+        if (BurstArchive.open(dir) == null) throw FileNotFoundException("Burst archive gone: $dir")
+        val uri = BurstRecovery.mergeArchived(this, dir) ?: error("Merge of $dir failed")
+        Log.i(TAG, "Recovered burst ${dir.name} as $uri")
+        queue.markWritten(job.id, uri.toString())
+        queue.markDone(job.id)
+        if (job.lookId != null || job.watermark != WatermarkTemplate.NONE.key) {
+            enqueue(this, uri, job.lookId, job.intensity, job.watermark)
         }
     }
 
@@ -296,7 +322,18 @@ class ProcessingService : Service() {
         /** Restarts processing left over from a previous process. Call while in the foreground. */
         fun resumeIfPending(context: Context) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+            runCatching { enqueueOrphanBursts(context) }.onFailure { Log.w(TAG, "Burst recovery scan failed", it) }
             if (queue(context).pendingCount() > 0) start(context)
+        }
+
+        /** Bursts archived by a dead process go into the persistent queue to be merged. */
+        private fun enqueueOrphanBursts(context: Context) {
+            val prefs = LookPreferences(context)
+            val look = prefs.lookId.takeIf { LooksRepository.get(context).descriptor(it) != null }
+            for (dir in BurstRecovery.orphans(context)) {
+                val job = queue(context).enqueue(BurstRecovery.SCHEME + dir.name, look, prefs.intensity, prefs.watermark.key)
+                if (job.state == JobState.FAILED || job.state == JobState.DONE) BurstArchive.delete(dir)
+            }
         }
 
         /** Keeps the service in the foreground while multi-frame merges run. */

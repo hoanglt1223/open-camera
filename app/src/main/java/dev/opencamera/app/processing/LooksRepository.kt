@@ -15,7 +15,10 @@ import dev.opencamera.pipeline.looks.Lut3d
 import dev.opencamera.pipeline.looks.UserLookStore
 import dev.opencamera.pipeline.watermark.WatermarkTemplate
 import org.json.JSONObject
+import java.io.DataInputStream
+import java.io.DataOutputStream
 import java.io.File
+import java.nio.ByteBuffer
 
 /**
  * Built-in looks from `assets/looks` plus user looks (colour match, imported `.cube`) from
@@ -23,6 +26,10 @@ import java.io.File
  */
 class LooksRepository private constructor(context: Context) {
     private val assets = context.applicationContext.assets
+    private val lutCache = File(context.applicationContext.cacheDir, "luts")
+    private val appVersion = runCatching {
+        context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime
+    }.getOrDefault(0L)
     private val luts = HashMap<String, Lut3d>()
     val userLooks = UserLookStore(File(context.applicationContext.filesDir, "looks/user"))
 
@@ -54,8 +61,35 @@ class LooksRepository private constructor(context: Context) {
 
     @Synchronized
     private fun lut(d: LookDescriptor): Lut3d = luts.getOrPut(d.id) {
-        if (d.id.startsWith(UserLookStore.PREFIX)) userLooks.lut(d)
-        else CubeParser.parse(read("$ROOT/${d.id}/${d.lutFile}"))
+        if (d.id.startsWith(UserLookStore.PREFIX)) userLooks.lut(d) else builtInLut(d)
+    }
+
+    /** Built-in `.cube` text takes seconds to parse on a phone; a binary copy loads in ms. */
+    private fun builtInLut(d: LookDescriptor): Lut3d {
+        val cached = File(lutCache, "${d.id}-$appVersion.bin")
+        runCatching {
+            DataInputStream(cached.inputStream().buffered()).use { input ->
+                val size = input.readInt()
+                val data = FloatArray(size * size * size * 3)
+                val bytes = ByteArray(data.size * 4)
+                input.readFully(bytes)
+                ByteBuffer.wrap(bytes).asFloatBuffer().get(data)
+                return Lut3d(size, data)
+            }
+        }
+        val lut = CubeParser.parse(read("$ROOT/${d.id}/${d.lutFile}"))
+        runCatching {
+            lutCache.mkdirs()
+            val tmp = File(lutCache, "${d.id}.tmp")
+            DataOutputStream(tmp.outputStream().buffered()).use { out ->
+                out.writeInt(lut.size)
+                val bytes = ByteBuffer.allocate(lut.data.size * 4)
+                bytes.asFloatBuffer().put(lut.data)
+                out.write(bytes.array())
+            }
+            tmp.renameTo(cached)
+        }
+        return lut
     }
 
     private fun read(path: String) = assets.open(path).bufferedReader().use { it.readText() }

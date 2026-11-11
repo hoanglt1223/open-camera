@@ -18,9 +18,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Multi-frame merges on the shared processing queue. A burst lives in native memory, so it
- * cannot be persisted like a saved photo; merges run one at a time while [ProcessingService]
- * holds the foreground, and the merged JPEG then enters the persistent look/frame queue.
+ * Multi-frame merges on the shared processing queue, one at a time while [ProcessingService]
+ * holds the foreground; the merged JPEG then enters the persistent look/frame queue. The burst
+ * is archived to disk during its merge, and an archive left by a dead process is merged through
+ * the persistent queue on the next launch (`BurstRecovery`).
  */
 class BurstJobQueue private constructor(private val app: Context) : ProcessingQueue {
     @OptIn(ExperimentalCoroutinesApi::class)

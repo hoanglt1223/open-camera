@@ -11,6 +11,8 @@ import android.app.Application
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.ImageFormat
+import dev.opencamera.app.R
+import androidx.camera.core.ImageProxy
 import android.location.LocationManager
 import android.net.Uri
 import android.os.BatteryManager
@@ -108,7 +110,14 @@ import dev.opencamera.app.qr.QrImageAnalyzer
 import dev.opencamera.app.repositories.CameraRepository
 import dev.opencamera.app.utils.CameraSoundsUtils
 import dev.opencamera.app.utils.StorageUtils
+import dev.opencamera.capture.BurstKind
+import dev.opencamera.capture.BurstPlan
+import dev.opencamera.capture.StreamConfig
+import dev.opencamera.capture.StreamPolicy
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.ByteArrayOutputStream
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
@@ -188,6 +197,28 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
     /** True when the analysis stream is needed by multi-frame, creative or motion features. */
     val wantsAnalysisStream: Boolean
         get() = multiFrame.enabled || creative.mode.value != CreativeMode.OFF || motionPhoto.active
+
+    /**
+     * Session layout for a photo configuration: full-resolution YUV (or RAW) without the JPEG
+     * stream while a multi-frame or creative mode is active, else the regular JPEG session.
+     * Limited by the fallback cap after a failure.
+     */
+    fun desiredStreamConfig(cfg: CameraConfiguration.Photo): StreamConfig = multiFrame.capped(
+        StreamPolicy.choose(
+            StreamPolicy.Inputs(
+                setting = multiFrame.setting.value,
+                creativeActive = creative.mode.value != CreativeMode.OFF,
+                jpegOutput = cfg.photoOutputFormat == PhotoOutputFormat.JPEG,
+                noExtension = cfg.extensionMode == ExtensionMode.NONE,
+                backCamera = cfg.camera.cameraFacing != CameraFacing.FRONT,
+                singleCaptureIntent = inSingleCaptureMode.value,
+                flashOff = flashMode.value == FlashMode.OFF || flashMode.value == FlashMode.TORCH,
+                manualExposure = multiFrame.manualExposureActive,
+                rawCapable = PhotoOutputFormat.RAW in cfg.camera.supportedPhotoOutputFormats,
+                source = multiFrame.source,
+            )
+        )
+    )
 
     /**
      * Do not emit here directly, use [emitEvent].
@@ -331,6 +362,12 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         )
 
     private var lensChipZoomJob: Job? = null
+
+    /** Longest physical telephoto chip (a different lens than 1x, at 2x or more), if any. */
+    private fun moonTelephoto(chips: List<Pair<LensChip, Camera>>): Pair<LensChip, Camera>? {
+        val main = chips.firstOrNull { it.first.ratio == 1f }?.first ?: return null
+        return chips.filter { it.first.ratio >= 2f && it.first.lensId != main.lensId }.maxByOrNull { it.first.ratio }
+    }
 
     /**
      * Opens the chip's camera if needed, then applies the chip's zoom ratio once that camera
@@ -1021,6 +1058,9 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         )
 
     init {
+        // LUT and GL set-up start now so the first bind can carry the look effect.
+        lookController.preload()
+
         multiFrame.analyzer.frameTap = { image ->
             creative.tap(image)
             motionPhoto.tap(image)
@@ -1038,6 +1078,17 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
             launch {
                 flashMode.collectLatest { flashMode ->
                     cameraController.flashMode = flashMode
+                }
+            }
+
+            launch {
+                // Moon: a telephoto lens from the device profile beats crop + Super Res.
+                combine(creative.mode, lensChips) { mode, chips -> mode to chips }.collectLatest { (mode, chips) ->
+                    val tele = if (mode == CreativeMode.MOON) moonTelephoto(chips) else null
+                    creative.moonOnTele = tele != null
+                    if (tele != null && currentLensChip.value?.lensId != tele.first.lensId) {
+                        selectLensChip(tele.first, tele.second)
+                    }
                 }
             }
 
@@ -1145,6 +1196,12 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         }
 
         if (allowMultiFrame && takeCreativePhoto()) {
+            return
+        }
+
+        // No JPEG stream is bound in the full-resolution session: shots come from the app path.
+        if (multiFrame.fullRes) {
+            takeFullResPhoto(allowMultiFrame)
             return
         }
 
@@ -1385,6 +1442,83 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         }
         return true
     }
+    /** One RAW_SENSOR still from the RAW session's ImageCapture (main thread). */
+    private suspend fun takeRawImage(): ImageProxy = suspendCancellableCoroutine { cont ->
+        cameraController.takePicture(cameraExecutor, object : ImageCapture.OnImageCapturedCallback() {
+            override fun onCaptureSuccess(image: ImageProxy) {
+                if (!cont.tryResumeImage(image)) image.close()
+            }
+
+            override fun onError(exception: ImageCaptureException) {
+                if (cont.isActive) cont.resumeWithException(exception)
+            }
+        })
+    }
+
+    private fun kotlinx.coroutines.CancellableContinuation<ImageProxy>.tryResumeImage(image: ImageProxy): Boolean {
+        if (!isActive) return false
+        resume(image)
+        return true
+    }
+
+    /**
+     * Photo in the full-resolution session: a burst when one is planned, otherwise a single
+     * frame from the stream, encoded by the app. On failure the next shot falls back to the
+     * regular JPEG session (the activity rebinds) with a notice.
+     */
+    @SuppressLint("RestrictedApi")
+    private fun takeFullResPhoto(allowMerge: Boolean) {
+        val cameraControl = cameraController.cameraControl ?: return
+        val cameraInfo = cameraController.cameraInfo ?: return
+        val zoomRatio = cameraController.zoomState.value?.zoomRatio ?: 1f
+        val plan = (if (allowMerge) multiFrame.plan(cameraInfo, zoomRatio) else null)
+            ?: BurstPlan(BurstKind.SINGLE, 1)
+        val config = multiFrame.streamConfig
+        cameraState.value = CameraState.TAKING_PHOTO
+        val motionShutterTs = motionPhoto.shutterTimestamp()
+        val wantsMotion = motionPhoto.motionPhoto.value
+        viewModelScope.launch {
+            emitEvent(Event.PhotoCaptureStatus.CaptureStarted)
+            cameraSoundsUtils.playShutterClick()
+            val takeRaw: suspend () -> ImageProxy = { takeRawImage() }
+            var captured = runCatching { multiFrame.capture(cameraControl, cameraInfo, plan, takeRaw = takeRaw) }
+                .onFailure { if (it is CancellationException) throw it }
+                .onFailure { Log.e(LOG_TAG, "Full-resolution ${plan.kind} capture failed", it) }
+                .getOrNull()
+            if (captured == null && plan.kind != BurstKind.SINGLE) {
+                captured = runCatching {
+                    multiFrame.capture(cameraControl, cameraInfo, BurstPlan(BurstKind.SINGLE, 1), takeRaw = takeRaw)
+                }.onFailure { if (it is CancellationException) throw it }.getOrNull()
+            }
+            cameraState.value = CameraState.IDLE
+            if (captured == null) {
+                multiFrame.demote(config)
+                _fullResNotice.tryEmit(R.string.full_res_fallback)
+                return@launch
+            }
+            multiFrame.process(captured, location.value) { uri ->
+                uri ?: return@process
+                mediaRepository.broadcastNewPicture(uri)
+                if (wantsMotion && motionShutterTs != 0L) {
+                    viewModelScope.launch {
+                        motionPhoto.embed(uri, motionShutterTs)
+                        lookController.onPhotoSaved(uri)
+                    }
+                } else {
+                    lookController.onPhotoSaved(uri)
+                }
+                emitEvent(
+                    Event.PhotoCaptureStatus.ImageSaved(ImageCapture.OutputFileResults(uri, ImageFormat.JPEG), null)
+                )
+            }
+        }
+    }
+
+    private val _fullResNotice = MutableSharedFlow<Int>(extraBufferCapacity = 2)
+
+    /** Notices (string resources) when the full-resolution session falls back. */
+    val fullResNotice = _fullResNotice.asSharedFlow()
+
     fun captureVideo() {
         if (cameraState.value != CameraState.IDLE) {
             if (cameraController.isRecording) {

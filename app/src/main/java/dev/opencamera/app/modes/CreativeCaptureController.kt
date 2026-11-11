@@ -32,10 +32,15 @@ import dev.opencamera.capture.BurstKind
 import dev.opencamera.capture.BurstPlan
 import dev.opencamera.pipeline.Burst
 import dev.opencamera.pipeline.MergedImage
+import dev.opencamera.pipeline.MultiFrameMode
 import dev.opencamera.pipeline.MultiFrameProcessor
 import dev.opencamera.pipeline.StackOp
 import dev.opencamera.pipeline.StackParams
+import dev.opencamera.pipeline.creative.LumaFrame
 import dev.opencamera.pipeline.creative.MoonDetector
+import dev.opencamera.pipeline.creative.MotionSubjectLocator
+import dev.opencamera.pipeline.creative.SportsPicker
+import dev.opencamera.pipeline.creative.SubjectLocator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -122,6 +127,18 @@ class CreativeCaptureController(
     @Volatile
     var zoomRatio = 1f
 
+    /** Set when Moon mode switched to a telephoto camera; otherwise Moon uses crop + Super Res. */
+    @Volatile
+    var moonOnTele = false
+
+    /** Normalised point the user selected (tap to focus) for sports subject tracking. */
+    @Volatile
+    var subjectHint: Pair<Float, Float>? = null
+
+    /** Finds the sports subject; a segmentation model can replace the motion-based default. */
+    @Volatile
+    var subjectLocator: SubjectLocator = MotionSubjectLocator
+
     private var frameCounter = 0
     private var moonHits = 0
 
@@ -190,19 +207,24 @@ class CreativeCaptureController(
             delay(plan.delayMs)
         }
         val timestamp = System.currentTimeMillis()
+        // Moon without a telephoto lens: unzoomed full-resolution frames, cropped around the
+        // moon and super-resolved after alignment.
+        val moonSuperRes = plan.mode == CreativeMode.MOON && !moonOnTele && multiFrame.fullRes
+        val moonZoom = maxOf(zoomRatio, MOON_MIN_ZOOM)
+        val moonCenter = lastMoon?.let { 0.5f + (it.cx - 0.5f) / zoomRatio to 0.5f + (it.cy - 0.5f) / zoomRatio }
         val captured: Pair<Burst, MultiFrameCaptureController.CapturedBurst?> = try {
             if (plan.mode == CreativeMode.FOCUS_STACK) {
                 focusSweep(cameraControl, cameraInfo, size.width, size.height, frames) to null
             } else {
                 val burstPlan = BurstPlan(BurstKind.SINGLE, frames, evCompensation = plan.evCompensation)
                 val c = try {
-                    multiFrame.capture(cameraControl, cameraInfo, burstPlan, plan.stride)
+                    multiFrame.capture(cameraControl, cameraInfo, burstPlan, plan.stride, unzoom = moonSuperRes)
                 } catch (e: CameraControl.OperationCanceledException) {
                     // The session was rebound under us (e.g. the preview look effect attaching);
                     // it is back within a second, so try once more.
                     Log.w(TAG, "Camera rebound during ${plan.mode}, retrying", e)
                     delay(REBIND_RETRY_MS)
-                    multiFrame.capture(cameraControl, cameraInfo, burstPlan, plan.stride)
+                    multiFrame.capture(cameraControl, cameraInfo, burstPlan, plan.stride, unzoom = moonSuperRes)
                 }
                 c.burst to c
             }
@@ -217,10 +239,18 @@ class CreativeCaptureController(
             if (plan.mode == CreativeMode.MOON) runCatching { cameraControl.cancelFocusAndMetering() }
         }
         val (burst, collected) = captured
+        val moonCrop = if (moonSuperRes) {
+            MultiFrameProcessor.zoomCrop(
+                burst.width, burst.height, moonZoom, moonCenter?.first ?: 0.5f, moonCenter?.second ?: 0.5f,
+            )
+        } else {
+            null
+        }
+        val hint = subjectHint
         queue.submit {
             val uris = ArrayList<Uri>()
             try {
-                burst.use { uris += process(it, plan, collected, location, timestamp) }
+                burst.use { uris += process(it, plan, collected, location, timestamp, moonCrop, hint) }
             } catch (e: Throwable) {
                 Log.e(TAG, "Creative processing failed", e)
             }
@@ -235,13 +265,20 @@ class CreativeCaptureController(
         collected: MultiFrameCaptureController.CapturedBurst?,
         location: Location?,
         timestamp: Long,
+        moonCrop: IntArray?,
+        hint: Pair<Float, Float>?,
     ): List<Uri> {
         val t0 = SystemClock.elapsedRealtime()
         val images: List<MergedImage> = if (plan.op == null) {
-            // Sports: keep the sharpest frames of the burst.
-            val order = runCatching { burst.rankBySharpness() }.getOrDefault(IntArray(0))
-            val picks = if (order.isEmpty()) intArrayOf(0) else order.take(SPORTS_KEEP).toIntArray()
+            // Sports: keep the frames where the tracked subject is sharpest.
+            val picks = pickSports(burst, hint)
             picks.toList().mapNotNull { burst.exportFrame(it) }
+        } else if (moonCrop != null) {
+            listOfNotNull(
+                runCatching { burst.process(MultiFrameMode.SUPER_RES, 0f, crop = moonCrop) }
+                    .onFailure { Log.e(TAG, "Moon super-res failed, stacking instead", it) }.getOrNull()
+                    ?: MultiFrameProcessor.stackOrFallback(burst, StackOp.MOON, StackParams(align = plan.align))
+            )
         } else {
             listOfNotNull(
                 MultiFrameProcessor.stackOrFallback(burst, plan.op, StackParams(align = plan.align))
@@ -270,6 +307,19 @@ class CreativeCaptureController(
 
     @Volatile
     private var lastRotation = 0
+
+    /** Indices of the frames to keep; falls back to whole-frame sharpness, then to frame 0. */
+    private fun pickSports(burst: Burst, hint: Pair<Float, Float>?): IntArray {
+        val picks = runCatching {
+            val factor = maxOf(1, burst.width / SPORTS_ANALYSIS_WIDTH)
+            val frames = (0 until burst.frameCount).map { i ->
+                LumaFrame(burst.width / factor, burst.height / factor, checkNotNull(burst.exportLuma(i, factor)))
+            }
+            SportsPicker.pick(frames, SPORTS_KEEP, hint, subjectLocator)
+        }.onFailure { Log.w(TAG, "Subject tracking failed, ranking whole frames", it) }.getOrNull()
+            ?: runCatching { burst.rankBySharpness().take(SPORTS_KEEP).toIntArray() }.getOrNull()
+        return picks?.takeIf { it.isNotEmpty() } ?: intArrayOf(0)
+    }
 
     /** Spot AE/AF on the detected disc so the bright limb does not clip. */
     private suspend fun meterOnMoon(cameraControl: CameraControl) {
@@ -338,5 +388,7 @@ class CreativeCaptureController(
         const val SPORTS_KEEP = 3
         const val FOCUS_SETTLE_MS = 350L
         const val REBIND_RETRY_MS = 1000L
+        const val MOON_MIN_ZOOM = 2f
+        const val SPORTS_ANALYSIS_WIDTH = 400
     }
 }
