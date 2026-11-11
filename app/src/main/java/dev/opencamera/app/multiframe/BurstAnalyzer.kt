@@ -141,8 +141,10 @@ class BurstAnalyzer : ImageAnalysis.Analyzer {
     private fun meter(image: ImageProxy) {
         // Some CameraX backends (camera-pipe) attach no CaptureResult to analysis frames; meter
         // from luma with a typical indoor exposure then, so bursts still run as HDR.
-        val result = resultFor(image)
-        if (result == null && !warnedNoResult) {
+        // A frame's TotalCaptureResult often lands after its image; the previous frame's result
+        // is close enough for metering.
+        val result = resultFor(image) ?: resultTracker?.latest
+        if (result == null && frameCounter > NO_RESULT_GRACE_FRAMES && !warnedNoResult) {
             warnedNoResult = true
             Log.w(LOG_TAG, "No CaptureResult on analysis frames, metering from luma only")
         }
@@ -181,6 +183,7 @@ class BurstAnalyzer : ImageAnalysis.Analyzer {
         private const val LOG_TAG = "BurstAnalyzer"
         private const val FALLBACK_EXPOSURE_NS = 20_000_000L
         private const val FALLBACK_ISO = 200
+        private const val NO_RESULT_GRACE_FRAMES = 40
 
         @SuppressLint("RestrictedApi")
         fun captureResult(image: ImageProxy): CaptureResult? = runCatching {
