@@ -14,7 +14,7 @@ import org.junit.Test
 class StreamPolicyTest {
     private val base = StreamPolicy.Inputs(
         setting = MultiFrameSetting.HDR_AUTO, creativeActive = false, jpegOutput = true, noExtension = true,
-        backCamera = true, singleCaptureIntent = false, flashOff = true, manualExposure = false,
+        backCamera = true, singleCaptureIntent = false, flashOff = true,
         rawCapable = true, source = BurstSource.AUTO,
     )
 
@@ -51,7 +51,6 @@ class StreamPolicyTest {
             base.copy(backCamera = false),
             base.copy(singleCaptureIntent = true),
             base.copy(flashOff = false),
-            base.copy(manualExposure = true),
             base.copy(flashOff = false, creativeActive = true),
         ).forEach { assertEquals(it.toString(), StreamConfig.STANDARD, StreamPolicy.choose(it)) }
     }

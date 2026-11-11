@@ -17,8 +17,6 @@ import android.view.MotionEvent
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.Toast
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Recomposer
@@ -248,11 +246,11 @@ class OverlayHost(
             guard?.onFirstFrame()
         }
         val scale = remember { repo.animatorScale() }
-        Crossfade(tokens, animationSpec = tween((240 * scale).toInt()), label = "skin") { t ->
-            if (debugFail == "all" || debugFail == t.id) error("Injected skin failure for ${t.id}")
-            CompositionLocalProvider(LocalSkin provides remember(t, blur) { Skin(t, blur, scale) }) {
-                content(ui)
-            }
+        if (debugFail == "all" || debugFail == tokens.id) error("Injected skin failure for ${tokens.id}")
+        // Tokens switch in place: the overlay keeps its composition and only the readers of the
+        // skin recompose (a crossfade composed and laid out two whole overlays for a frame).
+        CompositionLocalProvider(LocalSkin provides remember(tokens, blur) { Skin(tokens, blur, scale) }) {
+            content(ui)
         }
     }
 

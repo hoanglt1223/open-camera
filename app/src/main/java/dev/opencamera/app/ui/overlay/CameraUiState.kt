@@ -70,6 +70,7 @@ data class LensChipUi(val label: String, val selected: Boolean)
 
 data class LookItem(val id: String, val name: String)
 
+@androidx.compose.runtime.Immutable
 data class ProUiState(
     val enabled: Boolean,
     val available: Boolean,

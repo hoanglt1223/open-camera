@@ -169,6 +169,7 @@ class DialModel(val dial: ProDial, private val caps: ProCapabilities, private va
 
 @Composable
 fun ProPanel(pro: ProUiState, actions: CameraUiActions) {
+    CountRecompositions("ProPanel")
     val s = skin
     val caps = pro.caps ?: return
     val context = LocalContext.current
@@ -259,6 +260,12 @@ private fun Dial(model: DialModel, index: Int, enabled: Boolean, description: St
     val position by animateFloatAsState(index.toFloat(), s.fast(), label = "dial")
     val label = model.label(index)
     val textPx = with(density) { 11.sp.toPx() }
+    val paint = remember {
+        android.graphics.Paint().apply {
+            isAntiAlias = true
+            textAlign = android.graphics.Paint.Align.CENTER
+        }
+    }
 
     Box(
         Modifier
@@ -303,11 +310,7 @@ private fun Dial(model: DialModel, index: Int, enabled: Boolean, description: St
                 model.count <= 40 -> 3
                 else -> 10
             }
-            val paint = android.graphics.Paint().apply {
-                isAntiAlias = true
-                textSize = textPx
-                textAlign = android.graphics.Paint.Align.CENTER
-            }
+            paint.textSize = textPx
             for (i in first..last) {
                 val x = mid + sign * (i - position) * stepPx
                 if (x < 0 || x > size.width) continue

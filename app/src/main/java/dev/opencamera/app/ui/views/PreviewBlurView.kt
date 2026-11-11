@@ -40,9 +40,23 @@ class PreviewBlurView @JvmOverloads constructor(
      * view size (it is blurred anyway) and, for a SurfaceView preview, copied asynchronously,
      * so a rebind does not stall the UI thread on a full-size synchronous PixelCopy.
      */
-    fun freeze() {
+    fun freeze(lensScale: Float = 1f) {
         animate().cancel()
         alpha = 1f
+        scaleX = 1f
+        scaleY = 1f
+        // A lens switch keeps the frame sharp and shows it at the new field of view while the
+        // other camera opens, so the switch reads as a zoom rather than a blurred stall. Zooming
+        // in crops the frame (scaling the view up would spill over the bars around the preview);
+        // zooming out shrinks the view.
+        sharp = lensScale != 1f
+        cropScale = lensScale.coerceAtLeast(1f)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            setRenderEffect(if (sharp) null else RenderEffect.createBlurEffect(RADIUS, RADIUS, Shader.TileMode.REPEAT))
+        }
+        if (lensScale < 1f) {
+            animate().scaleX(lensScale).scaleY(lensScale).setDuration(LENS_ZOOM_MS).start()
+        }
         val pv = previewView?.takeUnless { it.height <= 0 || it.width <= 0 }
         if (pv == null) {
             setImageResource(android.R.color.black)
@@ -74,13 +88,18 @@ class PreviewBlurView @JvmOverloads constructor(
     fun reveal() {
         if (!isVisible) return
         requests++
+        animate().cancel()
         animate().alpha(0f).setDuration(REVEAL_MS).withEndAction {
             isVisible = false
             alpha = 1f
+            scaleX = 1f
+            scaleY = 1f
         }.start()
     }
 
     private var requests = 0
+    private var sharp = false
+    private var cropScale = 1f
     private val handler = Handler(Looper.getMainLooper())
 
     private fun show(bitmap: Bitmap?) {
@@ -88,13 +107,23 @@ class PreviewBlurView @JvmOverloads constructor(
             setImageResource(android.R.color.black)
             return
         }
-        setImageBitmap(
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) bitmap else bitmap.stackBlur((RADIUS / SNAPSHOT_DIVISOR).toInt().coerceAtLeast(2))
-        )
+        val shown = when {
+            sharp && cropScale > 1f -> centerCrop(bitmap, cropScale)
+            sharp || Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> bitmap
+            else -> bitmap.stackBlur((RADIUS / SNAPSHOT_DIVISOR).toInt().coerceAtLeast(2))
+        }
+        setImageBitmap(shown)
+    }
+
+    private fun centerCrop(src: Bitmap, scale: Float): Bitmap {
+        val w = (src.width / scale).toInt().coerceIn(1, src.width)
+        val h = (src.height / scale).toInt().coerceIn(1, src.height)
+        return Bitmap.createBitmap(src, (src.width - w) / 2, (src.height - h) / 2, w, h)
     }
     companion object {
         private const val RADIUS = 25f
         private const val SNAPSHOT_DIVISOR = 4
         private const val REVEAL_MS = 180L
+        private const val LENS_ZOOM_MS = 300L
     }
 }

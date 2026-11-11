@@ -90,4 +90,15 @@ class LensCatalogTest {
         assertEquals("1x", plan.stopFor(1.9f)?.label)
         assertEquals("2", plan.stopFor(5f)?.label)
     }
+
+    @Test
+    fun logicalZoomOnlyForPhysicalsInRange() {
+        val wide = LensChip("0.6", 0.6f, "3", 1f)
+        assertEquals(0.6f, LensPlan.logicalZoom(wide, setOf("0", "3"), 0.6f, 10f))
+        // Not a physical camera of the open logical camera (gauguin: logical 5 = main + depth).
+        assertNull(LensPlan.logicalZoom(wide, setOf("0", "4"), 1f, 10f))
+        // The logical camera cannot zoom out that far.
+        assertNull(LensPlan.logicalZoom(wide, setOf("0", "3"), 1f, 10f))
+        assertNull(LensPlan.logicalZoom(wide, emptySet(), 0.5f, 10f))
+    }
 }

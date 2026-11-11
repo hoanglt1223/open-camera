@@ -122,6 +122,8 @@ dependencies {
     implementation(libs.androidx.media3.effect)
     implementation(libs.opencv)
     implementation(libs.androidx.preference)
+    // Installs the baseline profile (src/main/baseline-prof.txt) on sideloaded installs too.
+    implementation(libs.androidx.profileinstaller)
     implementation(libs.androidx.recyclerview)
     implementation(libs.material)
     implementation(libs.coil)

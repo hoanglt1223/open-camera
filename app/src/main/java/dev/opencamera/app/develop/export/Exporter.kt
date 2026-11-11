@@ -45,12 +45,23 @@ enum class ExportFormat(val mime: String, val ext: String) {
     JPEG("image/jpeg", "jpg"), HEIF("image/heic", "heic"), AVIF("image/avif", "avif"), PNG("image/png", "png");
 
     companion object {
-        /** Formats this device can encode right now. */
-        fun available(): List<ExportFormat> = buildList {
-            add(JPEG)
-            if (hasEncoder(MediaFormat.MIMETYPE_VIDEO_HEVC)) add(HEIF)
-            if (avifFormat() != null) add(AVIF)
-            add(PNG)
+        /**
+         * Formats this device can encode. The codec scan takes tens of ms, so it runs once per
+         * process; call [prewarm] off the main thread before the export sheet opens.
+         */
+        fun available(): List<ExportFormat> = encodable
+
+        fun prewarm() {
+            encodable
+        }
+
+        private val encodable by lazy {
+            buildList {
+                add(JPEG)
+                if (hasEncoder(MediaFormat.MIMETYPE_VIDEO_HEVC)) add(HEIF)
+                if (avifFormat() != null) add(AVIF)
+                add(PNG)
+            }
         }
 
         fun avifFormat(): Bitmap.CompressFormat? = Bitmap.CompressFormat.entries.firstOrNull { it.name == "AVIF" }

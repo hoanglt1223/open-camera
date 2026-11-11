@@ -203,6 +203,17 @@ class DevelopEngine(private val listener: Listener) {
     }
 
     /**
+     * Detaches the window surface and waits (bounded) until the render thread let go of it; a
+     * SurfaceView's surface must not be drawn to after its destroy callback returns.
+     */
+    fun detachAndWait(timeoutMs: Long = 500) {
+        val done = java.util.concurrent.CountDownLatch(1)
+        attach(null)
+        if (!gl.post { done.countDown() }) return
+        runCatching { done.await(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS) }
+    }
+
+    /**
      * Renders [stack]; while a render runs only the newest request is kept. [draft] renders at
      * screen resolution (during a slider drag); the full proxy render follows on release.
      */

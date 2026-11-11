@@ -161,6 +161,7 @@ class ProModeUi(
         control = camera2CameraControl
         baseOptions = base
         afLocked = false
+        appliedRequest = null
         caps = ProCapabilities.from(cameraInfo).also {
             settings = store.load(storeKey(it)).clampTo(it.ranges)
             Log.d(LOG_TAG, "Camera ${it.cameraId}: manualSensor=${it.manualSensor} " +
@@ -183,43 +184,62 @@ class ProModeUi(
     private fun storeKey(c: ProCapabilities) =
         lensChip?.takeIf { it.cameraId == c.cameraId }?.lensId ?: c.cameraId
 
-    /** Manual exposure decides between the full-resolution and the regular JPEG session. */
-    var onManualExposureChanged: (() -> Unit)? = null
+    /** Request-relevant Pro state last sent to [control]; null after a bind or while Pro is off. */
+    private var appliedRequest: ProSettings? = null
 
     private fun applyOptions() {
-        val manual = active && settings.manualExposure
-        if (viewModel.multiFrame.manualExposureActive != manual) {
-            viewModel.multiFrame.manualExposureActive = manual
-            onManualExposureChanged?.invoke()
-        }
+        // Only stops multi-frame plans; the session layout stays, so no dial ever rebinds.
+        viewModel.multiFrame.manualExposureActive = active && settings.manualExposure
         val control = control ?: return
-        // set() drops keys from an earlier Pro state; add() layers the Pro keys on top.
-        control.setCaptureRequestOptions(baseOptions ?: return)
-        if (active) {
-            control.addCaptureRequestOptions(
-                CaptureRequestOptions.Builder().applyPro(settings, caps!!).build()
-            )
+        val base = baseOptions ?: return
+        val request = settings.copy(peaking = false, zebra = false, histogram = false).takeIf { active }
+        if (request == appliedRequest) return
+        val previous = appliedRequest
+        appliedRequest = request
+        if (request == null) {
+            control.setCaptureRequestOptions(base)
+        } else {
+            val pro = CaptureRequestOptions.Builder().applyPro(settings, caps!!).build()
+            // add() overwrites the Pro keys in one request update. A different key set (manual
+            // exposure, manual focus or Kelvin switched) needs set() first to drop stale keys.
+            if (previous == null || previous.keyShape() != request.keyShape()) control.setCaptureRequestOptions(base)
+            control.addCaptureRequestOptions(pro)
         }
-        Log.d(LOG_TAG, "Applied ${if (active) settings.toString() else "auto"}")
+        Log.d(LOG_TAG, "Applied ${request ?: "auto"}")
+    }
+
+    private fun ProSettings.keyShape() = Triple(manualExposure, focusDiopters != null, wbMode == WbMode.KELVIN)
+
+    private val saveHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var pendingSave: Runnable? = null
+
+    /** Dial drags change settings every few frames; the preferences file is written once they settle. */
+    private fun scheduleSave(key: String, s: ProSettings) {
+        pendingSave?.let(saveHandler::removeCallbacks)
+        pendingSave = Runnable { store.save(key, s) }.also { saveHandler.postDelayed(it, SAVE_DELAY_MS) }
     }
 
     private fun render() {
         val photo = configuration is CameraConfiguration.Photo && caps != null
+        val enabled = store.enabled
+        val label = formatLabel()
+        _uiState.value = ProUiState(enabled, photo, caps, settings, afLocked, label)
+        overlay.isVisible = active
+        if (!active) overlay.show(null)
         toggle.isVisible = photo && !externalUi
+        panel.isVisible = active && !externalUi
+        // The skinned overlay draws its own toggle and dials; the hidden View copies are not updated.
+        if (externalUi) return
         toggle.background = GradientDrawable().apply {
             cornerRadius = 18 * density
-            setColor(if (store.enabled) 0xFF26A69A.toInt() else 0x66000000)
+            setColor(if (enabled) 0xFF26A69A.toInt() else 0x66000000)
         }
         toggle.contentDescription = activity.getString(
             R.string.pro_value_description,
             activity.getString(R.string.pro_toggle_description),
-            activity.getString(if (store.enabled) R.string.pro_state_on else R.string.pro_state_off),
+            activity.getString(if (enabled) R.string.pro_state_on else R.string.pro_state_off),
         )
-        panel.isVisible = active && !externalUi
-        _uiState.value = ProUiState(store.enabled, photo, caps, settings, afLocked, formatLabel())
-        overlay.isVisible = active
-        if (!active) overlay.show(null)
-        caps?.takeIf { active }?.let { panel.bind(it, settings, afLocked, formatLabel()) }
+        caps?.takeIf { active }?.let { panel.bind(it, settings, afLocked, label) }
     }
 
     private fun formatLabel(): String? {
@@ -236,7 +256,7 @@ class ProModeUi(
 
     override fun onSettingsChanged(settings: ProSettings) {
         this.settings = settings
-        caps?.let { store.save(storeKey(it), settings) }
+        caps?.let { scheduleSave(storeKey(it), settings) }
         applyOptions()
         render()
     }
@@ -339,6 +359,7 @@ class ProModeUi(
     private companion object {
         val LOG_TAG = ProModeUi::class.simpleName!!
         const val FRAME_INTERVAL_MS = 66L
+        const val SAVE_DELAY_MS = 400L
         const val ANALYSIS_WIDTH = 320
         const val PEAKING_THRESHOLD = 220
         const val ZEBRA_THRESHOLD = 250

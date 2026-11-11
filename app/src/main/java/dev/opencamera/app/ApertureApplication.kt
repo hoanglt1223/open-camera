@@ -44,5 +44,11 @@ class ApertureApplication : Application() {
 
         // Generate and cache the device profile off the main thread on first launch
         coroutineScope.launch { deviceProfileRepository.profile() }
+
+        // Opens the default and Pro settings files off the main thread; the camera screen reads it in onCreate.
+        coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching { getSharedPreferences(dev.opencamera.app.pro.ProSettingsStore.PREFS_NAME, MODE_PRIVATE).all }
+            runCatching { PreferenceManager.getDefaultSharedPreferences(this@ApertureApplication).all }
+        }
     }
 }

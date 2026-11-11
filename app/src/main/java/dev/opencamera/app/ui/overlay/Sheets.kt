@@ -40,6 +40,7 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -99,14 +100,17 @@ fun controlName(c: Control) = when (c) {
 
 @Composable
 fun BoxScope.Sheets(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiState) {
+    CountRecompositions("Sheets")
     val s = skin
     val open = ui.sheet != Sheet.NONE
-    val dim by animateFloatAsState(if (open) .35f else 0f, s.slow(), label = "dim")
-    if (dim > 0f) {
+    val dim = animateFloatAsState(if (open) .35f else 0f, s.slow(), label = "dim")
+    // The fade is read in the draw phase; composition only sees the scrim appear and disappear.
+    val dimmed by remember { derivedStateOf { dim.value > 0f } }
+    if (dimmed) {
         Box(
             Modifier
                 .matchParentSize()
-                .graphicsLayer { alpha = dim }
+                .graphicsLayer { alpha = dim.value }
                 .background(Color.Black)
                 .clickable(remember { MutableInteractionSource() }, null, onClickLabel = stringResource(R.string.ui_close)) {
                     ui.sheet = Sheet.NONE

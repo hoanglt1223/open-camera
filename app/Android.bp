@@ -92,6 +92,7 @@ android_app {
         "OpenCamera_androidx.media3_media3-transformer",
         "OpenCamera_androidx.media3_media3-ui",
         "androidx.preference_preference",
+        "androidx.profileinstaller_profileinstaller",
         "androidx.recyclerview_recyclerview",
         "androidx.tracing_tracing",
         "OpenCamera_com.google.ai.edge.litert_litert",

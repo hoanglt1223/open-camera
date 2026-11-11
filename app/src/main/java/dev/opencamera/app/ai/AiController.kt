@@ -55,12 +55,13 @@ class AiController(
 ) {
     private val context = viewFinder.context
     val settings = AiSettings(context)
-    private val runtime = MlRuntime.get(context)
-    private val segmenter = Segmenter(runtime)
-    private val bokeh = BokehProcessor(segmenter)
-    private val faces = FaceMesh(runtime)
-    private val scenes = SceneDetector(context, runtime, faces)
-    private val saliency = SaliencyDetector(runtime, maxModelMs = 400)
+    // Built on first use: the ML runtime and its tasks are not needed to show the first preview.
+    private val runtime by lazy { MlRuntime.get(context) }
+    private val segmenter by lazy { Segmenter(runtime) }
+    private val bokeh by lazy { BokehProcessor(segmenter) }
+    private val faces by lazy { FaceMesh(runtime) }
+    private val scenes by lazy { SceneDetector(context, runtime, faces) }
+    private val saliency by lazy { SaliencyDetector(runtime, maxModelMs = 400) }
 
     private val stabilizer = dev.opencamera.pipeline.ai.MaskStabilizer()
     private var liveBokehOk = true

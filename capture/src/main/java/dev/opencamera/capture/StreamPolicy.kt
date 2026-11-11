@@ -30,7 +30,6 @@ object StreamPolicy {
         val backCamera: Boolean,
         val singleCaptureIntent: Boolean,
         val flashOff: Boolean,
-        val manualExposure: Boolean,
         val rawCapable: Boolean,
         val source: BurstSource,
         /** RAW_SENSOR has more pixels than the largest YUV size the HAL streams. */
@@ -43,7 +42,9 @@ object StreamPolicy {
             return StreamConfig.STANDARD
         }
         if (i.creativeActive) return StreamConfig.FULL_RES_YUV
-        if (i.setting == MultiFrameSetting.OFF || i.manualExposure) return StreamConfig.STANDARD
+        // Pro manual exposure keeps the layout: a single frame of the full-resolution stream carries
+        // the Pro request options, so moving a dial never reopens the session.
+        if (i.setting == MultiFrameSetting.OFF) return StreamConfig.STANDARD
         val rawWanted = when (i.source) {
             BurstSource.RAW -> true
             BurstSource.YUV -> false
