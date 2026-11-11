@@ -32,6 +32,7 @@ class ApertureApplication : Application() {
     @SuppressLint("RestrictedApi")
     override fun onCreate() {
         super.onCreate()
+        DebugDiagnostics.install(this)
 
         // Observe dynamic colors changes
         DynamicColors.applyToActivitiesIfAvailable(this)
