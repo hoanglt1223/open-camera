@@ -11,7 +11,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
-import android.graphics.SurfaceTexture
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -23,7 +22,8 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.Surface
-import android.view.TextureView
+import android.view.SurfaceHolder
+import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
@@ -105,7 +105,7 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
     private var loadedLook: String? = null
 
     internal lateinit var previewFrame: FrameLayout
-    private lateinit var texture: TextureView
+    private lateinit var texture: SurfaceView
     private lateinit var cpuView: ImageView
     internal lateinit var overlay: PreviewOverlay
     private lateinit var histogramView: HistogramView
@@ -169,6 +169,7 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
         lifecycleScope.launch(Dispatchers.Default) {
             val ok = dev.opencamera.app.develop.tools.RetouchTools.install(this@DevelopActivity)
             withContext(Dispatchers.Main) { ui.retouchAvailable.value = ok }
+            runCatching { dev.opencamera.app.develop.export.ExportFormat.prewarm() }
         }
         val uris = when (intent?.action) {
             Intent.ACTION_SEND_MULTIPLE -> intentStreams()
@@ -248,18 +249,19 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
     @SuppressLint("ClickableViewAccessibility")
     private fun buildPreview() {
         previewFrame = FrameLayout(this)
-        texture = TextureView(this).apply {
-            surfaceTextureListener = object : TextureView.SurfaceTextureListener {
-                override fun onSurfaceTextureAvailable(st: SurfaceTexture, w: Int, h: Int) {
-                    surface = Surface(st); attachView()
+        // A SurfaceView: GL frames go straight to the compositor, so a slider drag does not make
+        // the UI thread redraw the window for every rendered frame (a TextureView did).
+        texture = SurfaceView(this).apply {
+            holder.addCallback(object : SurfaceHolder.Callback {
+                override fun surfaceCreated(h: SurfaceHolder) {
+                    surface = h.surface; attachView()
                 }
-                override fun onSurfaceTextureSizeChanged(st: SurfaceTexture, w: Int, h: Int) = attachView()
-                override fun onSurfaceTextureDestroyed(st: SurfaceTexture): Boolean {
-                    engine.attach(null); surface?.release(); surface = null
-                    return true
+                override fun surfaceChanged(h: SurfaceHolder, format: Int, w: Int, height: Int) = attachView()
+                override fun surfaceDestroyed(h: SurfaceHolder) {
+                    surface = null
+                    if (::engine.isInitialized) engine.detachAndWait()
                 }
-                override fun onSurfaceTextureUpdated(st: SurfaceTexture) = Unit
-            }
+            })
         }
         cpuView = ImageView(this).apply { scaleType = ImageView.ScaleType.MATRIX; visibility = View.GONE }
         overlay = PreviewOverlay(this)
@@ -646,7 +648,8 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
         }
         // The status line feeds editor state; updating it per draft frame recomposes during a drag.
         if (!stats.draft) status.text = getString(R.string.develop_render_stats, stats.outWidth, stats.outHeight, stats.ms.toInt(), if (stats.gpu) "GPU" else "CPU")
-        updateOverlay()
+        // Draft frames of a drag leave the overlay as it was, unless it draws the crop or a mask.
+        if (!stats.draft || sizeChanged || mode == Mode.CROP || gesture.showMask) updateOverlay()
     }
 
     override fun onHistogram(h: Histogram) {
