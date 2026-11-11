@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="vendor_bridge_header">Tính năng camera của điện thoại</string>
+    <string name="vendor_bridge_enabled_title">Dùng xử lý của điện thoại</string>
+    <string name="vendor_bridge_enabled_summary">Dùng chế độ đêm, HDR và các chế độ khác mà hãng điện thoại cung cấp, cùng các thiết lập của hãng được hồ sơ thiết bị đã xác minh bật. Tắt để chỉ dùng xử lý của Open Camera.</string>
+    <string name="processing_source_hdr_title">HDR và HDR tự động</string>
+    <string name="processing_source_night_title">Ban đêm</string>
+    <string name="processing_source_phone">Xử lý của điện thoại khi có</string>
+    <string name="processing_source_open">Xử lý của Open Camera</string>
+    <string name="oem_processing_active">Xử lý %1$s của điện thoại</string>
+    <string name="oem_processing_failed">Xử lý của điện thoại thất bại, đang dùng xử lý của Open Camera</string>
+</resources>

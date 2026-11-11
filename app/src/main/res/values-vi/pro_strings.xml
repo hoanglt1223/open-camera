@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="pro_toggle">Thủ công</string>
+    <string name="pro_toggle_description">Điều khiển thủ công</string>
+    <string name="pro_auto">Tự động</string>
+    <string name="pro_iso">ISO</string>
+    <string name="pro_shutter">Màn trập</string>
+    <string name="pro_wb">WB</string>
+    <string name="pro_wb_description">Cân bằng trắng</string>
+    <string name="pro_focus">Lấy nét</string>
+    <string name="pro_focus_infinity">∞</string>
+    <string name="pro_ev">EV</string>
+    <string name="pro_ev_description">Bù phơi sáng</string>
+    <string name="pro_meter">Đo sáng</string>
+    <string name="pro_meter_description">Chế độ đo sáng</string>
+    <string name="pro_meter_center">Trung tâm</string>
+    <string name="pro_meter_spot">Điểm</string>
+    <string name="pro_meter_matrix">Ma trận</string>
+    <string name="pro_wb_incandescent">Đèn sợi đốt</string>
+    <string name="pro_wb_fluorescent">Đèn huỳnh quang</string>
+    <string name="pro_wb_daylight">Ánh sáng ban ngày</string>
+    <string name="pro_wb_cloudy">Nhiều mây</string>
+    <string name="pro_wb_shade">Bóng râm</string>
+    <string name="pro_ae_lock">AE-L</string>
+    <string name="pro_ae_lock_description">Khóa phơi sáng</string>
+    <string name="pro_af_lock">AF-L</string>
+    <string name="pro_af_lock_description">Khóa lấy nét</string>
+    <string name="pro_peaking">Peaking</string>
+    <string name="pro_peaking_description">Tô viền vùng nét</string>
+    <string name="pro_zebra">Zebra</string>
+    <string name="pro_zebra_description">Sọc zebra trên vùng sáng</string>
+    <string name="pro_histogram">Biểu đồ histogram</string>
+    <string name="pro_format_description">Định dạng ảnh</string>
+    <string name="pro_format_jpeg">JPEG</string>
+    <string name="pro_format_raw">RAW</string>
+    <string name="pro_format_raw_jpeg">RAW+JPEG</string>
+    <string name="pro_reset">Đặt lại</string>
+    <string name="pro_reset_description">Đặt lại điều khiển thủ công cho ống kính này</string>
+    <string name="pro_state_on">bật</string>
+    <string name="pro_state_off">tắt</string>
+    <string name="pro_value_description">%1$s: %2$s</string>
+    <string name="pro_meter_reading">%1$s EV</string>
+</resources>

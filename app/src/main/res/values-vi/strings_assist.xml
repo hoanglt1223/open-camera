@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="grid_on_diagonal">LƯỚI ╳</string>
+    <string name="grid_on_square">LƯỚI □</string>
+    <string name="grid_setting_title">Lưới</string>
+    <string-array name="grid_mode_entries">
+        <item>Tắt</item>
+        <item>Quy tắc một phần ba (3×3)</item>
+        <item>4×4</item>
+        <item>Tỷ lệ vàng</item>
+        <item>Đường chéo</item>
+        <item>Hình vuông</item>
+    </string-array>
+    <string name="composition_hints_title">Gợi ý bố cục</string>
+    <string name="composition_hints_summary">Mũi tên nhẹ hướng tới khung hình tốt hơn: chủ thể ở điểm một phần ba, đường chân trời thẳng, khoảng trống phía trên đầu. Chạm vào gợi ý để ẩn gợi ý cho đến khi khởi động lại ứng dụng</string>
+</resources>

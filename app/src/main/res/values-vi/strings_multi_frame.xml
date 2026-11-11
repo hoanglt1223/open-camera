@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="multi_frame_off">Tắt HDR</string>
+    <string name="multi_frame_hdr_auto">HDR tự động</string>
+    <string name="multi_frame_hdr_on">Bật HDR</string>
+    <string name="multi_frame_night">Ban đêm</string>
+    <string name="multi_frame_astro">Thiên văn</string>
+    <string name="multi_frame_astro_suggestion">Điện thoại đứng yên và cảnh tối</string>
+    <string name="stream_fallback_multi_frame">Camera này không hỗ trợ chụp liên tiếp HDR và Ban đêm</string>
+    <string name="stream_fallback_look">Camera này không hỗ trợ xem trước phong cách màu trực tiếp; phong cách vẫn được áp dụng cho ảnh</string>
+    <string name="stream_fallback_baseline">Camera mở ở chế độ cơ bản: một số tính năng bị tắt cho camera này</string>
+    <string name="stream_fallback_failed">Không thể mở camera</string>
+    <string name="full_res_fallback">Không hỗ trợ chụp đa khung độ phân giải đầy đủ; đang dùng luồng camera chuẩn</string>
+</resources>

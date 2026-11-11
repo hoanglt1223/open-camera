@@ -183,4 +183,10 @@
     <string name="video_mirror_mode_off">Tắt</string>
     <string name="video_mirror_mode_on">Bật</string>
     <string name="video_mirror_mode_on_ffc_only">Chỉ camera trước</string>
+    <string name="device_profile_title">Hồ sơ thiết bị</string>
+    <string name="device_profile_best_match">Phù hợp nhất cho điện thoại này</string>
+    <string name="device_profile_auto">Chỉ quét trên điện thoại này</string>
+    <string name="device_profile_off">Tắt: danh sách camera thường</string>
+    <string name="export_device_profile_title">Xuất hồ sơ thiết bị</string>
+    <string name="export_device_profile_summary">Chia sẻ hồ sơ ống kính của thiết bị này dưới dạng JSON (không có số sê-ri hay vị trí)</string>
 </resources>

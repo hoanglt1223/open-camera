@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="look_none">Gốc</string>
+    <string name="look_button">Phong cách</string>
+    <string name="looks_header">Phong cách màu và khung</string>
+    <string name="look_intensity_title">Cường độ phong cách</string>
+    <string name="look_intensity_summary">Mức áp dụng phong cách đã chọn lên bản xem trước và ảnh</string>
+    <string name="watermark_template_title">Khung</string>
+    <string name="watermark_none">Không</string>
+    <string name="watermark_film_border">Viền phim</string>
+    <string name="watermark_exif_strip">Dải EXIF</string>
+    <string name="processing_channel_name">Xử lý ảnh</string>
+    <string name="processing_notification_title">Đang áp dụng phong cách màu</string>
+    <plurals name="processing_notification_text">
+        <item quantity="other">Còn %d ảnh</item>
+    </plurals>
+</resources>

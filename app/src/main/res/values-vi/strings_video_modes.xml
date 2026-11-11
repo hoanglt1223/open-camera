@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="camera_mode_more">Thêm</string>
+
+    <string name="video_mode_pro_video">Video chuyên nghiệp</string>
+    <string name="video_mode_slow_motion">Quay chậm</string>
+    <string name="video_mode_time_lapse">Tua nhanh thời gian</string>
+    <string name="video_mode_hyperlapse">Hyperlapse</string>
+    <string name="video_mode_short_video">Video ngắn</string>
+    <string name="video_mode_dual_video">Video kép</string>
+    <string name="video_mode_slow_shutter">Màn trập chậm</string>
+    <string name="video_mode_time_freeze">Đóng băng thời gian</string>
+    <string name="video_mode_bokeh_video">Video xóa phông</string>
+    <string name="video_mode_panorama">Toàn cảnh</string>
+    <string name="video_mode_document">Tài liệu</string>
+
+    <string name="video_modes_busy">Chờ…</string>
+    <string name="video_modes_capture">Chụp</string>
+    <string name="video_modes_close">Quay lại</string>
+    <string name="video_modes_duration">%1$d:%2$02d</string>
+    <string name="video_modes_failed">Chụp thất bại</string>
+    <string name="video_modes_flip">Lật</string>
+    <string name="video_modes_high_speed_fallback">Không có phiên tốc độ cao, đang dùng quay chậm định thời lại</string>
+    <string name="video_modes_mic_failed">Micrô đã chọn bị lỗi, đã chuyển về mặc định</string>
+    <string name="video_modes_mode_unavailable">%1$s không khả dụng trên thiết bị này</string>
+    <string name="video_modes_no_camera">Camera không khả dụng</string>
+    <string name="video_modes_no_frames">Không ghi được gì</string>
+    <string name="video_modes_none">Thiết bị này không có chế độ bổ sung</string>
+    <string name="video_modes_page_added">Đã thêm trang %1$d</string>
+    <string name="video_modes_pano_lower">Nghiêng xuống</string>
+    <string name="video_modes_pano_raise">Nghiêng lên</string>
+    <string name="video_modes_pano_turn">Xoay chậm</string>
+    <string name="video_modes_panorama_failed">Không thể ghép ảnh toàn cảnh</string>
+    <string name="video_modes_panorama_too_short">Xoay thêm để có ảnh toàn cảnh</string>
+    <string name="video_modes_pause">Tạm dừng</string>
+    <string name="video_modes_pdf_saved">Đã lưu PDF vào Documents/OpenCamera</string>
+    <string name="video_modes_post_failed">Đã lưu bản gốc; xử lý thất bại</string>
+    <string name="video_modes_processing">Đang xử lý…</string>
+    <string name="video_modes_reduced">Một số thiết lập không hỗ trợ dùng cùng nhau và đã bị tắt</string>
+    <string name="video_modes_resume">Tiếp tục</string>
+    <string name="video_modes_saved">Đã lưu video</string>
+    <string name="video_modes_saved_photo">Đã lưu ảnh</string>
+    <string name="video_modes_saved_post">Đã lưu bản gốc và bản đã xử lý</string>
+    <string name="video_modes_saved_video">Đã lưu video (%1$d khung hình)</string>
+    <string name="video_modes_start">Bắt đầu</string>
+    <string name="video_modes_stop">Dừng</string>
+    <string name="video_modes_thermal_stop">Thiết bị quá nóng, đã dừng quay</string>
+    <string name="video_modes_thermal_warm">Thiết bị đang ấm</string>
+
+    <string name="video_opt_bitrate">Bitrate %1$s</string>
+    <string name="video_opt_doc_bw">Đen trắng</string>
+    <string name="video_opt_doc_color">Màu</string>
+    <string name="video_opt_doc_gray">Xám</string>
+    <string name="video_opt_export_pdf">Xuất PDF (%1$d)</string>
+    <string name="video_opt_fps">%1$d fps</string>
+    <string name="video_opt_hdr_off">Tắt HDR</string>
+    <string name="video_opt_hdr_on">HDR 10-bit</string>
+    <string name="video_opt_high_speed">%1$d fps tốc độ cao</string>
+    <string name="video_opt_interval">Mỗi %1$.1f giây</string>
+    <string name="video_opt_length">%1$d giây</string>
+    <string name="video_opt_log_off">Tắt Log</string>
+    <string name="video_opt_log_on">Bật Log</string>
+    <string name="video_opt_mic">Micrô %1$s</string>
+    <string name="video_opt_mono">Mono</string>
+    <string name="video_opt_music_clear">Bỏ nhạc</string>
+    <string name="video_opt_music_pick">Thêm nhạc</string>
+    <string name="video_opt_orig_off">Tắt âm thanh gốc</string>
+    <string name="video_opt_orig_on">Bật âm thanh gốc</string>
+    <string name="video_opt_quality">Chất lượng %1$s</string>
+    <string name="video_opt_retimed">%1$d fps → chậm %2$dx</string>
+    <string name="video_opt_silky">Mượt</string>
+    <string name="video_opt_speed">%1$dx</string>
+    <string name="video_opt_stab">Chống rung %1$s</string>
+    <string name="video_opt_stereo">Stereo</string>
+    <string name="video_opt_trails">Vệt sáng</string>
+
+    <string name="video_value_high">cao</string>
+    <string name="video_value_low">thấp</string>
+    <string name="video_value_mic_camcorder">máy quay</string>
+    <string name="video_value_mic_default">mặc định</string>
+    <string name="video_value_mic_raw">chưa xử lý</string>
+    <string name="video_value_mic_voice">giọng nói</string>
+    <string name="video_value_off">tắt</string>
+    <string name="video_value_stab_gyro">con quay</string>
+    <string name="video_value_stab_hal">camera</string>
+    <string name="video_value_standard">chuẩn</string>
+</resources>

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="ai_settings_title">Tính năng thông minh</string>
+    <string name="ai_capture_category">Chụp</string>
+    <string name="ai_runtime_category">Thời gian chạy</string>
+    <string name="ai_models_category">Mô hình</string>
+    <string name="ai_models_info">Các mô hình nhỏ có sẵn trong ứng dụng. Mô hình lớn hơn có thể tải về tùy chọn và được kiểm tra bằng mã băm SHA-256 trước khi dùng. Chạm vào mô hình để tải về hoặc xóa.</string>
+    <string name="ai_model_bundled">Tích hợp sẵn</string>
+    <string name="ai_model_downloaded">Đã tải về. Chạm để xóa</string>
+    <string name="ai_model_not_downloaded">Chưa tải về. Chạm để tải</string>
+    <string name="ai_model_corrupt">Bị hỏng. Chạm để tải lại</string>
+    <string name="ai_model_downloading">Đang tải %1$d%%</string>
+    <string name="ai_model_download_failed">Tải về thất bại: %1$s</string>
+    <string name="ai_accelerator_title">Bộ tăng tốc</string>
+    <string name="ai_benchmark_title">Đo hiệu năng mô hình</string>
+    <string name="ai_benchmark_summary">Đo thời gian mọi mô hình có sẵn trên thiết bị này</string>
+    <string name="ai_benchmark_running">Đang chạy…</string>
+    <string name="ai_feature_disabled">Đã tắt %1$s trong phiên này</string>
+
+    <string name="ai_portrait_on">Chân dung</string>
+    <string name="ai_portrait_off">Tắt chân dung</string>
+    <string name="ai_portrait_summary">Làm mờ hậu cảnh của ảnh có người. Khẩu độ và điểm lấy nét có thể chỉnh lại sau trong trình chỉnh sửa.</string>
+    <string name="ai_portrait_aperture_title">Độ mờ hậu cảnh mặc định</string>
+    <string name="ai_live_portrait_title">Xem trước chân dung trực tiếp</string>
+    <string name="ai_live_portrait_summary">Hiển thị hiệu ứng mờ trong khung ngắm ở độ phân giải thấp hơn</string>
+    <string name="ai_portrait_no_subject">Không tìm thấy người</string>
+    <string name="ai_portrait_status">f/%1$.1f · %2$s · %3$d ms. Chạm để chọn điểm lấy nét.</string>
+
+    <string name="ai_scene_title">Nhận diện cảnh</string>
+    <string name="ai_scene_summary">Hiển thị nhãn cho đồ ăn, bầu trời, ban đêm, tài liệu, chân dung, cây cối và chữ. Chạm vào nhãn để dùng thiết lập phù hợp.</string>
+    <string name="ai_scene_none">Tự động</string>
+    <string name="ai_scene_food">Đồ ăn</string>
+    <string name="ai_scene_sky">Bầu trời</string>
+    <string name="ai_scene_night">Ban đêm</string>
+    <string name="ai_scene_document">Tài liệu</string>
+    <string name="ai_scene_portrait">Chân dung</string>
+    <string name="ai_scene_plant">Cây cối</string>
+    <string name="ai_scene_text">Chữ</string>
+    <string name="ai_preset_night">Đã bật chế độ đêm</string>
+    <string name="ai_preset_portrait">Đã bật chân dung</string>
+    <string name="ai_preset_vivid">Đã áp dụng màu sống động</string>
+    <string name="ai_preset_document">Đã áp dụng màu tự nhiên</string>
+
+    <string name="ai_composition_title">Hỗ trợ bố cục</string>
+    <string name="ai_composition_summary">Chỉ chủ thể chính tới điểm một phần ba gần nhất và gợi ý cách cắt</string>
+
+    <string name="ai_best_shot_title">Ảnh đẹp nhất</string>
+    <string name="ai_best_shot_summary">Chụp liên tiếp ngắn và chỉ giữ lại khung hình đẹp nhất</string>
+    <string name="ai_best_shot_frames_title">Số khung mỗi lần chụp liên tiếp</string>
+    <string name="ai_best_shot_failed">Chụp liên tiếp thất bại, chụp một ảnh đơn</string>
+    <string name="ai_best_shot_done">Đã giữ khung %1$d trên %2$d</string>
+
+    <string name="ai_beauty_title">Làm mịn da</string>
+    <string name="ai_beauty_summary">Làm mịn nhẹ khuôn mặt. 0 là tắt.</string>
+
+    <string name="ai_editor_title">Chỉnh sửa ảnh</string>
+    <string name="ai_editor_no_image">Không có ảnh để chỉnh sửa</string>
+    <string name="ai_editor_load_failed">Không thể mở ảnh này</string>
+    <string name="ai_editor_loading">Đang tải…</string>
+    <string name="ai_editor_working">Đang xử lý…</string>
+    <string name="ai_editor_saving">Đang lưu…</string>
+    <string name="ai_editor_save">Lưu bản sao</string>
+    <string name="ai_editor_saved">Đã lưu bản sao (%1$s)</string>
+    <string name="ai_editor_failed">Không thể áp dụng chỉnh sửa này</string>
+    <string name="ai_editor_queued">Đang xử lý trong nền. Kết quả được lưu thành ảnh mới.</string>
+    <string name="ai_tool_portrait">Chân dung</string>
+    <string name="ai_tool_beauty">Làm mịn da</string>
+    <string name="ai_tool_denoise">Khử nhiễu</string>
+    <string name="ai_tool_upscale">Phóng to 2×</string>
+    <string name="ai_denoise_model">Khử nhiễu bằng mô hình đã tải về. Thanh trượt đặt cường độ.</string>
+    <string name="ai_denoise_classical">Chưa tải mô hình khử nhiễu: dùng bộ lọc cổ điển.</string>
+    <string name="ai_upscale_model">Phóng to 2× bằng mô hình đã tải về.</string>
+    <string name="ai_upscale_classical">Chưa tải mô hình phóng to: dùng thay đổi kích thước mượt kèm làm nét.</string>
+
+    <string-array name="ai_accelerator_entries">
+        <item>Tự động (đo hiệu năng)</item>
+        <item>CPU</item>
+        <item>GPU</item>
+        <item>NNAPI</item>
+    </string-array>
+</resources>

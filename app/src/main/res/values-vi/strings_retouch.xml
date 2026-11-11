@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="retouch_title">Chỉnh sửa chi tiết</string>
+    <string name="retouch_tool_erase">Xóa</string>
+    <string name="retouch_tool_blemish">Vết thâm</string>
+    <string name="retouch_tool_skin">Làm mịn da</string>
+    <string name="retouch_tool_redeye">Mắt đỏ</string>
+    <string name="retouch_tool_teeth">Răng</string>
+    <string name="retouch_tool_eyes">Mắt</string>
+    <string name="retouch_tool_wb">Cân bằng trắng</string>
+    <string name="retouch_tool_geometry">Làm thẳng</string>
+    <string name="retouch_tool_reshape">Chỉnh hình dáng</string>
+    <string name="retouch_undo">Hoàn tác</string>
+    <string name="retouch_redo">Làm lại</string>
+    <string name="retouch_hold_original">Giữ: ảnh gốc</string>
+    <string name="retouch_apply">Áp dụng</string>
+    <string name="retouch_auto">Tự động</string>
+    <string name="retouch_compare">So sánh</string>
+    <string name="retouch_cancel">Hủy</string>
+    <string name="retouch_back_to_grid">Quay lại</string>
+    <string name="retouch_use_this">Dùng %1$s</string>
+    <string name="retouch_compare_hint">Chạm vào một kết quả để so với ảnh gốc. Kéo để di chuyển vạch chia, chạm hai lần để thu phóng.</string>
+    <string name="retouch_strength">Cường độ</string>
+    <string name="retouch_spot_size">Cỡ điểm</string>
+    <string name="retouch_brush_size">Cỡ cọ</string>
+    <string name="retouch_brush">Cọ</string>
+    <string name="retouch_brush_erase">Bỏ tô</string>
+    <string name="retouch_select_tap">Chạm để chọn</string>
+    <string name="retouch_remove">Xóa</string>
+    <string name="retouch_hq">Chất lượng cao</string>
+    <string name="retouch_selected">Đã chọn %1$d đối tượng</string>
+    <string name="retouch_angle">Xoay</string>
+    <string name="retouch_vertical">Phối cảnh dọc</string>
+    <string name="retouch_horizontal">Phối cảnh ngang</string>
+    <string name="retouch_lens_profile">Hiệu chỉnh ống kính (dữ liệu camera)</string>
+    <string name="retouch_lens_manual">Méo ống kính</string>
+    <string name="retouch_slim_face">Mặt thon hơn (tối đa 8%)</string>
+    <string name="retouch_bigger_eyes">Mắt to hơn (tối đa 10%)</string>
+    <string name="retouch_slim_nose">Mũi thon hơn (tối đa 8%)</string>
+    <string name="retouch_liquify_push">Đẩy</string>
+    <string name="retouch_liquify_bloat">Phình</string>
+    <string name="retouch_liquify_pinch">Thu</string>
+    <string name="retouch_reshape_notice">Thay đổi hình dáng khuôn mặt hoặc cơ thể. Ảnh đã lưu được đánh dấu là đã chỉnh hình dáng trong siêu dữ liệu.</string>
+    <string name="retouch_hint_tap">Chạm vào ảnh</string>
+    <string name="retouch_hint_brush">Tô lên vùng cần xóa, hoặc chạm vào người hay vật thể</string>
+    <string name="retouch_hint_slider">Kéo thanh trượt, rồi chọn Áp dụng</string>
+    <string name="retouch_hint_liquify">Kéo trên ảnh, rồi chọn Áp dụng</string>
+    <string name="retouch_unavailable">Không khả dụng: %1$s</string>
+    <string name="retouch_preview_status">Xem trước: %1$s, %2$d ms</string>
+    <string name="retouch_applied">Đã áp dụng: %1$s %2$s</string>
+    <string name="retouch_nothing">Không có gì để làm</string>
+    <string name="retouch_lama_title">Tải về công cụ xóa chất lượng cao?</string>
+    <string name="retouch_lama_message">Mô hình big-lama có dung lượng %1$s. Mô hình được tải về một lần từ %2$s (giấy phép %3$s) và chạy trên điện thoại. Nếu không có, việc xóa sẽ dùng mô hình tích hợp sẵn.</string>
+    <string name="retouch_download">Tải về</string>
+    <string name="retouch_use_migan">Dùng bản tích hợp</string>
+    <string name="retouch_downloading">Đang tải %1$d%% (nhấn giữ ảnh để hủy)</string>
+    <string name="retouch_download_failed">Tải về thất bại; mô hình tích hợp sẵn vẫn dùng được</string>
+</resources>

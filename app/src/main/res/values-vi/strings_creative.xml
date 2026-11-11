@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="creative_off">Sáng tạo</string>
+    <string name="creative_moon">Mặt trăng</string>
+    <string name="creative_long_exposure">Phơi sáng lâu</string>
+    <string name="creative_light_trails">Vệt sáng</string>
+    <string name="creative_remove_people">Xóa người</string>
+    <string name="creative_focus_stack">Ghép lấy nét</string>
+    <string name="creative_sports">Chụp liên tiếp thể thao</string>
+    <string name="creative_unavailable">Chế độ này cần luồng chụp liên tiếp mà camera hiện không cung cấp được. Đang chụp ảnh thường.</string>
+    <string name="creative_failed">Chụp liên tiếp thất bại. Đang chụp ảnh thường.</string>
+    <string name="creative_moon_shake">Điện thoại đang rung: hãy đặt lên vật cố định. Chụp sau 2 giây.</string>
+    <string name="creative_moon_not_found">Không thấy mặt trăng trong khung hình; đo sáng toàn khung</string>
+    <string name="creative_moon_suggestion">Đĩa sáng trên nền trời tối: thử chế độ Mặt trăng (chi tiết thật từ ghép nhiều khung, không vẽ thêm)</string>
+    <string name="creative_focus_unsupported">Camera này không lấy nét thủ công được; không dùng được ghép lấy nét</string>
+    <string name="motion_photo_on">Bật ảnh động</string>
+    <string name="motion_photo_off">Tắt ảnh động</string>
+    <string name="pre_shot_on">Bật chụp trước</string>
+    <string name="pre_shot_off">Tắt chụp trước</string>
+    <string name="look_color_match">+ Khớp màu…</string>
+
+    <string name="color_match_title">Khớp màu</string>
+    <string name="color_match_intro">Chọn một ảnh tham chiếu có màu bạn thích và một ảnh của bạn. Ứng dụng học cách đổi màu ngay trên điện thoại và biến nó thành phong cách màu cho camera, ảnh trong thư viện và các trình chỉnh sửa khác (.cube).</string>
+    <string name="color_match_reference">Tham chiếu</string>
+    <string name="color_match_source">Ảnh của bạn</string>
+    <string name="color_match_preview">Xem trước ảnh của bạn với màu đã khớp</string>
+    <string name="color_match_hold_to_compare">Chạm và giữ bản xem trước để xem ảnh gốc</string>
+    <string name="color_match_method_fast">Nhanh</string>
+    <string name="color_match_method_histogram">Histogram</string>
+    <string name="color_match_method_best">Tốt nhất</string>
+    <string name="color_match_skin">Bảo vệ tông da</string>
+    <string name="color_match_strength">Cường độ</string>
+    <string name="color_match_strength_value">Cường độ %d%%</string>
+    <string name="color_match_name_hint">Tên phong cách</string>
+    <string name="color_match_default_name">Khớp màu của tôi</string>
+    <string name="color_match_save">Lưu phong cách và dùng trong camera</string>
+    <string name="color_match_apply_photos">Áp dụng cho ảnh…</string>
+    <string name="color_match_export">Xuất .cube</string>
+    <string name="color_match_import">Nhập .cube</string>
+    <string name="color_match_need_source">Giờ hãy chọn một ảnh của bạn</string>
+    <string name="color_match_need_look">Hãy chọn ảnh tham chiếu và ảnh của bạn trước, hoặc nhập một tệp .cube</string>
+    <string name="color_match_working">Đang khớp màu…</string>
+    <string name="color_match_failed">Không thể khớp màu các ảnh này</string>
+    <string name="color_match_done">Khớp %1$s xong sau %2$d ms</string>
+    <string name="color_match_cannot_open">Không thể mở ảnh này</string>
+    <string name="color_match_saved">Đã lưu và chọn phong cách</string>
+    <string name="color_match_save_failed">Không thể lưu phong cách</string>
+    <string name="color_match_exported">Đã xuất LUT</string>
+    <string name="color_match_export_failed">Không thể xuất LUT</string>
+    <string name="color_match_imported">Đã nhập và chọn LUT</string>
+    <string name="color_match_import_failed">Không phải tệp .cube dùng được: %s</string>
+    <string name="color_match_look_description">Khớp màu từ ảnh tham chiếu</string>
+    <string name="color_match_imported_description">LUT .cube đã nhập</string>
+    <plurals name="color_match_batch_queued">
+        <item quantity="other">Đã xếp hàng %d ảnh; bản sao được lưu vào Pictures/Open Camera</item>
+    </plurals>
+</resources>
