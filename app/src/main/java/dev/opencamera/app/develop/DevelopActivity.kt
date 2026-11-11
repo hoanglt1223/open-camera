@@ -81,9 +81,13 @@ import kotlin.math.min
  * [EditStore] and in the XMP of exports. Every failure ends in a message, never a crash.
  */
 class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
-    enum class Mode { NONE, CROP, BRUSH, LINEAR, RADIAL, PICK_COLOR, PICK_HSL }
+    enum class Mode { NONE, CROP, BRUSH, LINEAR, RADIAL, PICK_COLOR, PICK_HSL, RETOUCH_BRUSH, RETOUCH_TAP }
 
-    internal val theme = DevelopTheme.current
+    internal val theme get() = DevelopTheme.current
+    /** State of the skinned Compose editor; the View widgets stay as the plain fallback UI. */
+    internal val ui = dev.opencamera.app.develop.ui.compose.EditorUiState()
+    private var composeHost: dev.opencamera.app.ui.overlay.OverlayHost? = null
+    internal val composeActive get() = composeHost?.active == true
     internal lateinit var engine: DevelopEngine
     internal val loader by lazy { SourceLoader(this) }
     internal val store by lazy { EditStore(File(filesDir, "edits")) }
@@ -106,7 +110,7 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
     private lateinit var histogramView: HistogramView
     internal lateinit var status: TextView
     internal lateinit var panel: LinearLayout
-    private lateinit var tabs: LinearLayout
+    private var tabs: LinearLayout? = null
     private lateinit var undoButton: ImageButton
     private lateinit var redoButton: ImageButton
     internal val sliders = HashMap<String, ParamSlider>()
@@ -154,6 +158,10 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
         engine = DevelopEngine(this)
         engine.prewarm()
         buildUi()
+        lifecycleScope.launch(Dispatchers.Default) {
+            val ok = dev.opencamera.app.develop.tools.RetouchTools.install(this@DevelopActivity)
+            withContext(Dispatchers.Main) { ui.retouchAvailable.value = ok }
+        }
         val uris = when (intent?.action) {
             Intent.ACTION_SEND_MULTIPLE -> intentStreams()
             Intent.ACTION_SEND -> listOfNotNull(streamExtra())
@@ -181,40 +189,54 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
     }
 
     override fun onDestroy() {
+        composeHost?.destroy()
         if (::engine.isInitialized) engine.release()
         super.onDestroy()
     }
 
     // ---- UI scaffold -------------------------------------------------------------------
 
-    @SuppressLint("ClickableViewAccessibility")
     private fun buildUi() {
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(theme.background)
-            fitsSystemWindows = true
+        buildPreview()
+        status = object : androidx.appcompat.widget.AppCompatTextView(this) {
+            override fun setText(text: CharSequence?, type: BufferType?) {
+                super.setText(text, type)
+                ui.status.value = text?.toString().orEmpty()
+            }
         }
-        val bar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        bar.addView(iconButton(android.R.drawable.ic_menu_revert, R.string.develop_back) { persist(); finish() })
-        undoButton = iconButton(android.R.drawable.ic_menu_rotate, R.string.develop_undo) { history.undo()?.let { onStackChanged(true) } }.apply { scaleX = -1f }
-        redoButton = iconButton(android.R.drawable.ic_menu_rotate, R.string.develop_redo) { history.redo()?.let { onStackChanged(true) } }
-        bar.addView(undoButton); bar.addView(redoButton)
-        bar.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
-        bar.addView(iconButton(android.R.drawable.ic_menu_view, R.string.develop_compare) { toggleCompare() })
-        bar.addView(iconButton(android.R.drawable.ic_menu_sort_by_size, R.string.develop_histogram) {
-            histogramView.visibility = if (histogramView.visibility == View.VISIBLE) View.GONE else View.VISIBLE
-        })
-        bar.addView(iconButton(android.R.drawable.ic_dialog_alert, R.string.develop_clipping) { warn = !warn; attachView() })
-        bar.addView(iconButton(android.R.drawable.ic_menu_more, R.string.develop_more) { showMoreMenu(it) })
-        bar.addView(Button(this).apply {
-            setText(R.string.develop_export)
-            setTextColor(theme.onAccent)
-            setBackgroundColor(theme.accent)
-            minimumHeight = dp(48f).toInt()
-            setOnClickListener { showExportDialog() }
-        })
-        root.addView(HorizontalScrollView(this).apply { addView(bar); isFillViewport = true }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+        panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        if (!startCompose()) buildLegacyUi()
+    }
 
+    /** Skinned Compose editor; a failing skin falls back to the other one, then to [buildLegacyUi]. */
+    private fun startCompose(): Boolean {
+        if (intent?.getBooleanExtra(EXTRA_PLAIN_UI, false) == true) return false
+        val root = FrameLayout(this).apply { setBackgroundColor(0xff000000.toInt()) }
+        setContentView(root)
+        val host = dev.opencamera.app.ui.overlay.OverlayHost(
+            context = this,
+            lifecycle = lifecycle,
+            parent = root,
+            insertIndex = 0,
+            repo = dev.opencamera.app.ui.skin.SkinRepository.get(this),
+            guard = null,
+            content = { dev.opencamera.app.develop.ui.compose.EditorScreen(this) },
+            onSkin = { tokens -> DevelopTheme.current = dev.opencamera.app.develop.ui.compose.skinDevelopTheme(tokens) },
+            onLegacy = {
+                runCatching {
+                    DevelopTheme.current = DevelopTheme.Default
+                    buildLegacyUi()
+                    if (info != null) selectTab(currentTab)
+                }.onFailure { Log.e(TAG, "Plain editor failed", it); finish() }
+            },
+            debugFail = dev.opencamera.app.ui.overlay.OverlayHost.debugFailure(this, intent?.getStringExtra(EXTRA_DEBUG_SKIN_FAIL)),
+        )
+        composeHost = host
+        return runCatching { host.start() }.getOrDefault(false).also { if (!it) composeHost = null }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun buildPreview() {
         previewFrame = FrameLayout(this)
         texture = TextureView(this).apply {
             surfaceTextureListener = object : TextureView.SurfaceTextureListener {
@@ -240,20 +262,62 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
         })
         previewFrame.setOnTouchListener { _, e -> onPreviewTouch(e) }
         previewFrame.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> attachView() }
+    }
+
+    internal fun toggleHistogram() {
+        histogramView.visibility = if (histogramView.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+    }
+
+    internal fun toggleClipping() {
+        warn = !warn
+        attachView()
+    }
+
+    /** The plain Material editor: the last fallback, and the UI with `--ez develop_plain_ui true`. */
+    @SuppressLint("ClickableViewAccessibility")
+    private fun buildLegacyUi() {
+        composeHost = null
+        (previewFrame.parent as? android.view.ViewGroup)?.removeView(previewFrame)
+        (status.parent as? android.view.ViewGroup)?.removeView(status)
+        (panel.parent as? android.view.ViewGroup)?.removeView(panel)
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(theme.background)
+            fitsSystemWindows = true
+        }
+        val bar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        bar.addView(iconButton(android.R.drawable.ic_menu_revert, R.string.develop_back) { persist(); finish() })
+        undoButton = iconButton(android.R.drawable.ic_menu_rotate, R.string.develop_undo) { history.undo()?.let { onStackChanged(true) } }.apply { scaleX = -1f }
+        redoButton = iconButton(android.R.drawable.ic_menu_rotate, R.string.develop_redo) { history.redo()?.let { onStackChanged(true) } }
+        bar.addView(undoButton); bar.addView(redoButton)
+        bar.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
+        bar.addView(iconButton(android.R.drawable.ic_menu_view, R.string.develop_compare) { toggleCompare() })
+        bar.addView(iconButton(android.R.drawable.ic_menu_sort_by_size, R.string.develop_histogram) { toggleHistogram() })
+        bar.addView(iconButton(android.R.drawable.ic_dialog_alert, R.string.develop_clipping) { toggleClipping() })
+        bar.addView(iconButton(android.R.drawable.ic_menu_more, R.string.develop_more) { showMoreMenu(it) })
+        bar.addView(Button(this).apply {
+            setText(R.string.develop_export)
+            setTextColor(theme.onAccent)
+            setBackgroundColor(theme.accent)
+            minimumHeight = dp(48f).toInt()
+            setOnClickListener { showExportDialog() }
+        })
+        root.addView(HorizontalScrollView(this).apply { addView(bar); isFillViewport = true }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
         root.addView(previewFrame, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
 
-        status = TextView(this).apply {
+        status.apply {
             setTextColor(theme.onSurfaceMuted)
             gravity = Gravity.CENTER
             setPadding(dp(8f).toInt(), dp(2f).toInt(), dp(8f).toInt(), dp(2f).toInt())
-            setText(R.string.develop_loading)
+            if (info == null) setText(R.string.develop_loading)
         }
         root.addView(status, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
 
-        tabs = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val tabs = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        this.tabs = tabs
         root.addView(HorizontalScrollView(this).apply { addView(tabs); setBackgroundColor(theme.surface) },
             LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
-        panel = LinearLayout(this).apply {
+        panel.apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16f).toInt(), dp(8f).toInt(), dp(16f).toInt(), dp(16f).toInt())
         }
@@ -274,6 +338,7 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
     }
 
     private fun buildTabs() {
+        val tabs = tabs ?: return
         tabs.removeAllViews()
         DevelopPanels.TABS.forEachIndexed { i, (label, _) ->
             tabs.addView(Button(this, null, android.R.attr.borderlessButtonStyle).apply {
@@ -286,6 +351,7 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
     }
 
     internal fun selectTab(i: Int) {
+        if (composeActive) return
         val wasCrop = mode == Mode.CROP
         currentTab = i
         buildTabs()
@@ -337,8 +403,11 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
                 updateUndo()
                 if (l.reopened) toast(getString(R.string.develop_reopened))
                 if (l.info.hasGainmap) toast(getString(R.string.develop_ultra_hdr))
+                baseProxy = l.proxy
+                toolKey = null
+                toolProxy = null
                 ensureLook {
-                    engine.open(applyTools(l.proxy, l.info)) {
+                    applyToolsAsync {
                         Log.i(TAG, "engine ready at ${SystemClock.elapsedRealtime() - openedAt} ms")
                         Log.i(TAG, "Proxy ${l.proxy.width}x${l.proxy.height} ${l.info.kind} decoded in ${SystemClock.elapsedRealtime() - openedAt} ms")
                         selectTab(currentTab)
@@ -346,6 +415,7 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
                         // First frame at screen resolution, the full proxy right after.
                         ensureLook { engine.renderProgressive(displayStack()) }
                         if (intent?.getBooleanExtra(EXTRA_BENCHMARK, false) == true) bench = DevelopBenchmark(this@DevelopActivity).also { it.start() }
+                        ui.loaded(l.info.kind != SourceLoader.Kind.RASTER)
                     }
                 }
                 if (pendingBatch.isNotEmpty()) DevelopDialogs(this@DevelopActivity).batch(pendingBatch).also { pendingBatch = emptyList() }
@@ -370,22 +440,64 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
     private class Loaded(val info: SourceLoader.Info, val stack: EditStack, val snapshots: List<EditHistory.Snapshot>, val proxy: Bitmap, val reopened: Boolean)
 
     /** Retouch steps are raster tools on the proxy; rerun when the tool list changes. */
-    private var toolKey: Any? = null
+    private var toolKey: List<dev.opencamera.app.develop.model.ToolStep>? = null
     private var baseProxy: Bitmap? = null
+    /** Proxy with the steps of [toolKey] applied; an appended step continues from it. */
+    private var toolProxy: Bitmap? = null
+    private var toolJob: Job? = null
 
-    private fun applyTools(proxy: Bitmap, i: SourceLoader.Info): Bitmap {
-        baseProxy = proxy
-        toolKey = stack.tools
-        if (stack.tools.isEmpty()) return proxy
-        val skipped = ArrayList<String>()
-        val out = dev.opencamera.app.develop.tools.ToolRegistry.applyAll(
-            proxy.copy(proxy.config ?: Bitmap.Config.ARGB_8888, true), stack.tools,
-            proxy.width / max(1f, i.width.toFloat()), store.assetDir(i.ref), skipped,
-        )
-        if (skipped.isNotEmpty()) toast(getString(R.string.develop_tools_skipped, skipped.distinct().joinToString()))
-        return out
+    /** Upright proxy with the current retouch steps applied, as the retouch tools see it. */
+    internal fun retouchSource(): Bitmap? = toolProxy ?: baseProxy
+
+    /**
+     * Applies the retouch steps off the main thread (object removal takes seconds), then gives
+     * the result to the engine. Appending a step only runs that step; undo replays the list.
+     */
+    private fun applyToolsAsync(then: () -> Unit) {
+        val i = info ?: return
+        val base = baseProxy ?: return
+        val steps = stack.tools
+        val prev = toolKey
+        val prevBitmap = toolProxy
+        toolKey = steps
+        toolJob?.cancel()
+        if (steps.isEmpty()) {
+            toolProxy = null
+            engine.open(base) { then() }
+            return
+        }
+        ui.busy.value = true
+        toolJob = lifecycleScope.launch {
+            val skipped = ArrayList<String>()
+            val out = withContext(Dispatchers.Default) {
+                runCatching {
+                    val incremental = prev != null && prevBitmap != null && steps.size > prev.size && steps.subList(0, prev.size) == prev
+                    val src = if (incremental) prevBitmap!! else base
+                    val todo = if (incremental) steps.drop(prev!!.size) else steps
+                    dev.opencamera.app.develop.tools.ToolRegistry.applyAll(
+                        src.copy(Bitmap.Config.ARGB_8888, true), todo, base.width / max(1f, i.width.toFloat()), store.assetDir(i.ref), skipped,
+                    )
+                }.onFailure { Log.w(TAG, "Retouch replay failed", it) }.getOrNull()
+            }
+            ui.busy.value = false
+            if (stack.tools != steps) return@launch
+            if (out == null || skipped.isNotEmpty()) toast(getString(R.string.develop_tools_skipped, skipped.distinct().joinToString().ifEmpty { "retouch" }))
+            toolProxy = out
+            engine.open(out ?: base) { then() }
+        }
     }
 
+    /** Adds a retouch step whose result was already computed (comparison grid, preview). */
+    internal fun commitToolResult(step: dev.opencamera.app.develop.model.ToolStep, label: String, result: Bitmap) {
+        val steps = stack.tools + step
+        history.push(stack.copy(tools = steps), label)
+        toolJob?.cancel()
+        toolKey = steps
+        toolProxy = result
+        ui.busy.value = false
+        seal()
+        engine.open(result) { render() }
+    }
     private fun fail(message: String) {
         status.text = message
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
@@ -434,10 +546,8 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
             refreshPanel()
             schedulePersist()
         }
-        val i = info
-        val base = baseProxy
-        if (i != null && base != null && stack.tools != toolKey) {
-            engine.open(applyTools(base, i)) { render() }
+        if (info != null && baseProxy != null && stack.tools != toolKey) {
+            applyToolsAsync { render() }
             return
         }
         render()
@@ -455,6 +565,7 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
     } else stack
 
     private fun updateUndo() {
+        ui.changed(history)
         if (!::undoButton.isInitialized) return
         undoButton.isEnabled = history.canUndo; undoButton.alpha = if (history.canUndo) 1f else 0.4f
         redoButton.isEnabled = history.canRedo; redoButton.alpha = if (history.canRedo) 1f else 0.4f
@@ -573,6 +684,7 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
     private var lastY = 0f
     private var downAt = 0L
     private var multi = false
+    private var lastTapAt = 0L
     internal val gesture = DevelopGestures(this)
 
     @SuppressLint("ClickableViewAccessibility")
@@ -591,6 +703,10 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
                 if (kotlin.math.hypot(e.x - lastX, e.y - lastY) > dp(8f)) previewFrame.removeCallbacks(holdCheck)
                 when {
                     multi && e.pointerCount >= 2 && zoom > 1f -> { panX += e.x - lastX; panY += e.y - lastY; attachView() }
+                    !multi && zoom > 1f && mode == Mode.NONE && !gesture.draggingSplit -> {
+                        previewFrame.removeCallbacks(holdCheck)
+                        panX += e.x - lastX; panY += e.y - lastY; attachView()
+                    }
                     gesture.draggingSplit -> {
                         split = ((e.x - overlay.image.left) / overlay.image.width()).coerceIn(0f, 1f); attachView()
                     }
@@ -600,7 +716,17 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 previewFrame.removeCallbacks(holdCheck)
-                if (!multi && !gesture.draggingSplit) gesture.up(e.x, e.y, SystemClock.elapsedRealtime() - downAt < 250)
+                val now = SystemClock.elapsedRealtime()
+                val tap = now - downAt < 250 && kotlin.math.hypot(e.x - lastX, e.y - lastY) < dp(12f)
+                if (!multi && !gesture.draggingSplit) gesture.up(e.x, e.y, tap)
+                if (tap && !multi && mode == Mode.NONE) {
+                    if (now - lastTapAt < DOUBLE_TAP_MS) {
+                        zoom = if (zoom > 1f) 1f else 2.5f
+                        if (zoom == 1f) { panX = 0f; panY = 0f }
+                        attachView()
+                        lastTapAt = 0L
+                    } else lastTapAt = now
+                }
                 gesture.draggingSplit = false
                 endHold()
                 previewFrame.performClick()
@@ -612,15 +738,24 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
     /** Press and hold (without a tool gesture) shows the original. */
     private val holdCheck = Runnable {
         if (gesture.active || multi) return@Runnable
+        startHold()
+    }
+
+    /** Shows the original until [endHold] (long press on the photo or on the Compare button). */
+    internal fun startHold() {
+        if (holding || info == null) return
         holding = true
+        ui.showingOriginal.value = true
+        runCatching { previewFrame.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS) }
         overlay.hint = getString(R.string.develop_hold_original)
         engine.renderBefore(EditStack().pasteFrom(displayStack(), setOf(Group.GEOMETRY)))
         attachView()
     }
 
-    private fun endHold() {
+    internal fun endHold() {
         if (!holding) return
         holding = false
+        ui.showingOriginal.value = false
         switchMode(mode)
         if (compare) engine.renderBefore(beforeStack()) else engine.clearBefore()
         attachView()
@@ -686,6 +821,11 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
         const val PREF_EDITOR_V2 = "editor_v2"
         /** Debug/measurement: runs [DevelopBenchmark] after opening (adb `--ez develop_benchmark true`). */
         const val EXTRA_BENCHMARK = "develop_benchmark"
-        private const val HOLD_MS = 450L
+        /** Opens the plain Material editor instead of the skinned one. */
+        const val EXTRA_PLAIN_UI = "develop_plain_ui"
+        /** Debug builds: "all" or a skin id makes that editor skin fail (fallback test). */
+        const val EXTRA_DEBUG_SKIN_FAIL = "debug_skin_fail"
+        private const val HOLD_MS = 280L
+        private const val DOUBLE_TAP_MS = 300L
     }
 }

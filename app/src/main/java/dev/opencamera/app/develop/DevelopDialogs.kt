@@ -87,7 +87,7 @@ class DevelopDialogs(private val a: DevelopActivity) {
             }.show()
     }
 
-    private fun snapshots() {
+    internal fun snapshots() {
         val snaps = a.history.snapshots
         val names = arrayOf(a.getString(R.string.develop_snapshot_new)) + snaps.map { it.name }
         dialog().setTitle(R.string.develop_snapshots).setItems(names) { _, which ->
@@ -253,7 +253,7 @@ class DevelopDialogs(private val a: DevelopActivity) {
         }.setNegativeButton(R.string.develop_cancel, null).show()
     }
 
-    private fun revert() {
+    internal fun revert() {
         dialog().setMessage(R.string.develop_revert_confirm).setPositiveButton(R.string.develop_ok) { _, _ ->
             a.change(EditStack(source = a.stack.source), "Revert")
             a.seal()
@@ -262,7 +262,7 @@ class DevelopDialogs(private val a: DevelopActivity) {
         }.setNegativeButton(R.string.develop_cancel, null).show()
     }
 
-    private fun exportXmp() {
+    internal fun exportXmp() {
         val i = a.info ?: return
         a.toast(a.getString(R.string.develop_xmp_note, CrsXmp.NOT_TRANSFERRED.joinToString("; ")))
         a.onCreateDocument = { uri ->
@@ -273,7 +273,7 @@ class DevelopDialogs(private val a: DevelopActivity) {
         a.createDocument.launch(i.displayName.substringBeforeLast('.') + ".xmp")
     }
 
-    private fun importXmp() {
+    internal fun importXmp() {
         a.onImport = { uri ->
             runCatching {
                 val text = a.contentResolver.openInputStream(uri)?.use { String(it.readNBytesCompat(4 shl 20)) } ?: error("Cannot read")
@@ -345,7 +345,13 @@ class DevelopDialogs(private val a: DevelopActivity) {
             .show()
     }
 
-    private fun run(info: dev.opencamera.app.develop.io.SourceLoader.Info, options: ExportOptions, share: Boolean, overwrite: Boolean) {
+    internal fun confirmOverwrite(info: dev.opencamera.app.develop.io.SourceLoader.Info, options: ExportOptions) {
+        dialog().setMessage(R.string.develop_overwrite_confirm).setPositiveButton(R.string.develop_ok) { _, _ ->
+            run(info, options.copy(format = if (info.mime == "image/png") ExportFormat.PNG else ExportFormat.JPEG), share = false, overwrite = true)
+        }.setNegativeButton(R.string.develop_cancel, null).show()
+    }
+
+    internal fun run(info: dev.opencamera.app.develop.io.SourceLoader.Info, options: ExportOptions, share: Boolean, overwrite: Boolean) {
         // Keeping the location needs ACCESS_MEDIA_LOCATION; without it the export simply has no GPS.
         if (options.metadata == MetadataPolicy.KEEP_ALL && Build.VERSION.SDK_INT >= 29 &&
             a.checkSelfPermission(android.Manifest.permission.ACCESS_MEDIA_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED &&
@@ -382,6 +388,12 @@ class DevelopDialogs(private val a: DevelopActivity) {
                 }
             }.onFailure { e ->
                 Log.w("DevelopExport", "Export failed", e)
+                if (options.format != ExportFormat.JPEG && e !is OutOfMemoryError) {
+                    // HEIF/AVIF/PNG encoders can fail on some devices: fall back to JPEG.
+                    a.toast(a.getString(R.string.develop_export_failed, "${options.format.name} → JPEG"))
+                    run(info, options.copy(format = ExportFormat.JPEG), share, overwrite)
+                    return@launch
+                }
                 val msg = if (e is OutOfMemoryError) "out of memory" else e.message ?: e.javaClass.simpleName
                 a.status.text = a.getString(R.string.develop_export_failed, msg)
                 a.toast(a.getString(R.string.develop_export_failed, msg))

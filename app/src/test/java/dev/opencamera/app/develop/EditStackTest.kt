@@ -121,6 +121,33 @@ class EditStackTest {
         assertEquals(listOf("p.png"), s.tools[0].files)
     }
 
+    @Test
+    fun historyListsFutureStepsNextFirst() {
+        val h = EditHistory(EditStack())
+        h.push(EditStack().with(Params.EXPOSURE, 1f), "a")
+        h.push(EditStack().with(Params.EXPOSURE, 2f), "b")
+        h.push(EditStack().with(Params.EXPOSURE, 3f), "c")
+        h.undo(); h.undo()
+        assertEquals(listOf("a"), h.steps)
+        assertEquals(listOf("b", "c"), h.futureSteps)
+    }
+
+    @Test
+    fun migratesRetouchStackKeepingOnlyAppliedOpsAsToolSteps() {
+        val retouch = """{"version":1,"applied":2,"ops":[
+            {"tool":"whitebalance","params":{"strength":0.8,"method":"gray_world","values":{"gr":1.1,"gb":0.9}}},
+            {"tool":"geometry","params":{"strength":0,"values":{"angle":2.5,"vertical":0.1}}},
+            {"tool":"erase","params":{"strength":0}}
+        ]}"""
+        val s = StackCodec.decode(retouch)
+        assertEquals(listOf("whitebalance", "geometry"), s.tools.map { it.toolId })
+        assertEquals(0f, s[Params.TEMP])
+        assertEquals(0f, s[Params.CROP_ANGLE])
+        assertTrue(s.tools[1].params.contains("vertical"))
+        val back = StackCodec.decode(StackCodec.encode(s))
+        assertEquals(s.tools, back.tools)
+    }
+
     @Test(expected = StackFormatException::class)
     fun rejectsNewerSchema() {
         StackCodec.decode("""{"schemaVersion":99}""")

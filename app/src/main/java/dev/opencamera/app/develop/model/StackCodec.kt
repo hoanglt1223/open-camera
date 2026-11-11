@@ -104,6 +104,16 @@ object StackCodec {
      * beauty, ...) is kept as a [ToolStep] for its tool to render.
      */
     private fun migrateV1(o: JSONObject): EditStack {
+        // The retouch screen's RetouchStack: {"version":1,"applied":n,"ops":[{tool, params}]}.
+        // Its params are RetouchParams (gains, keystone, lens) that only the retouch tools can
+        // render, so every applied op stays a ToolStep, including whitebalance and geometry.
+        o.optJSONArray("ops")?.let { ops ->
+            val applied = o.optInt("applied", ops.length()).coerceIn(0, ops.length())
+            return EditStack(tools = (0 until applied).map { i ->
+                val s = ops.getJSONObject(i)
+                ToolStep(s.getString("tool"), (s.optJSONObject("params") ?: JSONObject()).toString())
+            })
+        }
         val steps = o.optJSONArray("steps") ?: o.optJSONArray("tools") ?: JSONArray()
         var stack = EditStack()
         val tools = ArrayList<ToolStep>()

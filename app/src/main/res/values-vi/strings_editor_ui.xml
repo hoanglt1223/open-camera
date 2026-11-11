@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="editor_cat_auto">Tự động</string>
+    <string name="editor_cat_adjust">Điều chỉnh</string>
+    <string name="editor_cat_looks">Phong cách</string>
+    <string name="editor_cat_crop">Cắt</string>
+    <string name="editor_cat_retouch">Chỉnh sửa</string>
+    <string name="editor_cat_masks">Vùng chọn</string>
+    <string name="editor_cat_color">Màu</string>
+    <string name="editor_cat_export">Xuất</string>
+    <string name="editor_cancel">Đóng trình chỉnh</string>
+    <string name="editor_done">Xong</string>
+    <string name="editor_raw_badge">RAW</string>
+    <string name="editor_raw_desc">Ảnh RAW</string>
+    <string name="editor_original">Ảnh gốc</string>
+    <string name="editor_history">Lịch sử</string>
+    <string name="editor_compare">So sánh (giữ để xem gốc)</string>
+    <string name="editor_history_original">Ảnh gốc</string>
+    <string name="editor_auto_undo">Bỏ tự động</string>
+    <string name="editor_curves">Đường cong</string>
+    <string name="editor_hsl">HSL</string>
+    <string name="editor_grade">Chỉnh màu</string>
+    <string name="editor_detail">Chi tiết</string>
+    <string name="editor_straighten">Làm thẳng</string>
+    <string name="editor_vertical">Dọc</string>
+    <string name="editor_horizontal">Ngang</string>
+    <string name="editor_keep_original">Giữ ảnh gốc (lưu bản sao)</string>
+    <string name="editor_save">Lưu</string>
+    <string name="editor_format">Định dạng</string>
+    <string name="editor_size">Kích thước</string>
+    <string name="editor_quality">Chất lượng</string>
+    <string name="editor_metadata">Siêu dữ liệu</string>
+    <string name="editor_brush">Cọ</string>
+    <string name="editor_unbrush">Bỏ cọ</string>
+    <string name="editor_tap_select">Chạm để chọn</string>
+    <string name="editor_brush_size">Cỡ</string>
+    <string name="editor_strength">Cường độ</string>
+    <string name="editor_remove">Xóa</string>
+    <string name="editor_results">Kết quả</string>
+    <string name="editor_use_result">Dùng %1$s</string>
+    <string name="editor_before_after">Kéo thanh chia để so sánh</string>
+    <string name="editor_working">Đang xử lý…</string>
+    <string name="editor_apply">Áp dụng</string>
+    <string name="editor_clear">Xóa nét</string>
+    <string name="editor_retouch_unavailable">Công cụ chỉnh sửa không có trên máy này</string>
+    <string name="editor_classic_retouch">Màn chỉnh sửa cũ</string>
+    <string name="editor_reshape_show">Hiện chỉnh dáng</string>
+    <string name="editor_mask_add">Thêm</string>
+    <string name="editor_mask_subtract">Trừ</string>
+    <string name="editor_mask_intersect">Giao</string>
+    <string name="editor_mask_invert">Đảo</string>
+    <string name="editor_mask_overlay">Hiện lớp phủ</string>
+    <string name="editor_mask_adjust">Điều chỉnh</string>
+    <string name="editor_mask_delete">Xóa</string>
+    <string name="editor_mask_new">Vùng chọn mới</string>
+    <string name="editor_more">Thêm</string>
+    <string name="editor_snapshots">Ảnh chụp nhanh</string>
+    <string name="editor_histogram">Biểu đồ</string>
+    <string name="editor_clipping">Vùng cháy</string>
+    <string name="editor_xmp_export">Xuất XMP</string>
+    <string name="editor_xmp_import">Nhập XMP</string>
+    <string name="editor_hue">Sắc độ</string>
+    <string name="editor_sat">Độ bão hòa</string>
+    <string name="editor_lum">Độ sáng</string>
+    <string name="editor_wheel_desc">Bánh xe %1$s, sắc độ %2$d, độ bão hòa %3$d</string>
+    <string name="editor_curve_desc">Đường cong %1$s, %2$d điểm. Kéo điểm, nhấn giữ để xóa.</string>
+    <string name="editor_skin_fallback">Giao diện trình chỉnh lỗi; đã đổi giao diện khác</string>
+    <string name="editor_look_none">Không</string>
+    <string name="editor_look_intensity">Cường độ</string>
+    <string name="editor_rotate">Xoay</string>
+    <string name="editor_flip">Lật</string>
+    <string name="editor_reset">Đặt lại</string>
+    <string name="editor_auto_level">Tự động</string>
+</resources>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="editor_cat_auto">Auto</string>
+    <string name="editor_cat_adjust">Adjust</string>
+    <string name="editor_cat_looks">Looks</string>
+    <string name="editor_cat_crop">Crop</string>
+    <string name="editor_cat_retouch">Retouch</string>
+    <string name="editor_cat_masks">Masks</string>
+    <string name="editor_cat_color">Color</string>
+    <string name="editor_cat_export">Export</string>
+    <string name="editor_cancel">Close editor</string>
+    <string name="editor_done">Done</string>
+    <string name="editor_raw_badge">RAW</string>
+    <string name="editor_raw_desc">RAW photo</string>
+    <string name="editor_original">Original</string>
+    <string name="editor_history">History</string>
+    <string name="editor_compare">Compare (hold for original)</string>
+    <string name="editor_history_original">Original photo</string>
+    <string name="editor_auto_undo">Remove auto</string>
+    <string name="editor_curves">Curves</string>
+    <string name="editor_hsl">HSL</string>
+    <string name="editor_grade">Grade</string>
+    <string name="editor_detail">Detail</string>
+    <string name="editor_straighten">Straighten</string>
+    <string name="editor_vertical">Vertical</string>
+    <string name="editor_horizontal">Horizontal</string>
+    <string name="editor_keep_original">Keep original (save a copy)</string>
+    <string name="editor_save">Save</string>
+    <string name="editor_format">Format</string>
+    <string name="editor_size">Size</string>
+    <string name="editor_quality">Quality</string>
+    <string name="editor_metadata">Metadata</string>
+    <string name="editor_brush">Brush</string>
+    <string name="editor_unbrush">Unbrush</string>
+    <string name="editor_tap_select">Tap to select</string>
+    <string name="editor_brush_size">Size</string>
+    <string name="editor_strength">Strength</string>
+    <string name="editor_remove">Remove</string>
+    <string name="editor_results">Results</string>
+    <string name="editor_use_result">Use %1$s</string>
+    <string name="editor_before_after">Drag the divider to compare</string>
+    <string name="editor_working">Working…</string>
+    <string name="editor_apply">Apply</string>
+    <string name="editor_clear">Clear</string>
+    <string name="editor_retouch_unavailable">Retouch tools are not available on this device</string>
+    <string name="editor_classic_retouch">Classic retouch screen</string>
+    <string name="editor_reshape_show">Show reshape</string>
+    <string name="editor_mask_add">Add</string>
+    <string name="editor_mask_subtract">Subtract</string>
+    <string name="editor_mask_intersect">Intersect</string>
+    <string name="editor_mask_invert">Invert</string>
+    <string name="editor_mask_overlay">Show overlay</string>
+    <string name="editor_mask_adjust">Adjust</string>
+    <string name="editor_mask_delete">Delete</string>
+    <string name="editor_mask_new">New mask</string>
+    <string name="editor_more">More</string>
+    <string name="editor_snapshots">Snapshots</string>
+    <string name="editor_histogram">Histogram</string>
+    <string name="editor_clipping">Clipping</string>
+    <string name="editor_xmp_export">Export XMP</string>
+    <string name="editor_xmp_import">Import XMP</string>
+    <string name="editor_hue">Hue</string>
+    <string name="editor_sat">Saturation</string>
+    <string name="editor_lum">Luminance</string>
+    <string name="editor_wheel_desc">%1$s wheel, hue %2$d, saturation %3$d</string>
+    <string name="editor_curve_desc">%1$s curve, %2$d points. Drag points, long press to remove.</string>
+    <string name="editor_skin_fallback">Editor skin failed; using another look</string>
+    <string name="editor_look_none">None</string>
+    <string name="editor_look_intensity">Intensity</string>
+    <string name="editor_rotate">Rotate</string>
+    <string name="editor_flip">Flip</string>
+    <string name="editor_reset">Reset</string>
+    <string name="editor_auto_level">Auto</string>
+</resources>

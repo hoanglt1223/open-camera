@@ -71,6 +71,8 @@ class DevelopPanels(private val a: DevelopActivity) {
             R.string.develop_tab_retouch to { retouch() },
         )
 
+        fun labelRes(key: String): Int? = LABELS[key]
+
         private val LABELS = mapOf(
             Params.EXPOSURE to R.string.develop_p_exposure, Params.CONTRAST to R.string.develop_p_contrast,
             Params.HIGHLIGHTS to R.string.develop_p_highlights, Params.SHADOWS to R.string.develop_p_shadows,
@@ -94,8 +96,8 @@ class DevelopPanels(private val a: DevelopActivity) {
         )
         val BAND_LABELS = listOf(R.string.develop_band_red, R.string.develop_band_orange, R.string.develop_band_yellow, R.string.develop_band_green,
             R.string.develop_band_aqua, R.string.develop_band_blue, R.string.develop_band_purple, R.string.develop_band_magenta)
-        private val RANGE_LABELS = listOf(R.string.develop_grade_shadows, R.string.develop_grade_midtones, R.string.develop_grade_highlights, R.string.develop_grade_global)
-        private val BAND_COLORS = intArrayOf(0xffe04040.toInt(), 0xffe08a30.toInt(), 0xffe0d040.toInt(), 0xff40c040.toInt(),
+        val RANGE_LABELS = listOf(R.string.develop_grade_shadows, R.string.develop_grade_midtones, R.string.develop_grade_highlights, R.string.develop_grade_global)
+        val BAND_COLORS = intArrayOf(0xffe04040.toInt(), 0xffe08a30.toInt(), 0xffe0d040.toInt(), 0xff40c040.toInt(),
             0xff40d0d0.toInt(), 0xff4060e0.toInt(), 0xff9040e0.toInt(), 0xffe040b0.toInt())
     }
 

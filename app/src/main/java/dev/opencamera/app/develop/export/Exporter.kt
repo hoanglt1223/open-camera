@@ -30,7 +30,9 @@ import dev.opencamera.app.develop.render.CpuDevelop
 import dev.opencamera.app.develop.render.DevelopUniforms
 import dev.opencamera.app.develop.render.Geometry
 import dev.opencamera.app.develop.render.GlDevelop
+import dev.opencamera.app.develop.tools.RetouchTools
 import dev.opencamera.app.develop.tools.ToolRegistry
+import dev.opencamera.pipeline.retouch.RetouchExif
 import dev.opencamera.pipeline.looks.LookParams
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -200,7 +202,7 @@ class Exporter(private val context: Context) {
                 ExportFormat.HEIF -> HeifEncoder.write(bitmap, options.quality, tmp)
             }
             if (options.format == ExportFormat.JPEG || options.format == ExportFormat.PNG) {
-                runCatching { writeExif(info, tmp, options.metadata, bitmap.width, bitmap.height) }
+                runCatching { writeExif(info, tmp, options.metadata, bitmap.width, bitmap.height, stack?.let { RetouchTools.tags(it.tools) }.orEmpty()) }
                     .onFailure { Log.w(TAG, "EXIF not written", it) }
             }
             var bytes = tmp.readBytes()
@@ -214,7 +216,7 @@ class Exporter(private val context: Context) {
         }
     }
 
-    private fun writeExif(info: SourceLoader.Info, file: File, policy: MetadataPolicy, w: Int, h: Int) {
+    private fun writeExif(info: SourceLoader.Info, file: File, policy: MetadataPolicy, w: Int, h: Int, retouchTags: Set<String>) {
         val dst = ExifInterface(file)
         if (policy != MetadataPolicy.STRIP_ALL) {
             val src = context.contentResolver.openInputStream(info.uri)?.use { runCatching { ExifInterface(it) }.getOrNull() }
@@ -230,6 +232,8 @@ class Exporter(private val context: Context) {
         dst.setAttribute(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL.toString())
         dst.setAttribute(ExifInterface.TAG_PIXEL_X_DIMENSION, w.toString())
         dst.setAttribute(ExifInterface.TAG_PIXEL_Y_DIMENSION, h.toString())
+        // Reshaped or generated pixels are disclosed even when other metadata is stripped.
+        RetouchExif.write(dst, retouchTags, CREATOR_TOOL)
         dst.saveAttributes()
     }
 

@@ -58,6 +58,11 @@ class DevelopGestures(private val a: DevelopActivity) {
                 true
             }
             Mode.LINEAR, Mode.RADIAL -> true
+            Mode.RETOUCH_BRUSH -> {
+                retouchPts.clear()
+                addRetouchPoint(x, y)
+                true
+            }
             else -> false
         }
     }
@@ -73,6 +78,11 @@ class DevelopGestures(private val a: DevelopActivity) {
             }
             Mode.LINEAR -> {
                 a.overlay.line = floatArrayOf(startX, startY, x, y)
+                a.overlay.invalidate()
+            }
+            Mode.RETOUCH_BRUSH -> {
+                addRetouchPoint(x, y)
+                a.overlay.cursor = floatArrayOf(x, y, a.ui.retouchBrush.floatValue * max(a.overlay.image.width(), a.overlay.image.height()))
                 a.overlay.invalidate()
             }
             Mode.RADIAL -> {
@@ -100,6 +110,14 @@ class DevelopGestures(private val a: DevelopActivity) {
                 val r = hypot(x - startX, y - startY) / long
                 setShape(RadialShape(c[0], c[1], r, r))
             }
+            Mode.RETOUCH_BRUSH -> if (wasActive) {
+                addRetouchPoint(x, y)
+                a.overlay.cursor = null
+                if (tap) a.ui.retouchTap(a.viewToSource(x, y))
+                else a.ui.retouchStrokes.add(dev.opencamera.pipeline.retouch.Stroke(retouchPts.toList(), a.ui.retouchBrush.floatValue, a.ui.retouchErase.value))
+                a.ui.liveStroke.value = emptyList()
+            }
+            Mode.RETOUCH_TAP -> if (tap) a.ui.retouchTap(a.viewToSource(x, y))
             Mode.PICK_HSL -> if (tap) a.sampleAt(x, y)?.let { p ->
                 val hue = ColorMath.hue(((p shr 16) and 255) / 255f, ((p shr 8) and 255) / 255f, (p and 255) / 255f)
                 var best = 0; var bw = -1f
@@ -120,6 +138,15 @@ class DevelopGestures(private val a: DevelopActivity) {
     fun cancel() {
         active = false
         a.overlay.cursor = null
+        a.ui.liveStroke.value = emptyList()
+    }
+
+    private val retouchPts = ArrayList<dev.opencamera.pipeline.retouch.NPoint>()
+
+    private fun addRetouchPoint(x: Float, y: Float) {
+        val s = a.viewToSource(x, y)
+        retouchPts += dev.opencamera.pipeline.retouch.NPoint(s[0].coerceIn(0f, 1f), s[1].coerceIn(0f, 1f))
+        a.ui.liveStroke.value = retouchPts.toList()
     }
 
     private fun addPoint(x: Float, y: Float) {

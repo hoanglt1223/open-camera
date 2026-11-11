@@ -29,6 +29,9 @@ class EditHistory(initial: EditStack) {
     /** Labels of the steps that can be undone, oldest first. */
     val steps: List<String> get() = undo.map { it.label }
 
+    /** Labels of the steps that can be redone, the next one first. */
+    val futureSteps: List<String> get() = redo.asReversed().map { it.label }
+
     fun push(next: EditStack, label: String, coalesceKey: String? = null) {
         if (next == current) return
         if (coalesceKey == null || coalesceKey != lastKey || undo.isEmpty()) {

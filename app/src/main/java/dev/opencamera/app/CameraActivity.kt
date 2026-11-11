@@ -173,6 +173,9 @@ import dev.opencamera.app.utils.GoogleLensUtils
 import dev.opencamera.app.utils.PermissionsManager
 import dev.opencamera.app.utils.ShortcutsUtils
 import dev.opencamera.app.viewmodels.CameraViewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import dev.opencamera.app.ui.overlay.CameraOverlay
 import dev.opencamera.app.ui.overlay.CameraUiActions
 import dev.opencamera.app.ui.overlay.CameraUiState
 import dev.opencamera.app.ui.overlay.Control
@@ -844,6 +847,9 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             viewModel.cameraConfiguration.collectLatest { cameraConfiguration ->
                 // Let the first bind carry the preview look instead of rebinding when it loads.
                 viewModel.lookController.awaitPreload(LOOK_PRELOAD_WAIT_MS)
+                // Let the mode change draw its frame first; the bind (CameraX must be configured on
+                // the main thread) then runs in a frame of its own.
+                kotlinx.coroutines.android.awaitFrame()
                 bindCameraUseCases(cameraConfiguration)
             }
         }
@@ -2783,8 +2789,11 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             parent = mainLayout,
             insertIndex = mainLayout.indexOfChild(screenFlashView),
             repo = skinRepository,
-            state = uiState,
-            actions = overlayActions,
+            guard = skinRepository.crashGuard,
+            content = { ui ->
+                val s by uiState.collectAsState()
+                CameraOverlay(s, overlayActions, ui)
+            },
             onSkin = { layoutPreviewForSkin(it) },
             onLegacy = { showLegacyChrome() },
             debugFail = OverlayHost.debugFailure(this, intent.getStringExtra(EXTRA_DEBUG_SKIN_FAIL)),

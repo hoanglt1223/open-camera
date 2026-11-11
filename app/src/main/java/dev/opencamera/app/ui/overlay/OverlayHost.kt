@@ -44,7 +44,6 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 /** Follows the activity lifecycle with a registry of its own (see [OverlayHost.attach]). */
@@ -162,8 +161,9 @@ class OverlayHost(
     private val parent: ViewGroup,
     private val insertIndex: Int,
     private val repo: SkinRepository,
-    private val state: StateFlow<CameraUiState>,
-    private val actions: CameraUiActions,
+    /** Persistent crash flags; null for screens that only need the in-session fallback chain. */
+    private val guard: SkinCrashGuard?,
+    private val content: @androidx.compose.runtime.Composable (OverlayUiState) -> Unit,
     private val onSkin: (SkinTokens) -> Unit,
     private val onLegacy: () -> Unit,
     /** Debug builds only: "all" or a skin id makes that skin throw while composing. */
@@ -179,10 +179,13 @@ class OverlayHost(
     private var scope: CoroutineScope? = null
     private var currentSkin: String = Skins.DEFAULT.id
     private val tried = mutableSetOf<String>()
+    /** Skin used instead of the chosen one after an in-session failure (screens without a guard). */
+    private var forced: String? = null
 
     /** Returns false when the View layout must be used for this launch. */
     fun start(): Boolean {
-        val decision = repo.crashGuard.onLaunch(repo.skin.value.id)
+        val guard = guard ?: return attach()
+        val decision = guard.onLaunch(repo.skin.value.id)
         if (decision is SkinCrashGuard.Decision.Legacy) {
             Log.w(TAG, "Skin layer disabled after repeated failures, using the View layout")
             return false
@@ -215,8 +218,8 @@ class OverlayHost(
                 setContent { Root() }
             }
             safe.content = view
-            currentSkin = repo.skin.value.id
-            repo.crashGuard.beforeContent(currentSkin)
+            currentSkin = forced ?: repo.skin.value.id
+            guard?.beforeContent(currentSkin)
             parent.addView(
                 safe, insertIndex.coerceIn(0, parent.childCount),
                 ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
@@ -225,15 +228,15 @@ class OverlayHost(
             scope = newScope
         }.onFailure { Log.e(TAG, "Compose overlay could not be created", it) }.isSuccess
         active = ok
-        if (!ok) repo.crashGuard.clear()
+        if (!ok) guard?.clear()
         return ok
     }
 
     @androidx.compose.runtime.Composable
     private fun Root() {
-        val tokens by repo.skin.collectAsState()
+        val chosen by repo.skin.collectAsState()
+        val tokens = forced?.let { Skins.byId(it) } ?: chosen
         val blur by repo.blurPolicy.collectAsState()
-        val s by state.collectAsState()
 
         LaunchedEffect(tokens.id) {
             currentSkin = tokens.id
@@ -242,13 +245,13 @@ class OverlayHost(
         LaunchedEffect(Unit) {
             withFrameNanos { }
             withFrameNanos { }
-            repo.crashGuard.onFirstFrame()
+            guard?.onFirstFrame()
         }
         val scale = remember { repo.animatorScale() }
         Crossfade(tokens, animationSpec = tween((240 * scale).toInt()), label = "skin") { t ->
             if (debugFail == "all" || debugFail == t.id) error("Injected skin failure for ${t.id}")
             CompositionLocalProvider(LocalSkin provides remember(t, blur) { Skin(t, blur, scale) }) {
-                CameraOverlay(s, actions, ui)
+                content(ui)
             }
         }
     }
@@ -258,7 +261,10 @@ class OverlayHost(
         Log.e(TAG, "Skin ${currentSkin} failed, falling back", e)
         tried += currentSkin
         detach()
-        val next = repo.crashGuard.onRuntimeFailure(currentSkin, tried)
+        val next = guard?.onRuntimeFailure(currentSkin, tried) ?: Skins.ALL.map { it.id }.firstOrNull { it !in tried }
+        if (next != null) {
+            if (guard == null) forced = next
+        }
         if (next != null && attach()) {
             Toast.makeText(context, R.string.ui_skin_reset, Toast.LENGTH_LONG).show()
             return
