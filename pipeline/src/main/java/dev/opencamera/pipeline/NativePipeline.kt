@@ -58,5 +58,29 @@ object NativePipeline {
 
     external fun nativeRankSharpness(handle: Long): IntArray?
 
+    external fun nativeAddNv21(handle: Long, nv21: ByteArray): Boolean
+
+    external fun nativeAddRawFrame(
+        handle: Long,
+        raw: ByteBuffer,
+        rowStride: Int,
+        params: FloatArray,
+        lensShading: FloatArray?,
+        lensShadingWidth: Int,
+        lensShadingHeight: Int,
+    ): Boolean
+
+    external fun nativeExportLuma(handle: Long, index: Int, factor: Int, out: ByteArray): Boolean
+
+    external fun nativeProcessCrop(
+        handle: Long,
+        mode: Int,
+        toneEvStep: Float,
+        reference: Int,
+        crop: IntArray?,
+        outNv21: ByteArray,
+        listener: ProgressListener?,
+    ): DoubleArray?
+
     external fun nativeReleaseBurst(handle: Long)
 }
