@@ -327,7 +327,9 @@ private fun TopBar(state: CameraUiState, actions: CameraUiActions, ui: OverlayUi
         }
         TopIcon(
             Glyphs.settings, stringResource(R.string.ui_settings), null, enabled = idle,
-            onClick = { ui.sheet = Sheet.SETTINGS },
+            // Tap: the full settings screen; long press: the quick sheet (skin, blur, mode options).
+            onLongClick = { ui.sheet = Sheet.SETTINGS },
+            onClick = { actions.allSettings() },
         )
     }
 }

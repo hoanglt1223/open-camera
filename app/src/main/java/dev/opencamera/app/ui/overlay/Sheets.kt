@@ -223,6 +223,11 @@ private fun MoreSheet(state: CameraUiState, actions: CameraUiActions, close: () 
         })
         add(Tile(stringResource(R.string.look_color_match), Glyphs.palette, false) { actions.colorMatch() })
         if (state.googleLens) add(Tile(stringResource(R.string.google_lens_button_description), Glyphs.scan, false) { actions.googleLens() })
+        val next = Skins.other(s.id)
+        add(Tile(stringResource(if (next.id == Skins.GLASS_ID) R.string.ui_skin_glass else R.string.ui_skin_origin), Glyphs.palette, false) {
+            actions.setSkin(next.id)
+        })
+        add(Tile(stringResource(R.string.ui_all_settings), Glyphs.settings, false) { actions.allSettings() })
     }
     val shape = if (s.glass) RoundedCornerShape(14.dp) else CircleShape
     tiles.chunked(4).forEach { row ->

@@ -46,8 +46,8 @@ object Glyphs {
     val grid = glyph("grid", "M4 9h16M4 15h16M9 4v16M15 4v16")
     val looks = glyph("looks", circle(9f, 10f, 5f), circle(15f, 10f, 5f), circle(12f, 15f, 5f))
     val settings = glyph(
-        "settings", circle(12f, 12f, 3f),
-        "M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1",
+        "settings", circle(12f, 12f, 3.2f),
+        "M10.3 2.5h3.4l.5 2.6 1.9.8 2.2-1.5 2.4 2.4-1.5 2.2.8 1.9 2.6.5v3.4l-2.6.5-.8 1.9 1.5 2.2-2.4 2.4-2.2-1.5-1.9.8-.5 2.6h-3.4l-.5-2.6-1.9-.8-2.2 1.5-2.4-2.4 1.5-2.2-.8-1.9-2.6-.5v-3.4l2.6-.5.8-1.9-1.5-2.2 2.4-2.4 2.2 1.5 1.9-.8z",
     )
     val flip = glyph("flip", "M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3", "M18 3v4h-4M6 21v-4h4", autoMirror = true)
     val live = glyph("live", circle(12f, 12f, 3f), circle(12f, 12f, 7f))

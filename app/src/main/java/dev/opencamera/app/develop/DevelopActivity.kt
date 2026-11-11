@@ -158,6 +158,13 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
         engine = DevelopEngine(this)
         engine.prewarm()
         buildUi()
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (composeActive && runCatching { ui.onBack() }.getOrDefault(false)) return
+                persist()
+                finish()
+            }
+        })
         lifecycleScope.launch(Dispatchers.Default) {
             val ok = dev.opencamera.app.develop.tools.RetouchTools.install(this@DevelopActivity)
             withContext(Dispatchers.Main) { ui.retouchAvailable.value = ok }
@@ -541,7 +548,8 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
     }
 
     internal fun onStackChanged(fromHistory: Boolean) {
-        updateUndo()
+        // During a drag only the dial itself changes; recomposing the editor every frame costs the frame budget.
+        if (dragging && !fromHistory) ui.canUndo.value = true else updateUndo()
         if (fromHistory) {
             refreshPanel()
             schedulePersist()

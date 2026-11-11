@@ -397,7 +397,8 @@ class PreviewOverlay(context: Context) : View(context) {
             paint.color = Color.WHITE
             paint.textSize = context.dp(14f)
             paint.setShadowLayer(4f, 0f, 0f, Color.BLACK)
-            canvas.drawText(it, context.dp(12f), context.dp(24f), paint)
+            // Just above the photo: the frame may extend under the status bar and top controls.
+            canvas.drawText(it, context.dp(12f), (image.top - context.dp(10f)).coerceAtLeast(context.dp(24f)), paint)
             paint.clearShadowLayer()
         }
     }

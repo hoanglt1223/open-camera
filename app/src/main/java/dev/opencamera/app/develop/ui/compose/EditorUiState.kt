@@ -34,6 +34,8 @@ class EditorUiState {
     val retouchAvailable = mutableStateOf(false)
     val category = mutableStateOf(Category.ADJUST)
     val grid = mutableStateOf<RetouchGrid?>(null)
+    /** Closes the top sheet or grid; false when nothing was open (back then leaves the editor). */
+    var onBack: () -> Boolean = { false }
 
     // Retouch input collected on the photo.
     val retouchBrush = mutableFloatStateOf(0.03f)

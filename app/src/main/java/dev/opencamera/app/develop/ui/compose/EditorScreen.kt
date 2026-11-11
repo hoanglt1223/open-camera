@@ -142,6 +142,16 @@ fun EditorScreen(a: DevelopActivity) {
             Sheet.NONE -> Unit
         }
         ui.grid.value?.let { RetouchGridOverlay(it) }
+        androidx.compose.runtime.SideEffect {
+            ui.onBack = {
+                val g = ui.grid.value
+                when {
+                    g != null -> { if (g.zoomed >= 0) g.zoomed = -1 else g.onCancel(); true }
+                    sheet != Sheet.NONE -> { sheet = Sheet.NONE; true }
+                    else -> false
+                }
+            }
+        }
     }
 }
 
@@ -604,7 +614,7 @@ private fun HistoryRow(label: String, current: Boolean, future: Boolean, onClick
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(8.dp).background(if (current) s.accent else Color.Transparent, CircleShape).border(1.dp, s.stroke, CircleShape))
-        BasicText(label, Modifier.padding(start = 12.dp), style = TextStyle(color = (if (current) s.accentText else s.fg).copy(alpha = if (future) 0.4f else 1f), fontSize = 15.sp))
+        BasicText(historyLabel(label), Modifier.padding(start = 12.dp), style = TextStyle(color = (if (current) s.accentText else s.fg).copy(alpha = if (future) 0.4f else 1f), fontSize = 15.sp))
     }
 }
 
@@ -668,4 +678,24 @@ private fun MoreSheet(a: DevelopActivity, onClose: () -> Unit) {
             items(items) { (label, act) -> HistoryRow(label, current = false, future = false) { act() } }
         }
     }
+}
+
+private val HISTORY_LABELS = mapOf(
+    "Auto" to R.string.develop_auto_all, "Auto tone" to R.string.develop_auto_tone, "Auto white balance" to R.string.develop_auto_wb,
+    "Auto straighten" to R.string.develop_auto_straighten, "Curve" to R.string.editor_curves, "Reset curve" to R.string.editor_curves,
+    "Grading" to R.string.editor_grade, "HSL" to R.string.editor_hsl, "Brush" to R.string.develop_mask_brush,
+    "Add mask" to R.string.editor_mask_new, "Delete mask" to R.string.editor_mask_delete, "Mask combine" to R.string.editor_cat_masks,
+    "Mask on/off" to R.string.develop_mask_enabled, "Gradient" to R.string.editor_cat_masks, "Colour range" to R.string.develop_mask_color,
+    "Range" to R.string.editor_cat_masks, "Crop" to R.string.editor_cat_crop, "Aspect" to R.string.editor_cat_crop,
+    "Reset crop" to R.string.editor_cat_crop, "Rotate" to R.string.editor_rotate, "Flip" to R.string.editor_flip,
+    "No look" to R.string.editor_look_none, "Preset strength" to R.string.develop_preset_strength,
+)
+
+/** History steps are recorded with stable English keys; known ones are shown in the UI language. */
+@Composable
+private fun historyLabel(label: String): String {
+    HISTORY_LABELS[label]?.let { return stringResource(it) }
+    if (label.startsWith("Preset ")) return stringResource(R.string.editor_cat_looks) + ": " + label.removePrefix("Preset ")
+    if (label.startsWith("Mask ")) return stringResource(R.string.editor_cat_masks) + ": " + label.removePrefix("Mask ")
+    return label
 }
