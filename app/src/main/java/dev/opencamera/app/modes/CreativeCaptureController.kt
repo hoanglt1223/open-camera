@@ -194,11 +194,16 @@ class CreativeCaptureController(
             if (plan.mode == CreativeMode.FOCUS_STACK) {
                 focusSweep(cameraControl, cameraInfo, size.width, size.height, frames) to null
             } else {
-                val c = multiFrame.capture(
-                    cameraControl, cameraInfo,
-                    BurstPlan(BurstKind.SINGLE, frames, evCompensation = plan.evCompensation),
-                    plan.stride,
-                )
+                val burstPlan = BurstPlan(BurstKind.SINGLE, frames, evCompensation = plan.evCompensation)
+                val c = try {
+                    multiFrame.capture(cameraControl, cameraInfo, burstPlan, plan.stride)
+                } catch (e: CameraControl.OperationCanceledException) {
+                    // The session was rebound under us (e.g. the preview look effect attaching);
+                    // it is back within a second, so try once more.
+                    Log.w(TAG, "Camera rebound during ${plan.mode}, retrying", e)
+                    delay(REBIND_RETRY_MS)
+                    multiFrame.capture(cameraControl, cameraInfo, burstPlan, plan.stride)
+                }
                 c.burst to c
             }
         } catch (e: CancellationException) {
@@ -332,5 +337,6 @@ class CreativeCaptureController(
         const val SHAKE_RAD_S = 0.05f
         const val SPORTS_KEEP = 3
         const val FOCUS_SETTLE_MS = 350L
+        const val REBIND_RETRY_MS = 1000L
     }
 }

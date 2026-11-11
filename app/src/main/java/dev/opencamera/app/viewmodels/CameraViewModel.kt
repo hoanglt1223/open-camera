@@ -1022,12 +1022,19 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
 
     init {
         multiFrame.analyzer.frameTap = { image ->
-            creative.zoomRatio = cameraController.zoomState.value?.zoomRatio ?: 1f
             creative.tap(image)
             motionPhoto.tap(image)
         }
 
         viewModelScope.launch {
+            // CameraController state is main-thread only; the analysis thread reads this copy.
+            launch {
+                while (true) {
+                    creative.zoomRatio = cameraController.zoomState.value?.zoomRatio ?: 1f
+                    delay(500)
+                }
+            }
+
             launch {
                 flashMode.collectLatest { flashMode ->
                     cameraController.flashMode = flashMode
