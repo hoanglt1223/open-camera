@@ -464,7 +464,7 @@ private fun RecordingPill(state: CameraUiState) {
     val dot by blink.animateFloat(
         1f, 0f, infiniteRepeatable(tween(500, easing = LinearEasing), RepeatMode.Reverse), label = "dot",
     )
-    val text = TimeUtils.convertNanosToString(state.recordingNanos)
+    val text = TimeUtils.convertNanosToString(LocalLiveUi.current.recordingNanos)
     Row(
         Modifier
             .clip(RoundedCornerShape(50))
@@ -516,7 +516,7 @@ private fun LensRow(state: CameraUiState, actions: CameraUiActions) {
     val scope = rememberCoroutineScope()
     var ring by remember { mutableStateOf(false) }
     var hideJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
-    val zoom by androidx.compose.runtime.rememberUpdatedState(state.zoomRatio)
+    val live = LocalLiveUi.current
     val minZ by androidx.compose.runtime.rememberUpdatedState(state.minZoom)
     val maxZ by androidx.compose.runtime.rememberUpdatedState(state.maxZoom)
     var dragZoom by remember { mutableFloatStateOf(1f) }
@@ -532,7 +532,7 @@ private fun LensRow(state: CameraUiState, actions: CameraUiActions) {
                 detectDragGesturesAfterLongPress(
                     onDragStart = {
                         hideJob?.cancel()
-                        dragZoom = zoom
+                        dragZoom = live.zoomRatio
                         ring = true
                         Haptics.longPress(view)
                     },
@@ -616,14 +616,15 @@ private fun LensChip(chip: LensChipUi, onClick: () -> Unit) {
 @Composable
 private fun ZoomRing(state: CameraUiState, modifier: Modifier) {
     val s = skin
-    val zoom by androidx.compose.runtime.rememberUpdatedState(state.zoomRatio)
+    val live = LocalLiveUi.current
     val minZ = state.minZoom.coerceAtLeast(0.1f)
     val maxZ = state.maxZoom.coerceAtLeast(minZ + 0.01f)
     Box(modifier, contentAlignment = Alignment.TopCenter) {
         Canvas(Modifier.fillMaxSize()) {
             val w = size.width
             val pxPerLog = w / 2.2f
-            val center = ln(zoom)
+            // Read in the draw phase: zooming redraws the dial without recomposing.
+            val center = ln(live.zoomRatio)
             var r = (floor(minZ * 10) / 10f).coerceAtLeast(0.1f)
             while (r <= maxZ + 1e-3f) {
                 val x = w / 2 + (ln(r) - center) * pxPerLog
@@ -641,8 +642,16 @@ private fun ZoomRing(state: CameraUiState, modifier: Modifier) {
             }
             drawLine(s.accent, Offset(w / 2, size.height - 28.dp.toPx()), Offset(w / 2, size.height - 4.dp.toPx()), strokeWidth = 4f)
         }
+        ZoomLabel(live)
+    }
+}
+
+@Composable
+private fun ZoomLabel(live: LiveUiValues) {
+    val s = skin
+    run {
         BasicText(
-            "%.1f×".format(state.zoomRatio),
+            "%.1f×".format(live.zoomRatio),
             Modifier.padding(top = 2.dp).semantics { liveRegion = LiveRegionMode.Polite },
             style = TextStyle(color = s.accentText, fontSize = 14.sp, fontWeight = FontWeight.Bold),
         )

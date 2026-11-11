@@ -1232,7 +1232,7 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
      */
     fun selectCamera(
         camera: Camera,
-    ) = updateConfiguration<CameraConfiguration> { cameraConfiguration ->
+    ): Boolean = updateConfiguration<CameraConfiguration>(retry = { selectCamera(camera); Unit }) { cameraConfiguration ->
         createInitialCameraConfiguration(
             camera = camera,
             cameraMode = cameraConfiguration.cameraMode,
@@ -1717,7 +1717,7 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
     /**
      * Flip the camera.
      */
-    fun flipCamera() = updateConfiguration<CameraConfiguration> { cameraConfiguration ->
+    fun flipCamera(): Boolean = updateConfiguration<CameraConfiguration>(retry = { flipCamera(); Unit }) { cameraConfiguration ->
         val cameraForCycling = camerasForCycling.value
 
         val cameraFacing = cameraForCycling.keys.sortedWith(
@@ -1860,8 +1860,8 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
     /**
      * Cycle the extension mode.
      */
-    fun cycleExtensionMode() =
-        updateConfiguration<CameraConfiguration.Photo> { cameraConfiguration ->
+    fun cycleExtensionMode(): Boolean =
+        updateConfiguration<CameraConfiguration.Photo>(retry = { cycleExtensionMode(); Unit }) { cameraConfiguration ->
             val supportedExtensionModes = cameraConfiguration.camera.supportedExtensionModes
             val extensionMode = supportedExtensionModes.toList().sorted().next(
                 cameraConfiguration.extensionMode
@@ -1877,8 +1877,8 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
     /**
      * Cycle the photo aspect ratio.
      */
-    fun cyclePhotoAspectRatio() =
-        updateConfiguration<CameraConfiguration.Photo> { cameraConfiguration ->
+    fun cyclePhotoAspectRatio(): Boolean =
+        updateConfiguration<CameraConfiguration.Photo>(retry = { cyclePhotoAspectRatio(); Unit }) { cameraConfiguration ->
             val newAspectRatio = when (cameraConfiguration.photoAspectRatio) {
                 AspectRatio.RATIO_4_3 -> AspectRatio.RATIO_16_9
                 AspectRatio.RATIO_16_9 -> AspectRatio.RATIO_4_3
@@ -1895,8 +1895,8 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
     /**
      * Cycle the video quality.
      */
-    fun cycleVideoQuality() =
-        updateConfiguration<CameraConfiguration.Video> { cameraConfiguration ->
+    fun cycleVideoQuality(): Boolean =
+        updateConfiguration<CameraConfiguration.Video>(retry = { cycleVideoQuality(); Unit }) { cameraConfiguration ->
             val videoQuality =
                 cameraConfiguration.camera.supportedVideoQualities.keys.toList()
                     .sortedWith { a, b ->
@@ -1933,8 +1933,8 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
     /**
      * Cycle the video frame rate.
      */
-    fun cycleVideoFrameRate() =
-        updateConfiguration<CameraConfiguration.Video> { cameraConfiguration ->
+    fun cycleVideoFrameRate(): Boolean =
+        updateConfiguration<CameraConfiguration.Video>(retry = { cycleVideoFrameRate(); Unit }) { cameraConfiguration ->
             val videoQualityInfo = cameraConfiguration.camera.supportedVideoQualities[
                 cameraConfiguration.videoQuality
             ] ?: error(
@@ -1955,8 +1955,8 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
     /**
      * Cycle the video dynamic range.
      */
-    fun cycleVideoDynamicRange() =
-        updateConfiguration<CameraConfiguration.Video> { cameraConfiguration ->
+    fun cycleVideoDynamicRange(): Boolean =
+        updateConfiguration<CameraConfiguration.Video>(retry = { cycleVideoDynamicRange(); Unit }) { cameraConfiguration ->
             val videoQualityInfo = cameraConfiguration.camera.supportedVideoQualities[
                 cameraConfiguration.videoQuality
             ] ?: error(
@@ -2314,7 +2314,10 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         block: (T) -> CameraConfiguration,
     ): Boolean {
         if (!canRestartCamera()) {
-            return false
+            // A recording is ended by the user; a change then would surprise, so it is dropped.
+            if (retry == null || cameraState.value.isRecordingVideo) return false
+            deferUntilIdle(retry)
+            return true
         }
 
         if (!rebindMutex.tryLock()) {
@@ -2349,6 +2352,27 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
     /** The latest configuration change that arrived while another one held [rebindMutex]. */
     @PublishedApi
     internal var pendingConfigurationUpdate: (() -> Unit)? = null
+
+    /**
+     * Busy capturing: keeps only the newest change and applies it once the camera is idle,
+     * instead of dropping the tap; the user is told it is pending.
+     */
+    @PublishedApi
+    internal fun deferUntilIdle(retry: () -> Unit) {
+        idleUpdate = retry
+        pendingChangeNotice.tryEmit(Unit)
+        if (idleWaiter?.isActive == true) return
+        idleWaiter = viewModelScope.launch {
+            cameraState.first { it == CameraState.IDLE }
+            idleUpdate?.also { idleUpdate = null }?.invoke()
+        }
+    }
+
+    private var idleUpdate: (() -> Unit)? = null
+    private var idleWaiter: Job? = null
+
+    /** A camera change was accepted while capturing and will apply when the camera is idle. */
+    val pendingChangeNotice = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST)
 
     companion object {
         private val LOG_TAG = CameraViewModel::class.simpleName!!

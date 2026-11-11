@@ -15,4 +15,5 @@
     <string name="stream_fallback_baseline">Camera mở ở chế độ cơ bản: một số tính năng bị tắt cho camera này</string>
     <string name="stream_fallback_failed">Không thể mở camera</string>
     <string name="full_res_fallback">Không hỗ trợ chụp đa khung độ phân giải đầy đủ; đang dùng luồng camera chuẩn</string>
+    <string name="camera_change_pending">Sẽ áp dụng khi chụp xong</string>
 </resources>

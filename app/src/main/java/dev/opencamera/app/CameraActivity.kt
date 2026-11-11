@@ -22,6 +22,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
+import android.os.SystemClock
 import android.provider.MediaStore
 import android.util.Log
 import android.view.GestureDetector
@@ -102,10 +103,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import dev.opencamera.app.ext.camera2CameraControl
+import dev.opencamera.app.ext.decodeSampled
 import dev.opencamera.app.ext.flashMode
 import dev.opencamera.app.ext.mapToRange
 import dev.opencamera.app.ext.px
@@ -167,6 +171,7 @@ import dev.opencamera.app.ui.views.LensSelectorLayout
 import dev.opencamera.app.ui.assist.AssistController
 import dev.opencamera.app.ui.assist.AssistOverlayView
 import dev.opencamera.app.ui.views.PreviewBlurView
+import dev.opencamera.app.ui.views.PreviewFrames
 import dev.opencamera.app.ui.views.VerticalSlider
 import dev.opencamera.app.utils.ExifUtils
 import dev.opencamera.app.utils.GoogleLensUtils
@@ -176,6 +181,8 @@ import dev.opencamera.app.viewmodels.CameraViewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import dev.opencamera.app.ui.overlay.CameraOverlay
+import dev.opencamera.app.ui.overlay.LiveUiValues
+import dev.opencamera.app.ui.overlay.LocalLiveUi
 import dev.opencamera.app.ui.overlay.CameraUiActions
 import dev.opencamera.app.ui.overlay.CameraUiState
 import dev.opencamera.app.ui.overlay.Control
@@ -602,8 +609,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                     gridView.alpha = 1f
                     gridView.previewView = viewFinder
 
-                    // Hide preview blur
-                    previewBlurView.isVisible = false
+                    // Cross-fade from the frozen frame to the live preview
+                    previewBlurView.reveal()
 
                     // Issue capture if requested via assistant
                     if ((launchedViaVoiceIntent || assistantIntent?.cameraOpenOnly != null)
@@ -849,10 +856,13 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                 viewModel.lookController.awaitPreload(LOOK_PRELOAD_WAIT_MS)
                 // Let the mode change draw its frame first; the bind (CameraX must be configured on
                 // the main thread) then runs in a frame of its own.
+                viewModel.cameraState.first { it == CameraState.IDLE }
                 kotlinx.coroutines.android.awaitFrame()
                 bindCameraUseCases(cameraConfiguration)
             }
         }
+
+        launch { collectRebindRequests() }
 
         launch {
             viewModel.cameraMode.collectLatest { cameraMode ->
@@ -1218,6 +1228,12 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             viewModel.fullResNotice.collect { res ->
                 Toast.makeText(this@CameraActivity, res, Toast.LENGTH_SHORT).show()
                 rebindIfAnalysisChanged()
+            }
+        }
+
+        launch {
+            viewModel.pendingChangeNotice.collect {
+                Toast.makeText(this@CameraActivity, R.string.camera_change_pending, Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -1654,7 +1670,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                 viewFinder.controller = viewModel.cameraController
                 viewModel.lookController.refresh()
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    ProcessingService.resumeIfPending(this)
+                    val app = applicationContext
+                    lifecycleScope.launch(Dispatchers.IO) { ProcessingService.resumeIfPending(app) }
                 }
 
                 // Attach CameraController to ScreenFlashView
@@ -1769,12 +1786,31 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
      * processing the vendor bridge stands in with.
      */
     private fun rebindIfAnalysisChanged() {
-        val config = viewModel.cameraConfiguration.replayCache.lastOrNull()
-        val wanted = boundStreamsKey(config)
-        val previous = boundStreams
-        boundStreams = wanted
-        if (previous != null && previous != wanted && viewModel.cameraState.value == CameraState.IDLE) {
-            config?.let { bindCameraUseCases(it) }
+        rebindRequests.tryEmit(Unit)
+    }
+
+    private val rebindRequests = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(
+        extraBufferCapacity = 1, onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST,
+    )
+
+    /**
+     * Toggles only post a request; quick taps collapse into one check after [REBIND_DEBOUNCE_MS],
+     * and the camera is rebound only when the stream layout really changed. A change made while
+     * a capture runs is kept and applied once the camera is idle again.
+     */
+    @OptIn(kotlinx.coroutines.FlowPreview::class)
+    private suspend fun collectRebindRequests() {
+        rebindRequests.debounce(REBIND_DEBOUNCE_MS).collectLatest {
+            if (boundStreams == null) return@collectLatest
+            val first = viewModel.cameraConfiguration.replayCache.lastOrNull() ?: return@collectLatest
+            if (boundStreamsKey(first) == boundStreams) return@collectLatest
+            if (viewModel.cameraState.value != CameraState.IDLE) {
+                Toast.makeText(this, R.string.camera_change_pending, Toast.LENGTH_SHORT).show()
+                viewModel.cameraState.first { it == CameraState.IDLE }
+            }
+            kotlinx.coroutines.android.awaitFrame()
+            val config = viewModel.cameraConfiguration.replayCache.lastOrNull() ?: return@collectLatest
+            if (boundStreamsKey(config) != boundStreams) bindCameraUseCases(config, "streams")
         }
     }
 
@@ -1859,7 +1895,22 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
      */
     private var lastBridgedOemFeature: OemFeature? = null
 
-    private fun bindCameraUseCases(cameraConfiguration: CameraConfiguration) {
+    private fun bindCameraUseCases(cameraConfiguration: CameraConfiguration, reason: String = "config") {
+        if (viewModel.cameraState.value != CameraState.IDLE) {
+            // Not a bind failure: the change is retried once the capture is done.
+            Log.i(LOG_TAG, "Bind deferred until idle ($reason)")
+            rebindIfAnalysisChanged()
+            return
+        }
+        val start = SystemClock.elapsedRealtimeNanos()
+        try {
+            bindCameraUseCasesWithFallback(cameraConfiguration)
+        } finally {
+            Log.i(PERF_TAG, "bind $reason ${(SystemClock.elapsedRealtimeNanos() - start) / 1_000_000} ms")
+        }
+    }
+
+    private fun bindCameraUseCasesWithFallback(cameraConfiguration: CameraConfiguration) {
         try {
             bindCameraUseCasesOrThrow(cameraConfiguration)
         } catch (e: RuntimeException) {
@@ -2192,7 +2243,9 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             ok
         }
         if (accepted.isEmpty()) return
-        bridge.beginTagWrite(accepted.map { it.name })
+        // The crash marker must reach disk (commit) before the tags are sent; off the main thread.
+        val names = accepted.map { it.name }
+        withContext(Dispatchers.IO) { bridge.beginTagWrite(names) }
         val applied = FeatureGuard.attempt(LOG_TAG, "Vendor tags request") {
             withTimeout(VENDOR_TAG_TIMEOUT_MS) {
                 control.addCaptureRequestOptions(vendorOptions.build()).await()
@@ -2410,7 +2463,9 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                     // No output URI provided, so return the photo inline as a downscaled Bitmap.
                     action = "inline-data"
                     val transform = ExifUtils.getTransform(input)
-                    val bitmap = input.use { BitmapFactory.decodeStream(input) }
+                    val bytes = input.use { it.readBytes() }
+                    val bitmap = decodeSampled({ bytes.inputStream() }, SINGLE_CAPTURE_INLINE_MAX_SIDE_LEN_PIXELS)
+                        ?: throw IllegalStateException("Cannot decode the captured photo")
                     val scaledAndRotatedBitmap = bitmap.scale(
                         SINGLE_CAPTURE_INLINE_MAX_SIDE_LEN_PIXELS
                     ).transform(transform)
@@ -2782,6 +2837,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
      * hidden, and keep their logic: the overlay mirrors their state and clicks them. When the
      * overlay cannot run (or fails later) the View controls come back.
      */
+    private val liveUi = LiveUiValues()
+
     private fun setupOverlay() {
         val host = OverlayHost(
             context = this,
@@ -2792,7 +2849,9 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             guard = skinRepository.crashGuard,
             content = { ui ->
                 val s by uiState.collectAsState()
-                CameraOverlay(s, overlayActions, ui)
+                androidx.compose.runtime.CompositionLocalProvider(LocalLiveUi provides liveUi) {
+                    CameraOverlay(s, overlayActions, ui)
+                }
             },
             onSkin = { layoutPreviewForSkin(it) },
             onLegacy = { showLegacyChrome() },
@@ -3043,14 +3102,16 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                 uiState.update { it.copy(glyphRotation = pinned ?: (r.compensationValue % 360)) }
             }
         }
-        launch { viewModel.videoRecordingDuration.collect { d -> uiState.update { it.copy(recordingNanos = d) } } }
+        launch { viewModel.videoRecordingDuration.collect { d -> liveUi.recordingNanos = d } }
         launch {
             viewModel.inSingleCaptureMode.collect { single -> uiState.update { it.copy(singleCapture = single).derived() } }
         }
         launch {
             viewModel.zoomState.collect { z ->
                 z ?: return@collect
-                uiState.update { it.copy(zoomRatio = z.zoomRatio, minZoom = z.minZoomRatio, maxZoom = z.maxZoomRatio) }
+                liveUi.zoomRatio = z.zoomRatio
+                // Unchanged bounds leave the state equal, so the overlay is not recomposed.
+                uiState.update { it.copy(minZoom = z.minZoomRatio, maxZoom = z.maxZoomRatio) }
             }
         }
         launch { proModeUi.uiState.collect { p -> uiState.update { it.copy(pro = p).derived() } } }
@@ -3109,11 +3170,11 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         override fun setSkin(id: String) = act("skin") { skinRepository.select(id) }
         override fun setBlur(enabled: Boolean) = act("blur") { skinRepository.setBlurEnabled(enabled) }
 
-        override fun previewSnapshot(): Bitmap? = FeatureGuard.attempt(LOG_TAG, "Preview snapshot") {
-            viewFinder.bitmap?.let { full ->
-                Bitmap.createScaledBitmap(full, (full.width / 4).coerceAtLeast(1), (full.height / 4).coerceAtLeast(1), true)
-                    .also { if (it !== full) full.recycle() }
-            }
+        override suspend fun previewSnapshot(): Bitmap? = try {
+            PreviewFrames.copy(viewFinder, maxOf(viewFinder.width, viewFinder.height) / 4)
+        } catch (e: RuntimeException) {
+            Log.w(LOG_TAG, "Preview snapshot failed", e)
+            null
         }
     }
     companion object {
@@ -3123,7 +3184,9 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         /** Debug builds: "all" or a skin id makes the skin throw, to exercise the fallback chain. */
         const val EXTRA_DEBUG_SKIN_FAIL = "debug_skin_fail"
         const val EXTRA_DEBUG_GLYPH_ROTATION = "debug_glyph_rotation"
-        private const val LOOK_PRELOAD_WAIT_MS = 1200L
+        private const val LOOK_PRELOAD_WAIT_MS = 300L
+        private const val REBIND_DEBOUNCE_MS = 150L
+        const val PERF_TAG = "OcPerf"
         private const val FULL_RES_STREAM_TIMEOUT_MS = 4000L
         private const val CAPTURE_RESULT_WAIT_MS = 800L
         private const val FULL_RES_MIN_PIXELS = 6_000_000L

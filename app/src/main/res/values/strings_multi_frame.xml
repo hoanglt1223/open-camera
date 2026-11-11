@@ -15,4 +15,5 @@
     <string name="stream_fallback_baseline">Camera opened in basic mode: some features are off for this camera</string>
     <string name="stream_fallback_failed">Camera could not be opened</string>
     <string name="full_res_fallback">Full-resolution multi-frame capture is not available; using the standard camera stream</string>
+    <string name="camera_change_pending">Applying after the current capture</string>
 </resources>

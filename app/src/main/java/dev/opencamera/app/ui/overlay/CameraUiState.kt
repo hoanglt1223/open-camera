@@ -8,6 +8,8 @@ package dev.opencamera.app.ui.overlay
 import android.graphics.Bitmap
 import android.graphics.RectF
 import android.net.Uri
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import dev.opencamera.app.models.CameraMode
 import dev.opencamera.app.models.CameraState
 import dev.opencamera.app.models.FlashMode
@@ -77,6 +79,20 @@ data class ProUiState(
     val formatLabel: String?,
 )
 
+/**
+ * Values that change many times a second (zoom while pinching, the recording clock). They live
+ * in snapshot state outside [CameraUiState], so a change only recomposes or redraws the few
+ * places that read them instead of the whole overlay.
+ */
+@androidx.compose.runtime.Stable
+class LiveUiValues {
+    var zoomRatio by androidx.compose.runtime.mutableFloatStateOf(1f)
+    var recordingNanos by androidx.compose.runtime.mutableLongStateOf(0L)
+}
+
+val LocalLiveUi = androidx.compose.runtime.staticCompositionLocalOf { LiveUiValues() }
+
+@androidx.compose.runtime.Immutable
 data class CameraUiState(
     val cameraMode: CameraMode = CameraMode.PHOTO,
     val uiMode: UiMode = UiMode.PHOTO,
@@ -97,7 +113,6 @@ data class CameraUiState(
     val portrait: Boolean = false,
     val controls: Map<Control, LegacyControl> = emptyMap(),
     val lensChips: List<LensChipUi> = emptyList(),
-    val zoomRatio: Float = 1f,
     val minZoom: Float = 1f,
     val maxZoom: Float = 1f,
     /** Glyph rotation in degrees that keeps icons upright (0, 90, 180, 270). */
@@ -109,7 +124,6 @@ data class CameraUiState(
     val googleLens: Boolean = false,
     val looks: List<LookItem> = emptyList(),
     val lookId: String = "",
-    val recordingNanos: Long = 0L,
     val recordingPaused: Boolean = false,
     val pro: ProUiState? = null,
     /** The user's Glass blur switch (the device may still draw less). */
@@ -148,5 +162,5 @@ interface CameraUiActions {
     fun setBlur(enabled: Boolean)
 
     /** A downscaled preview frame for a sheet backdrop, or null. */
-    fun previewSnapshot(): Bitmap?
+    suspend fun previewSnapshot(): Bitmap?
 }
