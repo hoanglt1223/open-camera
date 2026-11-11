@@ -1,0 +1,13 @@
+{
+  "id": "nafnet_sidd",
+  "file": "nafnet_sidd_w32_256.onnx",
+  "format": "onnx",
+  "size": 117085438,
+  "sha256": "02616adecc933871f256eae6bb95f09bc50a99c4fe10004211b171e0e83346e0",
+  "license": "MIT",
+  "source": "NAFNet SIDD width32 denoiser, megvii-research/NAFNet (MIT), exported 256x256 by tools/model-export/export_torch_models.py",
+  "url": "https://github.com/hoanglt1223/open-camera/releases/download/models-v1/nafnet_sidd_w32_256.onnx",
+  "accelerators": ["CPU"],
+  "inputShape": [1,3,256,256],
+  "timeoutMs": 20000
+}

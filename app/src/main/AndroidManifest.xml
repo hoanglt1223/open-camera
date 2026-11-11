@@ -22,6 +22,8 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Optional model downloads only; the camera works offline. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
@@ -163,6 +165,18 @@
             android:exported="false"
             android:label="@string/title_activity_settings"
             android:theme="@style/Theme.SettingsLib" />
+
+        <activity
+            android:name=".ai.AiEditActivity"
+            android:exported="true"
+            android:label="@string/ai_editor_title"
+            android:theme="@style/Theme.SettingsLib">
+            <intent-filter>
+                <action android:name="android.intent.action.EDIT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/jpeg" />
+            </intent-filter>
+        </activity>
 
     </application>
 

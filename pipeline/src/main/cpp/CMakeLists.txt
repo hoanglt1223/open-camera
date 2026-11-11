@@ -37,6 +37,11 @@ else()
     add_library(opencamera_looks SHARED looks/look_apply.cpp)
     target_compile_options(opencamera_looks PRIVATE -O3)
     target_link_libraries(opencamera_looks jnigraphics)
+    # ML feature pixel ops (bokeh, mask refinement, skin smoothing, classical denoise).
+    add_library(opencamera_ai SHARED ai/ai_ops.cpp ai/ai_core.cpp)
+    target_compile_options(opencamera_ai PRIVATE -O3 -ffast-math -Wall)
+    target_link_libraries(opencamera_ai jnigraphics)
+    target_link_options(opencamera_ai PRIVATE "-Wl,-z,max-page-size=16384")
     # 16 KB page devices (Android 15+) refuse 4 KB-aligned LOAD segments.
     target_link_options(opencamera_pipeline PRIVATE "-Wl,-z,max-page-size=16384")
     target_link_options(opencamera_looks PRIVATE "-Wl,-z,max-page-size=16384")

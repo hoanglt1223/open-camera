@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:title="@string/ai_capture_category">
+
+        <SwitchPreference
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:key="ai_portrait"
+            app:summary="@string/ai_portrait_summary"
+            app:title="@string/ai_tool_portrait" />
+
+        <SeekBarPreference
+            android:max="100"
+            app:defaultValue="93"
+            app:iconSpaceReserved="false"
+            app:key="ai_portrait_aperture"
+            app:min="0"
+            app:showSeekBarValue="false"
+            app:title="@string/ai_portrait_aperture_title" />
+
+        <SwitchPreference
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="ai_live_portrait"
+            app:summary="@string/ai_live_portrait_summary"
+            app:title="@string/ai_live_portrait_title" />
+
+        <SwitchPreference
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="ai_scene_detection"
+            app:summary="@string/ai_scene_summary"
+            app:title="@string/ai_scene_title" />
+
+        <SwitchPreference
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:key="ai_composition"
+            app:summary="@string/ai_composition_summary"
+            app:title="@string/ai_composition_title" />
+
+        <SwitchPreference
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:key="ai_best_shot"
+            app:summary="@string/ai_best_shot_summary"
+            app:title="@string/ai_best_shot_title" />
+
+        <ListPreference
+            app:defaultValue="5"
+            app:dependency="ai_best_shot"
+            app:entries="@array/ai_best_shot_frames"
+            app:entryValues="@array/ai_best_shot_frames"
+            app:iconSpaceReserved="false"
+            app:key="ai_best_shot_frames"
+            app:title="@string/ai_best_shot_frames_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <SeekBarPreference
+            android:max="100"
+            app:defaultValue="0"
+            app:iconSpaceReserved="false"
+            app:key="ai_beauty"
+            app:min="0"
+            app:showSeekBarValue="true"
+            app:summary="@string/ai_beauty_summary"
+            app:title="@string/ai_beauty_title" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:title="@string/ai_runtime_category">
+
+        <ListPreference
+            app:defaultValue="AUTO"
+            app:entries="@array/ai_accelerator_entries"
+            app:entryValues="@array/ai_accelerator_values"
+            app:iconSpaceReserved="false"
+            app:key="ml_accelerator"
+            app:title="@string/ai_accelerator_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="ai_benchmark"
+            app:persistent="false"
+            app:summary="@string/ai_benchmark_summary"
+            app:title="@string/ai_benchmark_title" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:key="ai_models"
+        app:title="@string/ai_models_category">
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:selectable="false"
+            app:summary="@string/ai_models_info" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

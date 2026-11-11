@@ -414,6 +414,63 @@ android_library_import {
     ],
 }
 
+android_library_import {
+    name: "OpenCamera_com.google.ai.edge.litert_litert",
+    aars: ["com/google/ai/edge/litert/litert/1.4.2/litert-1.4.2.aar"],
+    sdk_version: "36",
+    min_sdk_version: "26",
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    static_libs: [
+        "OpenCamera_com.google.ai.edge.litert_litert-api",
+    ],
+    extract_jni: true,
+}
+
+android_library_import {
+    name: "OpenCamera_com.google.ai.edge.litert_litert-api",
+    aars: ["com/google/ai/edge/litert/litert-api/1.4.2/litert-api-1.4.2.aar"],
+    sdk_version: "36",
+    min_sdk_version: "26",
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    static_libs: [
+    ],
+}
+
+android_library_import {
+    name: "OpenCamera_com.google.ai.edge.litert_litert-gpu",
+    aars: ["com/google/ai/edge/litert/litert-gpu/1.4.2/litert-gpu-1.4.2.aar"],
+    sdk_version: "36",
+    min_sdk_version: "26",
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    static_libs: [
+        "OpenCamera_com.google.ai.edge.litert_litert-api",
+        "OpenCamera_com.google.ai.edge.litert_litert-gpu-api",
+    ],
+    extract_jni: true,
+}
+
+android_library_import {
+    name: "OpenCamera_com.google.ai.edge.litert_litert-gpu-api",
+    aars: ["com/google/ai/edge/litert/litert-gpu-api/1.4.2/litert-gpu-api-1.4.2.aar"],
+    sdk_version: "36",
+    min_sdk_version: "26",
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    static_libs: [
+    ],
+}
+
 java_import {
     name: "OpenCamera_com.google.dagger_dagger",
     jars: ["com/google/dagger/dagger/2.59/dagger-2.59.jar"],
@@ -441,6 +498,20 @@ java_import {
     ],
     static_libs: [
     ],
+}
+
+android_library_import {
+    name: "OpenCamera_com.microsoft.onnxruntime_onnxruntime-android",
+    aars: ["com/microsoft/onnxruntime/onnxruntime-android/1.22.0/onnxruntime-android-1.22.0.aar"],
+    sdk_version: "36",
+    min_sdk_version: "26",
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    static_libs: [
+    ],
+    extract_jni: true,
 }
 
 java_library_static {

@@ -44,6 +44,7 @@ android {
     }
 }
 dependencies {
+    implementation(project(":ml"))
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.exifinterface)
     testImplementation(libs.junit)

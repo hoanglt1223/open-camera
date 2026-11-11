@@ -75,7 +75,13 @@ dependencies {
         implementation(project(":profiles"))
         implementation(project(":capture"))
         implementation(project(":pipeline"))
+        implementation(project(":ml"))
     }
+    // :ml runtimes, listed here as well so gradle-generatebp vendors them for Soong.
+    implementation(libs.litert)
+    implementation(libs.litert.gpu)
+    implementation(libs.litert.gpu.api)
+    implementation(libs.onnxruntime.android)
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.camera.core)

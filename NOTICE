@@ -13,3 +13,13 @@ This project is not affiliated with, or endorsed by, the LineageOS Project or
 the "Open Camera" app published as net.sourceforge.opencamera.
 
 License texts are in the LICENSES/ directory.
+Machine learning runtimes and models (details, hashes and sources in docs/models.md):
+- LiteRT (TensorFlow Lite) and its GPU delegate, Copyright Google LLC, Apache License 2.0.
+- ONNX Runtime, Copyright Microsoft Corporation, MIT License.
+- MediaPipe Selfie Segmenter, Selfie Multiclass Segmenter, BlazeFace short range and
+  Face Mesh V2 models, Copyright Google LLC, Apache License 2.0 (per model card).
+- MobileNetV3-Small ImageNet weights from Keras Applications, Apache License 2.0.
+- NIMA aesthetic MobileNet weights, Copyright 2018 idealo internet GmbH, Apache License 2.0.
+- U-2-Net (u2netp) weights, Copyright Xuebin Qin, Apache License 2.0.
+- Real-ESRGAN realesr-general-x4v3 weights, Copyright 2021 Xintao Wang, BSD 3-Clause License.
+- NAFNet SIDD width-32 weights, Copyright 2022 megvii-model, MIT License.

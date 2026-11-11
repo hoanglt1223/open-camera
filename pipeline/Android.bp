@@ -45,6 +45,25 @@ cc_library_shared {
     product_specific: true,
 }
 
+cc_library_shared {
+    name: "libopencamera_ai",
+    srcs: [
+        "src/main/cpp/ai/ai_ops.cpp",
+        "src/main/cpp/ai/ai_core.cpp",
+    ],
+    cflags: [
+        "-O3",
+        "-ffast-math",
+        "-Wall",
+        "-Werror",
+    ],
+    cppflags: ["-fexceptions"],
+    shared_libs: ["libjnigraphics"],
+    sdk_version: "current",
+    stl: "c++_static",
+    product_specific: true,
+}
+
 filegroup {
     name: "OpenCamera_pipeline_srcs",
     srcs: ["src/main/java/**/*.kt"],

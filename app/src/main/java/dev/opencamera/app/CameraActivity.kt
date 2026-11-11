@@ -33,6 +33,7 @@ import android.widget.Button
 import android.widget.HorizontalScrollView
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -111,6 +112,10 @@ import dev.opencamera.app.models.AssistantIntent
 import dev.opencamera.app.models.CameraConfiguration
 import dev.opencamera.app.models.CameraFacing
 import dev.opencamera.app.models.CameraMode
+import dev.opencamera.app.ai.AiController
+import dev.opencamera.app.ai.BestShotCapture
+import dev.opencamera.app.ai.CompositionOverlayView
+import dev.opencamera.ml.tasks.Scene
 import dev.opencamera.app.models.CameraState
 import dev.opencamera.app.models.Event
 import dev.opencamera.app.models.FlashMode
@@ -190,6 +195,12 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     private val secondaryBottomBarLayout by lazy { findViewById<ConstraintLayout>(R.id.secondaryBottomBarLayout) }
     private val secondaryTopBarLayout by lazy { findViewById<HorizontalScrollView>(R.id.secondaryTopBarLayout) }
     private val lookButton by lazy { findViewById<Button>(R.id.lookButton) }
+    private val aiPortraitButton by lazy { findViewById<Button>(R.id.aiPortraitButton) }
+    private val aiBokehView by lazy { findViewById<ImageView>(R.id.aiBokehView) }
+    private val aiCompositionOverlay by lazy { findViewById<CompositionOverlayView>(R.id.aiCompositionOverlay) }
+    private val aiSceneChip by lazy { findViewById<TextView>(R.id.aiSceneChip) }
+    private lateinit var aiController: AiController
+    private var bestShotRunning = false
     private val lookPickerView by lazy { findViewById<LookPickerView>(R.id.lookPickerView) }
     private val settingsButton by lazy { findViewById<Button>(R.id.settingsButton) }
     private val shutterButton by lazy { findViewById<ImageButton>(R.id.shutterButton) }
@@ -474,6 +485,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         micButton.setOnClickListener { viewModel.toggleVideoMicrophoneEnabled() }
         settingsButton.setOnClickListener { openSettings() }
         setupLookPicker()
+        setupAi()
 
         // Set secondary bottom bar button callbacks
         proButton.setOnClickListener {
@@ -570,7 +582,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
             startTimerAndRun {
                 when (viewModel.cameraMode.value) {
-                    CameraMode.PHOTO -> viewModel.takePhoto()
+                    CameraMode.PHOTO -> if (!takeBestShot()) viewModel.takePhoto()
                     CameraMode.VIDEO -> viewModel.captureVideo()
                     else -> {}
                 }
@@ -2294,6 +2306,91 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         }
     }
 
+    private fun setupAi() {
+        aiController = AiController(
+            this, viewFinder, aiBokehView, aiCompositionOverlay, aiSceneChip,
+            isPhotoMode = { viewModel.cameraMode.value == CameraMode.PHOTO && !viewModel.inSingleCaptureMode.value },
+            onScenePreset = ::applyScenePreset,
+        )
+        aiController.start()
+        viewModel.lookController.captureOps = { aiController.captureOps() }
+        updateAiPortraitButton()
+        aiPortraitButton.setOnClickListener {
+            aiController.settings.portrait = !aiController.settings.portrait
+            updateAiPortraitButton()
+        }
+        lifecycleScope.launch {
+            viewModel.cameraMode.collectLatest { aiPortraitButton.isVisible = it == CameraMode.PHOTO }
+        }
+    }
+
+    private fun updateAiPortraitButton() {
+        aiPortraitButton.setText(
+            if (aiController.settings.portrait) R.string.ai_portrait_on else R.string.ai_portrait_off
+        )
+    }
+
+    /** Scene chip tap: switch to the preset that suits the detected scene. */
+    private fun applyScenePreset(scene: Scene) {
+        val message = when (scene) {
+            Scene.NIGHT -> {
+                viewModel.multiFrame.setSetting(MultiFrameSetting.NIGHT)
+                R.string.ai_preset_night
+            }
+            Scene.PORTRAIT -> {
+                aiController.settings.portrait = true
+                updateAiPortraitButton()
+                R.string.ai_preset_portrait
+            }
+            Scene.FOOD, Scene.PLANT, Scene.SKY -> {
+                viewModel.lookController.select("vivid")
+                R.string.ai_preset_vivid
+            }
+            Scene.DOCUMENT, Scene.TEXT -> {
+                viewModel.lookController.select("natural")
+                R.string.ai_preset_document
+            }
+            Scene.NONE -> return
+        }
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    /**
+     * Best-shot burst when enabled: several in-memory JPEGs, only the best is kept. Returns
+     * false when the regular capture should run instead.
+     */
+    private fun takeBestShot(): Boolean {
+        if (!aiController.settings.bestShot || bestShotRunning) return false
+        if (viewModel.inSingleCaptureMode.value || viewModel.cameraState.value != CameraState.IDLE) return false
+        if (viewModel.cameraController.imageOutputFormat != ImageCapture.OUTPUT_FORMAT_JPEG) return false
+        bestShotRunning = true
+        viewModel.cameraState.value = CameraState.TAKING_PHOTO
+        lifecycleScope.launch {
+            val result = try {
+                BestShotCapture(this@CameraActivity).capture(
+                    viewModel.cameraController, aiController.settings.bestShotFrames,
+                )
+            } catch (e: Exception) {
+                Log.e(LOG_TAG, "Best shot failed", e)
+                null
+            } finally {
+                viewModel.cameraState.value = CameraState.IDLE
+                bestShotRunning = false
+            }
+            if (result == null) {
+                Toast.makeText(this@CameraActivity, R.string.ai_best_shot_failed, Toast.LENGTH_SHORT).show()
+                viewModel.takePhoto()
+                return@launch
+            }
+            viewModel.lookController.onPhotoSaved(result.uri)
+            Toast.makeText(
+                this@CameraActivity,
+                getString(R.string.ai_best_shot_done, result.chosen + 1, result.frames),
+                Toast.LENGTH_SHORT,
+            ).show()
+        }
+        return true
+    }
     companion object {
         private val LOG_TAG = CameraActivity::class.simpleName!!
 

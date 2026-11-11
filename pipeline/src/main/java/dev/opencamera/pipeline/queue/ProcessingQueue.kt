@@ -25,6 +25,8 @@ data class Job(
     val lookId: String?,
     val intensity: Float,
     val watermark: String,
+    /** ML steps as [dev.opencamera.pipeline.ai.AiOps] JSON; null for look/frame-only jobs. */
+    val ops: String? = null,
     val state: JobState = JobState.QUEUED,
     val attempts: Int = 0,
     val nextAttemptAt: Long = 0,
@@ -79,13 +81,17 @@ class ProcessingQueue(
     private val baseBackoffMs: Long = 2_000,
     private val keepFinishedMs: Long = 24 * 60 * 60 * 1000L,
 ) {
-    /** Adds a job; a second request for the same source returns the existing job. */
+    /** Adds a job; a second request for the same source returns the existing job unless it is a finished one and [ops] is set. */
     @Synchronized
-    fun enqueue(sourceUri: String, lookId: String?, intensity: Float, watermark: String): Job {
-        store.findBySource(sourceUri)?.let { return it }
+    fun enqueue(sourceUri: String, lookId: String?, intensity: Float, watermark: String, ops: String? = null): Job {
+        store.findBySource(sourceUri)?.let {
+            // A finished job may be replaced by a new edit of the same photo.
+            if (it.state.isPending || ops == null) return it
+            store.delete(it.id)
+        }
         val now = clock()
         val job = Job(
-            sourceUri = sourceUri, lookId = lookId, intensity = intensity, watermark = watermark,
+            sourceUri = sourceUri, lookId = lookId, intensity = intensity, watermark = watermark, ops = ops,
             createdAt = now, updatedAt = now, nextAttemptAt = now,
         )
         return job.copy(id = store.insert(job))

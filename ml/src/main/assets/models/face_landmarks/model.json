@@ -1,0 +1,13 @@
+{
+  "id": "face_landmarks",
+  "file": "face_landmarks_detector.tflite",
+  "format": "tflite",
+  "size": 2553590,
+  "sha256": "c7d54204ce0448474c7f3fa9af494787c0965cbdd6f20fc72867e43046bd43d5",
+  "license": "Apache-2.0",
+  "source": "MediaPipe Face Mesh V2 (478 points), from https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task; model card: Model Card MediaPipe Face Mesh V2",
+  "url": null,
+  "accelerators": ["GPU","CPU"],
+  "inputShape": [1,256,256,3],
+  "timeoutMs": 1000
+}
