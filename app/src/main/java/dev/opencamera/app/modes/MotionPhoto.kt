@@ -263,25 +263,38 @@ class MotionPhotoController(private val context: Context) {
                 yb.get(out, r * w, w)
             }
         } else {
+            val ys = factor * y.pixelStride
             for (r in 0 until h) {
-                val row = r * factor * y.rowStride
-                for (c in 0 until w) out[r * w + c] = yb.get(row + c * factor * y.pixelStride)
+                val row = readRow(yb, r * factor * y.rowStride, (w - 1) * ys + 1)
+                for (c in 0 until w) out[r * w + c] = row[c * ys]
             }
         }
+        // Rows are read in bulk and decimated from a heap array; ByteBuffer.get(index) per pixel
+        // on a direct buffer cost most of a core.
         val ub = u.buffer
         val vb = v.buffer
         val base = w * h
+        val us = factor * u.pixelStride
+        val vs = factor * v.pixelStride
         for (r in 0 until h / 2) {
-            val ur = r * factor * u.rowStride
-            val vr = r * factor * v.rowStride
-            for (c in 0 until w / 2) {
-                out[base + r * w + 2 * c] = vb.get(vr + c * factor * v.pixelStride)
-                out[base + r * w + 2 * c + 1] = ub.get(ur + c * factor * u.pixelStride)
-            }
+            val vRow = readRow(vb, r * factor * v.rowStride, (w / 2 - 1) * vs + 1)
+            for (c in 0 until w / 2) out[base + r * w + 2 * c] = vRow[c * vs]
+            val uRow = readRow(ub, r * factor * u.rowStride, (w / 2 - 1) * us + 1)
+            for (c in 0 until w / 2) out[base + r * w + 2 * c + 1] = uRow[c * us]
         }
         return RingFrame(out, w, h, image.imageInfo.timestamp, image.imageInfo.rotationDegrees)
     }
 
+    private var rowBuffer = ByteArray(0)
+
+    /** Copies [len] bytes at [offset] (clamped to the buffer) into a reused array. */
+    private fun readRow(buffer: java.nio.ByteBuffer, offset: Int, len: Int): ByteArray {
+        if (rowBuffer.size < len) rowBuffer = ByteArray(len)
+        val n = minOf(len, buffer.limit() - offset).coerceAtLeast(0)
+        buffer.position(offset)
+        buffer.get(rowBuffer, 0, n)
+        return rowBuffer
+    }
     private companion object {
         const val TAG = "MotionPhoto"
         const val KEY_MOTION = "motion_photo"
