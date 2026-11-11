@@ -563,7 +563,10 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         preShotButton.setOnClickListener { viewModel.motionPhoto.setPreShot(!viewModel.motionPhoto.preShot.value) }
         lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onResume(owner: LifecycleOwner) = viewModel.multiFrame.motionMeter.start()
-            override fun onPause(owner: LifecycleOwner) = viewModel.multiFrame.motionMeter.stop()
+            override fun onPause(owner: LifecycleOwner) {
+                viewModel.multiFrame.motionMeter.stop()
+                dev.opencamera.app.ui.overlay.RecomposeCounts.dump("camera paused")
+            }
         })
         micButton.setOnClickListener { viewModel.toggleVideoMicrophoneEnabled() }
         settingsButton.setOnClickListener { openSettings() }
@@ -605,6 +608,10 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         viewFinder.previewStreamState.observe(this) {
             when (it) {
                 PreviewView.StreamState.STREAMING -> {
+                    if (!firstPreviewLogged) {
+                        firstPreviewLogged = true
+                        Log.i(PERF_TAG, "first preview ${SystemClock.uptimeMillis() - android.os.Process.getStartUptimeMillis()} ms after process start")
+                    }
                     // Show grid
                     gridView.alpha = 1f
                     gridView.previewView = viewFinder
@@ -1905,6 +1912,9 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
      * format or extension) reopens the camera with plain preview + JPEG capture.
      */
     private var lastBridgedOemFeature: OemFeature? = null
+    private var lastBoundCamera: dev.opencamera.app.models.Camera? = null
+    private var firstPreviewLogged = false
+    private var previewLayoutKey: Any? = null
 
     private fun bindCameraUseCases(cameraConfiguration: CameraConfiguration, reason: String = "config") {
         if (viewModel.cameraState.value != CameraState.IDLE) {
@@ -1963,8 +1973,17 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             "Trying to rebind camera while camera is not in IDLE state"
         }
 
-        // Show blurred preview
-        previewBlurView.freeze()
+        // Show blurred preview; a switch to another lens of the same side shows the frame sharp
+        // at the new field of view instead.
+        val previous = lastBoundCamera
+        val next = cameraConfiguration.camera
+        val lensScale = if (
+            previous != null && previous.cameraId != next.cameraId &&
+            previous.cameraFacing == next.cameraFacing &&
+            previous.intrinsicZoomRatio > 0f && next.intrinsicZoomRatio > 0f
+        ) next.intrinsicZoomRatio / previous.intrinsicZoomRatio else 1f
+        lastBoundCamera = next
+        previewBlurView.freeze(lensScale)
         previewBlurView.isVisible = true
 
         // Unbind previous use cases
@@ -2306,6 +2325,9 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
             // When keyguard is unlocked, we want media from MediaStore, else we only trust the
             // ones coming from the capture
+            // The skinned overlay draws its own thumbnail; the hidden View one is decoded only
+            // when the View layout comes back (showLegacyChrome).
+            if (overlayActive) return@runOnUiThread
             uri?.also {
                 galleryButtonPreviewImageView.load(uri) {
                     decoderFactory(VideoFrameDecoder.Factory())
@@ -2735,7 +2757,6 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             viewModel.cameraMode.value == CameraMode.PHOTO
         }
         lifecycle.addObserver(assistController)
-        proModeUi.onManualExposureChanged = { rebindIfAnalysisChanged() }
         viewModel.multiFrame.previewZoomCompensation = { f ->
             viewFinder.scaleX = f
             viewFinder.scaleY = f
@@ -2934,6 +2955,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     }
 
     private fun showLegacyChrome() {
+        previewLayoutKey = null
         legacyViewFinderParams?.let { viewFinder.layoutParams = it }
         legacyProgressParams?.let { multiFrameProgress.layoutParams = it }
         legacySceneChipParams?.let { aiSceneChip.layoutParams = it }
@@ -2942,6 +2964,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         proModeUi.externalUi = false
         overlayBack.isEnabled = false
         setLegacyChromeVisible(true)
+        updateGalleryButton(galleryButtonUri, false)
     }
 
     /** Preview box of the skin: below the top bar, preview-shaped, optionally inset and rounded. */
@@ -2954,6 +2977,10 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             CameraMode.QR -> "3:4"
             CameraMode.PHOTO -> if (viewModel.photoAspectRatio.value == AspectRatio.RATIO_16_9) "9:16" else "3:4"
         }
+        // Mode switches call this with the same box most of the time; a relayout costs a frame.
+        val key = Triple(tokens, ratio, uiState.value.insetTop)
+        if (key == previewLayoutKey) return
+        previewLayoutKey = key
         viewFinder.updateLayoutParams<ConstraintLayout.LayoutParams> {
             topToTop = ConstraintLayout.LayoutParams.PARENT_ID
             topToBottom = ConstraintLayout.LayoutParams.UNSET

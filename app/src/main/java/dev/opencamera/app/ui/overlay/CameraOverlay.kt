@@ -5,6 +5,9 @@
 
 package dev.opencamera.app.ui.overlay
 
+import android.graphics.RectF
+import android.os.Build
+import android.provider.MediaStore
 import kotlin.math.cos
 import kotlin.math.sin
 import android.graphics.Bitmap
@@ -120,8 +123,10 @@ import dev.opencamera.app.models.TimerMode
 import dev.opencamera.app.modes.CreativeMode
 import dev.opencamera.app.utils.TimeUtils
 import dev.opencamera.capture.MultiFrameSetting
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.floor
@@ -147,8 +152,59 @@ val LocalGlyphRotation = staticCompositionLocalOf<State<Float>> { mutableFloatSt
 
 fun Modifier.uprightGlyph(rotation: State<Float>) = graphicsLayer { rotationZ = rotation.value }
 
+/**
+ * Debuggable builds count recompositions per overlay section and log them under `OcRecompose`
+ * (see [RecomposeCounts.dump]); release builds skip the bookkeeping.
+ */
+object RecomposeCounts {
+    @Volatile
+    var enabled = false
+    private val counts = java.util.concurrent.ConcurrentHashMap<String, Int>()
+
+    fun hit(name: String) {
+        counts.merge(name, 1, Int::plus)
+    }
+
+    fun dump(reason: String) {
+        if (!enabled || counts.isEmpty()) return
+        android.util.Log.i("OcRecompose", "$reason: " + counts.entries.sortedBy { it.key }.joinToString { "${it.key}=${it.value}" })
+        counts.clear()
+    }
+}
+
+@Composable
+internal fun CountRecompositions(name: String) {
+    if (RecomposeCounts.enabled) androidx.compose.runtime.SideEffect { RecomposeCounts.hit(name) }
+}
+
+// Each section gets a copy of the state holding only the fields it reads, so a change elsewhere
+// leaves its argument equal and Compose skips it.
+private fun CameraUiState.forTopBar() = CameraUiState(
+    cameraState = cameraState, flashVisible = flashVisible, flash = flash, flashEnabled = flashEnabled,
+    cameraMode = cameraMode, multiFrame = multiFrame, controls = controls, motionPhoto = motionPhoto,
+    lookId = lookId, timer = timer,
+)
+
+private fun CameraUiState.forLooks() = CameraUiState(looks = looks, lookId = lookId)
+
+private fun CameraUiState.forLens() = CameraUiState(minZoom = minZoom, maxZoom = maxZoom, lensChips = lensChips)
+
+private fun CameraUiState.forModes() = CameraUiState(modes = modes, uiMode = uiMode, cameraState = cameraState)
+
+private fun CameraUiState.forBottom() = CameraUiState(
+    cameraState = cameraState, cameraMode = cameraMode, googleLens = googleLens, singleCapture = singleCapture,
+    recordingPaused = recordingPaused, canFlip = canFlip, shutterPresses = shutterPresses,
+    shutterEnabled = shutterEnabled, galleryUri = galleryUri, captures = captures, galleryLocked = galleryLocked,
+)
+
+private fun CameraUiState.forSheets() = CameraUiState(
+    blurEnabled = blurEnabled, cameraMode = cameraMode, controls = controls, creative = creative,
+    googleLens = googleLens, insetBottom = insetBottom, moreModes = moreModes, multiFrame = multiFrame,
+)
+
 @Composable
 fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiState) {
+    CountRecompositions("Overlay")
     val s = skin
     var rotationTarget by remember { mutableFloatStateOf(state.glyphRotation.toFloat() % 360f) }
     LaunchedEffect(state.glyphRotation) {
@@ -159,7 +215,7 @@ fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiS
 
     androidx.compose.runtime.CompositionLocalProvider(LocalGlyphRotation provides rotation) {
         Box(Modifier.fillMaxSize()) {
-            PreviewChrome(state)
+            PreviewChrome(state.previewRect)
 
             Column(
                 Modifier
@@ -167,10 +223,10 @@ fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiS
                     .padding(top = with(LocalDensity.current) { state.insetTop.toDp() } + 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                TopBar(state, actions, ui)
+                TopBar(state.forTopBar(), actions, ui)
                 Spacer(Modifier.height(8.dp))
                 AnimatedVisibility(recording, enter = fadeIn(s.medium()), exit = fadeOut(s.medium())) {
-                    RecordingPill(state)
+                    RecordingPill(state.recordingPaused)
                 }
                 AnimatedVisibility(
                     !recording && state.cameraMode == CameraMode.PHOTO && state.creative != CreativeMode.OFF,
@@ -192,13 +248,13 @@ fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiS
                     enter = fadeIn(s.medium()) + slideInVertically(s.medium()) { it / 3 },
                     exit = fadeOut(s.medium()) + slideOutVertically(s.medium()) { it / 3 },
                 ) {
-                    LooksStrip(state, actions)
+                    LooksStrip(state.forLooks(), actions)
                 }
                 val pro = state.pro
                 if (state.uiMode == UiMode.PRO && pro != null && pro.available) {
                     ProPanel(pro, actions)
                 } else if (!ui.looksOpen || state.cameraMode != CameraMode.PHOTO) {
-                    LensRow(state, actions)
+                    LensRow(state.forLens(), actions)
                 }
                 Spacer(Modifier.height(4.dp))
                 Box(Modifier.height(48.dp), contentAlignment = Alignment.Center) {
@@ -206,23 +262,23 @@ fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiS
                         !recording && !state.singleCapture,
                         enter = fadeIn(s.medium()), exit = fadeOut(s.medium()),
                     ) {
-                        ModeCarousel(state, actions, ui)
+                        ModeCarousel(state.forModes(), actions, ui)
                     }
                 }
                 Spacer(Modifier.height(8.dp))
-                BottomRow(state, actions)
+                BottomRow(state.forBottom(), actions)
             }
 
-            Sheets(state, actions, ui)
+            Sheets(state.forSheets(), actions, ui)
         }
     }
 }
 
 /** Rounded preview corners (masks over the SurfaceView) and the Glass bottom scrim. */
 @Composable
-private fun BoxScope.PreviewChrome(state: CameraUiState) {
+private fun BoxScope.PreviewChrome(rect: RectF?) {
+    CountRecompositions("PreviewChrome")
     val s = skin
-    val rect = state.previewRect
     val radiusPx = with(LocalDensity.current) { s.tokens.shape.previewRadius.dp.toPx() }
     Canvas(Modifier.matchParentSize()) {
         if (s.glass) {
@@ -251,6 +307,7 @@ private fun BoxScope.PreviewChrome(state: CameraUiState) {
 
 @Composable
 private fun TopBar(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiState) {
+    CountRecompositions("TopBar")
     val s = skin
     val recording = state.cameraState.isRecordingVideo
     val idle = state.cameraState == CameraState.IDLE
@@ -458,7 +515,7 @@ private fun Modifier.combinedClickableCompat(
 )
 
 @Composable
-private fun RecordingPill(state: CameraUiState) {
+private fun RecordingPill(paused: Boolean) {
     val s = skin
     val blink = rememberInfiniteTransition(label = "rec")
     val dot by blink.animateFloat(
@@ -468,7 +525,7 @@ private fun RecordingPill(state: CameraUiState) {
     Row(
         Modifier
             .clip(RoundedCornerShape(50))
-            .background(if (state.recordingPaused) s.surface else s.record)
+            .background(if (paused) s.surface else s.record)
             .padding(horizontal = 12.dp, vertical = 4.dp)
             .semantics { liveRegion = LiveRegionMode.Polite; contentDescription = text },
         verticalAlignment = Alignment.CenterVertically,
@@ -476,7 +533,7 @@ private fun RecordingPill(state: CameraUiState) {
         Box(
             Modifier
                 .size(8.dp)
-                .graphicsLayer { alpha = if (state.recordingPaused) 1f else dot }
+                .graphicsLayer { alpha = if (paused) 1f else dot }
                 .background(Color.White, CircleShape)
         )
         Spacer(Modifier.width(6.dp))
@@ -511,6 +568,7 @@ private fun CreativeChip(mode: CreativeMode, onClear: () -> Unit) {
 
 @Composable
 private fun LensRow(state: CameraUiState, actions: CameraUiActions) {
+    CountRecompositions("LensRow")
     val s = skin
     val view = LocalView.current
     val scope = rememberCoroutineScope()
@@ -675,6 +733,7 @@ private fun modeLabel(mode: UiMode) = stringResource(
 
 @Composable
 private fun ModeCarousel(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiState) {
+    CountRecompositions("ModeCarousel")
     val s = skin
     val view = LocalView.current
     val modes = state.modes
@@ -790,6 +849,7 @@ private fun ModeCarousel(state: CameraUiState, actions: CameraUiActions, ui: Ove
 
 @Composable
 private fun BottomRow(state: CameraUiState, actions: CameraUiActions) {
+    CountRecompositions("BottomRow")
     val s = skin
     val view = LocalView.current
     val recording = state.cameraState.isRecordingVideo
@@ -935,7 +995,12 @@ private fun Thumb(state: CameraUiState, enabled: Boolean, onClick: () -> Unit) {
     val context = LocalContext.current
     val bitmap by produceState<Bitmap?>(null, state.galleryUri) {
         val uri = state.galleryUri ?: run { value = null; return@produceState }
+        // MediaStore keeps a small thumbnail; decoding the full photo for it took ~0.3 s at start.
         value = runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && uri.authority == MediaStore.AUTHORITY) {
+                withContext(Dispatchers.IO) { context.contentResolver.loadThumbnail(uri, android.util.Size(144, 144), null) }
+            } else null
+        }.getOrNull() ?: runCatching {
             val request = ImageRequest.Builder(context).data(uri).size(144)
                 .decoderFactory(VideoFrameDecoder.Factory()).build()
             SingletonImageLoader.get(context).execute(request).image?.toBitmap()
@@ -973,6 +1038,7 @@ private fun Thumb(state: CameraUiState, enabled: Boolean, onClick: () -> Unit) {
 
 @Composable
 private fun LooksStrip(state: CameraUiState, actions: CameraUiActions) {
+    CountRecompositions("LooksStrip")
     val s = skin
     val view = LocalView.current
     LazyRow(

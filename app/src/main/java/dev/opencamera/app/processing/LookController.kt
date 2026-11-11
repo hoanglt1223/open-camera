@@ -61,14 +61,16 @@ class LookController(
         val key = prefs.lookId to prefs.intensity
         if (preloadedKey == key && preloaded != null) return
         preloadedKey = key
+        // GL is set up for Original too: the effect is attached as a pass-through from the first
+        // bind, so picking a look later only swaps the LUT instead of rebinding the session.
+        if (!previewEffectBlocked && processor == null) {
+            processor = runCatching { LookSurfaceProcessor() }.onFailure { Log.w(TAG, "No GL for looks", it) }.getOrNull()
+        }
         if (key.first == LookPreferences.NONE) {
             preloaded = null
             // Warm the look list (asset JSON) off the main thread for the picker.
             scope.launch(Dispatchers.IO) { runCatching { repository.descriptors } }
             return
-        }
-        if (!previewEffectBlocked && processor == null) {
-            processor = runCatching { LookSurfaceProcessor() }.onFailure { Log.w(TAG, "No GL for looks", it) }.getOrNull()
         }
         preloaded = scope.async(Dispatchers.IO) {
             runCatching { repository.params(key.first, key.second) }
@@ -90,10 +92,14 @@ class LookController(
     @OptIn(ExperimentalCoroutinesApi::class)
     fun attachIfReady() {
         if (effectAttached || previewEffectBlocked || rawSession) return
-        val d = preloaded ?: return
-        val key = preloadedKey ?: return
-        if (!d.isCompleted || key != (prefs.lookId to prefs.intensity)) return
-        val params = runCatching { d.getCompleted() }.getOrNull() ?: return
+        val key = prefs.lookId to prefs.intensity
+        val params = if (key.first == LookPreferences.NONE) {
+            null
+        } else {
+            val d = preloaded ?: return
+            if (!d.isCompleted || key != preloadedKey) return
+            runCatching { d.getCompleted() }.getOrNull() ?: return
+        }
         val p = processor ?: return
         p.setLook(params)
         try {

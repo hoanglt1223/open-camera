@@ -62,6 +62,11 @@ class LensSelectorLayout @JvmOverloads constructor(
 
     /** Device profile zoom stops; replaces the per-camera buttons of [setCamera]. */
     fun setChips(activeCamera: Camera, chips: List<Pair<LensChip, Camera>>) {
+        // Mode switches re-emit the same stops; keep the buttons instead of inflating them again.
+        if (::activeCamera.isInitialized && this.activeCamera == activeCamera && buttonToChip.values.toList() == chips) {
+            updateButtonsAttributes()
+            return
+        }
         this.activeCamera = activeCamera
         clearButtons()
 

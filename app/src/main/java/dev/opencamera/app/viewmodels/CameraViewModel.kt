@@ -227,7 +227,6 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
                 singleCaptureIntent = inSingleCaptureMode.value,
                 // Auto flash never fired during bursts either; only a forced flash needs the JPEG path.
                 flashOff = flashMode.value != FlashMode.ON && flashMode.value != FlashMode.SCREEN,
-                manualExposure = multiFrame.manualExposureActive,
                 rawCapable = PhotoOutputFormat.RAW in cfg.camera.supportedPhotoOutputFormats,
                 source = multiFrame.source,
                 // A RAW session cannot carry the live look, so only trade it for resolution without one.
@@ -409,15 +408,28 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         return chips.filter { it.first.ratio >= 2f && it.first.lensId != main.lensId }.maxByOrNull { it.first.ratio }
     }
 
+    /** Zoom ratio on the open logical multi-camera that shows [chip]'s lens, if it has one. */
+    @androidx.annotation.OptIn(ExperimentalCamera2Interop::class)
+    private fun logicalZoomRatio(chip: LensChip): Float? = runCatching {
+        val info = cameraController.cameraInfo ?: return null
+        val zoom = zoomState.value ?: return null
+        val physical = info.physicalCameraInfos.map { Camera2CameraInfo.from(it).cameraId }.toSet()
+        dev.opencamera.profiles.LensPlan.logicalZoom(chip, physical, zoom.minZoomRatio, zoom.maxZoomRatio)
+    }.getOrNull()
+
     /**
      * Opens the chip's camera if needed, then applies the chip's zoom ratio once that camera
-     * is bound.
+     * is bound. A lens inside the open logical multi-camera is reached by zooming instead.
      */
     @androidx.annotation.OptIn(ExperimentalCamera2Interop::class)
     fun selectLensChip(chip: LensChip, camera: Camera) {
         lensChipZoomJob?.cancel()
         if (_cameraConfiguration.value?.camera == camera) {
             smoothZoom(chip.zoomRatio)
+            return
+        }
+        logicalZoomRatio(chip)?.let {
+            smoothZoom(it)
             return
         }
         if (!selectCamera(camera)) return

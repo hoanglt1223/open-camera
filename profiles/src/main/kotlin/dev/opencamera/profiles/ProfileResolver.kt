@@ -143,6 +143,14 @@ class LensPlan(val stops: List<ZoomStop>, private val cameras: List<CameraEntry>
         fun from(profile: DeviceProfile) =
             LensPlan(profile.zoomStops.sortedBy { it.ratio }, profile.cameras)
 
+        /**
+         * Zoom ratio that reaches [chip] on the open logical multi-camera, when the chip's lens is
+         * one of its [physicalIds] and the ratio is inside its zoom range; the HAL then switches
+         * the physical camera without a new session. Null means the chip's camera must be bound.
+         */
+        fun logicalZoom(chip: LensChip, physicalIds: Set<String>, minZoom: Float, maxZoom: Float): Float? =
+            chip.ratio.takeIf { chip.lensId in physicalIds && it >= minZoom - 1e-3f && it <= maxZoom + 1e-3f }
+
         /** The chip to highlight for the open camera and its current zoom ratio. */
         fun activeChip(chips: List<LensChip>, cameraId: String, zoomRatio: Float): LensChip? {
             val own = chips.filter { it.cameraId == cameraId }
