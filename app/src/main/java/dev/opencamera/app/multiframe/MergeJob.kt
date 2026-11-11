@@ -15,6 +15,8 @@ import dev.opencamera.pipeline.Burst
 import dev.opencamera.pipeline.MultiFrameMode
 import dev.opencamera.pipeline.MultiFrameProcessor
 import dev.opencamera.pipeline.queue.BurstArchive
+import dev.opencamera.vendorbridge.ProcessingSource
+import dev.opencamera.vendorbridge.SourcePolicy
 import java.io.File
 import java.util.UUID
 
@@ -120,8 +122,11 @@ object MergeRunner {
                 rotationDegrees = job.rotationDegrees,
                 captureResult = null,
                 location = job.location(),
-                description = if (job.kind == BurstKind.SINGLE) "Single ${job.source}" else
-                    "${job.mode.name} ${image.frameCount} frames ${job.source}",
+                description = SourcePolicy.label(
+                    ProcessingSource.OPEN,
+                    if (job.kind == BurstKind.SINGLE) "Single ${job.source}" else
+                        "${job.mode.name} ${image.frameCount} frames ${job.source}",
+                ),
                 exposure = job.exposure,
             )
         )

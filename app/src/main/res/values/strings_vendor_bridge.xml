@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="vendor_bridge_header">Phone\'s camera features</string>
+    <string name="vendor_bridge_enabled_title">Use the phone\'s processing</string>
+    <string name="vendor_bridge_enabled_summary">Use night, HDR and other modes the phone maker exposes, and the vendor settings a verified device profile enables. Turn off to use only Open Camera processing.</string>
+    <string name="processing_source_hdr_title">HDR and auto HDR</string>
+    <string name="processing_source_night_title">Night</string>
+    <string name="processing_source_phone">Phone\'s processing when available</string>
+    <string name="processing_source_open">Open Camera processing</string>
+    <string name="oem_processing_active">Phone\'s %1$s processing</string>
+    <string name="oem_processing_failed">Phone\'s processing failed, using Open Camera processing</string>
+
+    <string-array name="processing_source_entries" translatable="false">
+        <item>@string/processing_source_phone</item>
+        <item>@string/processing_source_open</item>
+    </string-array>
+    <string-array name="processing_source_values" translatable="false">
+        <item>phone</item>
+        <item>open</item>
+    </string-array>
+</resources>

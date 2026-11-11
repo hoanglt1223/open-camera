@@ -1,0 +1,14 @@
+//
+// SPDX-FileCopyrightText: Open Camera contributors
+// SPDX-License-Identifier: Apache-2.0
+//
+
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+filegroup {
+    name: "OpenCamera_vendor-bridge_srcs",
+    srcs: ["src/main/java/**/*.kt"],
+}
+

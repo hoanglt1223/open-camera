@@ -45,6 +45,15 @@ import androidx.camera.camera2.interop.CaptureRequestOptions
 import androidx.camera.view.CameraControllerInterop
 import dev.opencamera.capture.StreamConfig
 import kotlinx.coroutines.withTimeoutOrNull
+import dev.opencamera.vendorbridge.VendorTagRegistry
+import dev.opencamera.vendorbridge.SourcePolicy
+import dev.opencamera.vendorbridge.ProcessingSource
+import dev.opencamera.vendorbridge.OemFeature
+import dev.opencamera.app.ext.oemFeatureOf
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.withTimeout
+import androidx.camera.camera2.interop.Camera2CameraControl
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.ExperimentalZeroShutterLag
@@ -199,7 +208,13 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
     /** Whether the last bind included the analysis stream; null before the first setting is seen. */
     /** Analysis stream and session layout of the last bind; a change needs a rebind. */
-    private var boundStreams: Pair<Boolean, StreamConfig?>? = null
+    private var boundStreams: Triple<Boolean, StreamConfig?, OemFeature?>? = null
+
+    private fun boundStreamsKey(config: CameraConfiguration?) = Triple(
+        viewModel.wantsAnalysisStream,
+        (config as? CameraConfiguration.Photo)?.let { viewModel.desiredStreamConfig(it) },
+        config?.let { viewModel.bridgedOemFeature(it) },
+    )
     private val previewBlurView by lazy { findViewById<PreviewBlurView>(R.id.previewBlurView) }
     private val proButton by lazy { findViewById<ImageButton>(R.id.proButton) }
     private val screenFlashView by lazy { findViewById<ScreenFlashView>(R.id.screenFlashView) }
@@ -1638,8 +1653,9 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
      * Binds [useCases] through [FeatureGuard.bindChain]: optional streams are dropped when the
      * camera has no supported surface combination for them (seen on Snapdragon 8 Elite with
      * Preview + JPEG + full-res YUV). Never throws; the last resort is the baseline use case.
+     * Returns false when nothing could be bound.
      */
-    private fun bindWithFallback(useCases: Int) {
+    private fun bindWithFallback(useCases: Int, quiet: Boolean = false): Boolean {
         val controller = viewModel.cameraController
         val primary = (useCases and (CameraController.IMAGE_CAPTURE or CameraController.VIDEO_CAPTURE))
             .takeIf { it != 0 } ?: useCases
@@ -1666,20 +1682,21 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                 Log.w(LOG_TAG, "Bound with fallback ")
                 Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
             }
-            return
+            return true
         }
         Log.e(LOG_TAG, "No use case combination could be bound")
-        Toast.makeText(this, R.string.stream_fallback_failed, Toast.LENGTH_LONG).show()
+        if (!quiet) Toast.makeText(this, R.string.stream_fallback_failed, Toast.LENGTH_LONG).show()
+        return false
     }
 
     /**
      * The analysis stream is only bound while a multi-frame, creative or motion feature needs it,
-     * and the session layout follows the active mode, flash and fallback cap.
+     * and the session layout follows the active mode, flash, fallback cap and the phone's
+     * processing the vendor bridge stands in with.
      */
     private fun rebindIfAnalysisChanged() {
         val config = viewModel.cameraConfiguration.replayCache.lastOrNull()
-        val wanted = viewModel.wantsAnalysisStream to
-            (config as? CameraConfiguration.Photo)?.let { viewModel.desiredStreamConfig(it) }
+        val wanted = boundStreamsKey(config)
         val previous = boundStreams
         boundStreams = wanted
         if (previous != null && previous != wanted && viewModel.cameraState.value == CameraState.IDLE) {
@@ -1744,6 +1761,17 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                     size != null && size.width.toLong() * size.height >= FULL_RES_MIN_PIXELS
                 }
             } ?: false
+            if (ok && viewModel.multiFrame.streamConfig == config) {
+                // The controller may have rebuilt the analysis use case after the bind.
+                delay(CAPTURE_RESULT_WAIT_MS)
+                if (viewModel.multiFrame.resultTracker.latest == null &&
+                    viewModel.cameraState.value == CameraState.IDLE &&
+                    CameraControllerInterop.ensureAttached(viewModel.cameraController)
+                ) {
+                    delay(CAPTURE_RESULT_WAIT_MS)
+                }
+                Log.i(LOG_TAG, "Analysis capture results: ${viewModel.multiFrame.resultTracker.latest != null}")
+            }
             if (ok || viewModel.multiFrame.streamConfig != config) return@launch
             viewModel.multiFrame.demote(config)
             Toast.makeText(this@CameraActivity, R.string.full_res_fallback, Toast.LENGTH_SHORT).show()
@@ -1755,10 +1783,22 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
      * Last resort around the bind: a configuration that cannot be bound (unsupported mode,
      * format or extension) reopens the camera with plain preview + JPEG capture.
      */
+    private var lastBridgedOemFeature: OemFeature? = null
+
     private fun bindCameraUseCases(cameraConfiguration: CameraConfiguration) {
         try {
             bindCameraUseCasesOrThrow(cameraConfiguration)
         } catch (e: RuntimeException) {
+            // The phone's processing chosen by the vendor bridge failed: use the open pipeline
+            val oemFeature = viewModel.bridgedOemFeature(cameraConfiguration)
+            if (oemFeature != null) {
+                Log.e(LOG_TAG, "OEM ${oemFeature.key} bind failed, retrying without it", e)
+                viewModel.vendorBridge.markOemFailed(oemFeature)
+                Toast.makeText(this, R.string.oem_processing_failed, Toast.LENGTH_SHORT).show()
+                FeatureGuard.attempt(LOG_TAG, "Bind without OEM processing") {
+                    bindCameraUseCasesOrThrow(cameraConfiguration)
+                }?.let { return }
+            }
             Log.e(LOG_TAG, "Bind failed for $cameraConfiguration, reopening in baseline mode", e)
             viewModel.lookController.disablePreviewEffect()
             viewModel.multiFrame.analyzer.resetStream()
@@ -1803,15 +1843,18 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             }) not supported by camera ${cameraConfiguration.camera.cameraId}"
         }
 
+        // The user's effect, or the phone's processing picked by the vendor bridge
+        val extensionMode = viewModel.resolveExtensionMode(cameraConfiguration)
+        val bridgedOemFeature = viewModel.bridgedOemFeature(cameraConfiguration)
+        viewModel.oemProcessingLabel = oemFeatureOf(extensionMode)?.let {
+            SourcePolicy.label(ProcessingSource.PHONE, it.label)
+        }
+
         // Make sure the extension mode is supported
-        require(
-            cameraConfiguration.camera.supportsExtensionMode(
-                cameraConfiguration.extensionMode
-            )
-        ) {
-            "Selected extension mode (${
-                cameraConfiguration.extensionMode
-            }) not supported by camera ${cameraConfiguration.camera.cameraId}"
+        require(cameraConfiguration.camera.supportsExtensionMode(extensionMode)) {
+            "Selected extension mode ($extensionMode) not supported by camera ${
+                cameraConfiguration.camera.cameraId
+            }"
         }
 
         // Initialize the use case we want and set its properties
@@ -1866,13 +1909,13 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                 viewModel.motionPhoto.reset()
                 viewModel.multiFrame.resultTracker.clear()
                 val streamConfig = viewModel.desiredStreamConfig(cameraConfiguration)
-                boundStreams = viewModel.wantsAnalysisStream to streamConfig
+                boundStreams = boundStreamsKey(cameraConfiguration)
                 viewModel.multiFrame.streamConfig = streamConfig
                 if (streamConfig != StreamConfig.STANDARD) {
                     fullResUseCases(cameraConfiguration, streamConfig)
                 } else if (viewModel.wantsAnalysisStream &&
                     cameraConfiguration.photoOutputFormat == PhotoOutputFormat.JPEG &&
-                    cameraConfiguration.extensionMode == ExtensionMode.NONE &&
+                    extensionMode == ExtensionMode.NONE &&
                     cameraConfiguration.camera.cameraFacing != CameraFacing.FRONT
                 ) {
                     // Full resolution YUV stream for multi-frame bursts
@@ -1952,7 +1995,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
         // Get the camera selector
         val cameraSelector = viewModel.getExtensionEnabledCameraSelector(
-            cameraConfiguration.camera, cameraConfiguration.extensionMode
+            cameraConfiguration.camera, extensionMode
         )
 
         // Workaround: We cannot set flash mode to screen with a non front facing camera.
@@ -1982,7 +2025,17 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             verifyFullResStream(cameraConfiguration, fullRes)
         } else {
             viewModel.lookController.attachIfReady()
-            bindWithFallback(cameraUseCases)
+            if (!bindWithFallback(cameraUseCases, quiet = bridgedOemFeature != null)) {
+                check(bridgedOemFeature == null) { "OEM ${bridgedOemFeature?.key} could not be bound" }
+            }
+        }
+        if (bridgedOemFeature != lastBridgedOemFeature) {
+            bridgedOemFeature?.let {
+                Toast.makeText(
+                    this, getString(R.string.oem_processing_active, it.label), Toast.LENGTH_SHORT
+                ).show()
+            }
+            lastBridgedOemFeature = bridgedOemFeature
         }
 
         // Wait for camera to be ready
@@ -2004,7 +2057,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                 Log.w(LOG_TAG, "Camera ready without CameraInfo, skipping Camera2 options")
                 return@launch
             }
-            proModeUi.bind(cameraInfo, camera2CameraControl, cameraConfiguration, CaptureRequestOptions.Builder()
+            val baseOptions = CaptureRequestOptions.Builder()
                 .setFrameRate(
                     when (cameraConfiguration) {
                         is CameraConfiguration.Video -> cameraConfiguration.videoFrameRate
@@ -2029,8 +2082,10 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                 .setColorCorrectionAberrationMode(camera2Options.colorCorrectionAberrationMode)
                 .setDistortionCorrectionMode(camera2Options.distortionCorrectionMode)
                 .setHotPixelMode(camera2Options.hotPixelMode)
-                .build()
-            )
+            if (extensionMode == ExtensionMode.NONE) {
+                applyVendorTags(camera2CameraControl, cameraConfiguration.camera.cameraId, baseOptions)
+            }
+            proModeUi.bind(cameraInfo, camera2CameraControl, cameraConfiguration, baseOptions.build())
         }
 
         // Restore settings that can be set on the fly
@@ -2038,6 +2093,50 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
         // Reset exposure level
         viewModel.setExposureCompensationLevel(0.5f)
+    }
+
+    /**
+     * Writes the profile's vendor tags on top of [base]. A tag the framework rejects, or a
+     * request that fails, drops the tag for the session; a crash while writing blocks it for
+     * later launches (see VendorBridge).
+     */
+    private suspend fun applyVendorTags(
+        control: Camera2CameraControl,
+        cameraId: String,
+        base: CaptureRequestOptions.Builder,
+    ) {
+        val bridge = viewModel.vendorBridge
+        val tags = withContext(Dispatchers.IO) { viewModel.vendorTagsFor(cameraId) }
+        if (tags.isEmpty()) return
+        val vendorOptions = CaptureRequestOptions.Builder()
+        val accepted = tags.filter { tag ->
+            val ok = FeatureGuard.attempt(LOG_TAG, "Vendor tag ${tag.name}") {
+                vendorOptions.setCaptureRequestOption(requireNotNull(VendorTagRegistry.requestKey(tag)), tag.value)
+            } != null
+            if (!ok) bridge.tags.disable(tag.name, "rejected by the framework")
+            ok
+        }
+        if (accepted.isEmpty()) return
+        bridge.beginTagWrite(accepted.map { it.name })
+        val applied = FeatureGuard.attempt(LOG_TAG, "Vendor tags request") {
+            withTimeout(VENDOR_TAG_TIMEOUT_MS) {
+                control.addCaptureRequestOptions(vendorOptions.build()).await()
+            }
+            true
+        } != null
+        currentCoroutineContext().ensureActive()
+        if (applied) {
+            accepted.forEach { tag ->
+                VendorTagRegistry.requestKey(tag)?.let { base.setCaptureRequestOption(it, tag.value) }
+            }
+            Log.i(LOG_TAG, "Vendor tags applied on camera $cameraId: ${accepted.map { it.name }}")
+        } else {
+            accepted.forEach { bridge.tags.disable(it.name, "capture request failed") }
+        }
+        lifecycleScope.launch {
+            delay(VENDOR_TAG_SETTLE_MS)
+            bridge.endTagWrite()
+        }
     }
 
     private fun updateGalleryButton(uri: Uri?, fromCapture: Boolean) {
@@ -2484,8 +2583,12 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         private const val COLOR_MATCH_ITEM = "__color_match__"
         private const val LOOK_PRELOAD_WAIT_MS = 1200L
         private const val FULL_RES_STREAM_TIMEOUT_MS = 4000L
+        private const val CAPTURE_RESULT_WAIT_MS = 800L
         private const val FULL_RES_MIN_PIXELS = 6_000_000L
         private val METERING_STREAM_SIZE = Size(1280, 960)
+
+        private const val VENDOR_TAG_TIMEOUT_MS = 3000L
+        private const val VENDOR_TAG_SETTLE_MS = 3000L
 
         private const val MSG_HIDE_ZOOM_SLIDER = 0
         private const val MSG_HIDE_FOCUS_RING = 1
