@@ -1818,6 +1818,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         lifecycleScope.launch {
             FeatureGuard.attempt(LOG_TAG, "Camera initialization") {
                 viewModel.cameraController.initializationFuture.await()
+                true
             } ?: return@launch
 
             val camera2CameraControl = viewModel.cameraController.camera2CameraControl ?: run {
@@ -1828,7 +1829,10 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             val camera2Options = cameraConfiguration.camera2Options
 
             // Set Camera2 CaptureRequest options, plus Pro mode options when active
-            val cameraInfo = viewModel.cameraController.cameraInfo ?: return@launch
+            val cameraInfo = viewModel.cameraController.cameraInfo ?: run {
+                Log.w(LOG_TAG, "Camera ready without CameraInfo, skipping Camera2 options")
+                return@launch
+            }
             proModeUi.bind(cameraInfo, camera2CameraControl, cameraConfiguration, CaptureRequestOptions.Builder()
                 .setFrameRate(
                     when (cameraConfiguration) {

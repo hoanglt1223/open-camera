@@ -37,4 +37,7 @@ else()
     add_library(opencamera_looks SHARED looks/look_apply.cpp)
     target_compile_options(opencamera_looks PRIVATE -O3)
     target_link_libraries(opencamera_looks jnigraphics)
+    # 16 KB page devices (Android 15+) refuse 4 KB-aligned LOAD segments.
+    target_link_options(opencamera_pipeline PRIVATE "-Wl,-z,max-page-size=16384")
+    target_link_options(opencamera_looks PRIVATE "-Wl,-z,max-page-size=16384")
 endif()

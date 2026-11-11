@@ -27,7 +27,7 @@ cc_library_shared {
     cppflags: ["-fexceptions"],
     shared_libs: ["liblog"],
     sdk_version: "current",
-    stl: "c++_shared",
+    stl: "c++_static",
     product_specific: true,
 }
 
@@ -41,7 +41,7 @@ cc_library_shared {
     ],
     shared_libs: ["libjnigraphics"],
     sdk_version: "current",
-    stl: "c++_shared",
+    stl: "c++_static",
     product_specific: true,
 }
 
