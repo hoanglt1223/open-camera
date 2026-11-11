@@ -888,8 +888,15 @@ private fun Shutter(state: CameraUiState, onClick: () -> Unit) {
             else -> R.string.ui_take_photo
         }
     )
-    val spin = rememberInfiniteTransition(label = "busy")
-    val sweep by spin.animateFloat(0f, 360f, infiniteRepeatable(tween(900, easing = LinearEasing)), label = "sweep")
+    // Runs only while busy and is read in the draw phase: an idle camera screen draws no frames.
+    val sweep = remember { Animatable(0f) }
+    LaunchedEffect(busy) {
+        if (!busy) return@LaunchedEffect sweep.snapTo(0f)
+        while (true) {
+            sweep.animateTo(360f, tween(900, easing = LinearEasing))
+            sweep.snapTo(0f)
+        }
+    }
     val ring = s.tokens.shape.shutterRing.dp
     val videoRing = Brush.sweepGradient(listOf(Color(0xFFFF3D60), Color(0xFFFF8A4C), Color(0xFFFF3D60)))
     val ringBrush = if (s.glass) Brush.linearGradient(listOf(Color.White, Color.White)) else if (video) videoRing else s.accentBrush
@@ -904,7 +911,7 @@ private fun Shutter(state: CameraUiState, onClick: () -> Unit) {
                 drawCircle(ringBrush, radius = this.size.minDimension / 2 - w / 2, style = Stroke(w))
                 if (busy) {
                     drawArc(
-                        s.accent, sweep, 90f, false,
+                        s.accent, sweep.value, 90f, false,
                         topLeft = Offset(w / 2, w / 2), size = Size(this.size.width - w, this.size.height - w),
                         style = Stroke(w * 1.2f),
                     )
