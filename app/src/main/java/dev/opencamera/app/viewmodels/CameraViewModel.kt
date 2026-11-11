@@ -774,11 +774,12 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
     val isShutterButtonEnabled = combine(
         cameraMode,
         cameraState,
-    ) { cameraMode, cameraState ->
+        multiFrame.cancellable,
+    ) { cameraMode, cameraState, cancellable ->
         when (cameraState) {
             CameraState.IDLE -> true
             CameraState.COUNTDOWN -> cameraMode == CameraMode.VIDEO
-            CameraState.TAKING_PHOTO -> false
+            CameraState.TAKING_PHOTO -> cancellable
             CameraState.PRE_RECORDING_VIDEO -> false
             CameraState.RECORDING_VIDEO -> true
             CameraState.RECORDING_VIDEO_PAUSED -> true
@@ -1251,7 +1252,18 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         )
     }
 
+    /** Stops a running Camera2 burst (shutter tap, activity stopped); the camera is bound again. */
+    fun cancelBurst() {
+        if (multiFrame.cancellable.value) burstJob?.cancel()
+    }
+
+    private var burstJob: Job? = null
+
     fun takePhoto(allowMultiFrame: Boolean = true) {
+        if (multiFrame.cancellable.value) {
+            cancelBurst()
+            return
+        }
         // Bail out if a photo is already being taken
         if (cameraState.value == CameraState.TAKING_PHOTO) {
             Log.i(LOG_TAG, "Shutter ignored: a photo is still being taken")
@@ -1546,14 +1558,30 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         cameraState.value = CameraState.TAKING_PHOTO
         val motionShutterTs = motionPhoto.shutterTimestamp()
         val wantsMotion = motionPhoto.motionPhoto.value
-        viewModelScope.launch {
+        burstJob = viewModelScope.launch {
             emitEvent(Event.PhotoCaptureStatus.CaptureStarted)
             cameraSoundsUtils.playShutterClick()
             val takeRaw: suspend () -> ImageProxy = { takeRawImage() }
-            var captured = runCatching { multiFrame.capture(cameraControl, cameraInfo, plan, takeRaw = takeRaw) }
-                .onFailure { if (it is CancellationException) throw it }
-                .onFailure { Log.e(LOG_TAG, "Full-resolution ${plan.kind} capture failed", it) }
-                .getOrNull()
+            // RAW bursts run as one Camera2 burst; if that fails the RAW session only takes a
+            // single frame, since RAW stills through CameraX queue behind the preview.
+            val camera2 = multiFrame.usesCamera2Burst(plan)
+            var captured = if (camera2) {
+                try {
+                    multiFrame.captureCamera2(cameraInfo, plan)
+                } catch (e: CancellationException) {
+                    cameraState.value = CameraState.IDLE
+                    Log.i(LOG_TAG, "Burst cancelled")
+                    throw e
+                } catch (e: Throwable) {
+                    Log.e(LOG_TAG, "Camera2 ${plan.kind} burst failed, taking a single frame", e)
+                    null
+                }
+            } else {
+                runCatching { multiFrame.capture(cameraControl, cameraInfo, plan, takeRaw = takeRaw) }
+                    .onFailure { if (it is CancellationException) throw it }
+                    .onFailure { Log.e(LOG_TAG, "Full-resolution ${plan.kind} capture failed", it) }
+                    .getOrNull()
+            }
             if (captured == null && plan.kind != BurstKind.SINGLE) {
                 captured = runCatching {
                     multiFrame.capture(cameraControl, cameraInfo, BurstPlan(BurstKind.SINGLE, 1), takeRaw = takeRaw)
