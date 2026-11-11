@@ -112,6 +112,7 @@ import dev.opencamera.app.models.Rotation
 import dev.opencamera.app.models.ShadingMode
 import dev.opencamera.app.models.ThermalStatus
 import dev.opencamera.app.models.TimerMode
+import dev.opencamera.app.multiframe.ManualStill
 import dev.opencamera.app.multiframe.MultiFrameCaptureController
 import dev.opencamera.app.processing.BurstJobQueue
 import dev.opencamera.app.modes.CreativeCaptureController
@@ -1563,30 +1564,25 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
             emitEvent(Event.PhotoCaptureStatus.CaptureStarted)
             cameraSoundsUtils.playShutterClick()
             val takeRaw: suspend () -> ImageProxy = { takeRawImage() }
-            // RAW bursts run as one Camera2 burst; if that fails the RAW session only takes a
-            // single frame, since RAW stills through CameraX queue behind the preview.
-            val camera2 = multiFrame.usesCamera2Burst(plan)
-            var captured = if (camera2) {
-                try {
-                    multiFrame.captureCamera2(cameraInfo, plan)
-                } catch (e: CancellationException) {
-                    cameraState.value = CameraState.IDLE
-                    Log.i(LOG_TAG, "Burst cancelled")
-                    throw e
-                } catch (e: Throwable) {
-                    Log.e(LOG_TAG, "Camera2 ${plan.kind} burst failed, taking a single frame", e)
-                    null
-                }
-            } else {
-                runCatching { multiFrame.capture(cameraControl, cameraInfo, plan, takeRaw = takeRaw) }
-                    .onFailure { if (it is CancellationException) throw it }
-                    .onFailure { Log.e(LOG_TAG, "Full-resolution ${plan.kind} capture failed", it) }
-                    .getOrNull()
+            // RAW bursts and long Pro exposures run as one Camera2 burst; if that fails the RAW
+            // session only takes a single frame, since RAW stills through CameraX queue behind the preview.
+            val camera2Plan = multiFrame.camera2Plan(plan)
+            val single: suspend () -> MultiFrameCaptureController.CapturedBurst = {
+                multiFrame.capture(cameraControl, cameraInfo, BurstPlan(BurstKind.SINGLE, 1), takeRaw = takeRaw)
             }
-            if (captured == null && plan.kind != BurstKind.SINGLE) {
-                captured = runCatching {
-                    multiFrame.capture(cameraControl, cameraInfo, BurstPlan(BurstKind.SINGLE, 1), takeRaw = takeRaw)
-                }.onFailure { if (it is CancellationException) throw it }.getOrNull()
+            val captured = try {
+                ManualStill.withFallback(
+                    primary = if (camera2Plan != null) {
+                        { multiFrame.captureCamera2(cameraInfo, camera2Plan) }
+                    } else {
+                        { multiFrame.capture(cameraControl, cameraInfo, plan, takeRaw = takeRaw) }
+                    },
+                    fallback = single.takeIf { camera2Plan != null || plan.kind != BurstKind.SINGLE },
+                ) { step, e -> Log.e(LOG_TAG, "Full-resolution ${plan.kind} capture ($step) failed", e) }
+            } catch (e: CancellationException) {
+                cameraState.value = CameraState.IDLE
+                Log.i(LOG_TAG, "Burst cancelled")
+                throw e
             }
             cameraState.value = CameraState.IDLE
             if (captured == null) {
