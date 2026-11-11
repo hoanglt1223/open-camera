@@ -199,6 +199,24 @@
                 android:text="@string/multi_frame_hdr_auto" />
 
             <Button
+                android:id="@+id/creativeButton"
+                style="@style/Theme.Aperture.Camera.SecondaryTopBarButton"
+                android:drawableTop="@drawable/ic_blur_on"
+                android:text="@string/creative_off" />
+
+            <Button
+                android:id="@+id/motionPhotoButton"
+                style="@style/Theme.Aperture.Camera.SecondaryTopBarButton"
+                android:drawableTop="@drawable/ic_shortcut_video"
+                android:text="@string/motion_photo_off" />
+
+            <Button
+                android:id="@+id/preShotButton"
+                style="@style/Theme.Aperture.Camera.SecondaryTopBarButton"
+                android:drawableTop="@drawable/ic_image"
+                android:text="@string/pre_shot_off" />
+
+            <Button
                 android:id="@+id/gridButton"
                 style="@style/Theme.Aperture.Camera.SecondaryTopBarButton"
                 android:drawableTop="@drawable/ic_grid_3x3_off"

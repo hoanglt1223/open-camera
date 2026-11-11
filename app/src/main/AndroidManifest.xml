@@ -164,6 +164,18 @@
             android:label="@string/title_activity_settings"
             android:theme="@style/Theme.SettingsLib" />
 
+        <activity
+            android:name=".modes.ColorMatchActivity"
+            android:exported="true"
+            android:label="@string/color_match_title"
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar">
+            <intent-filter android:label="@string/color_match_title">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+        </activity>
+
     </application>
 
 </manifest>

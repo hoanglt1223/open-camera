@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "mf/pipeline.h"
+#include "stack/stack.h"
 
 #define LOG_TAG "OpenCameraPipeline"
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
@@ -158,6 +159,61 @@ Java_dev_opencamera_pipeline_NativePipeline_nativeProcess(JNIEnv *env, jobject, 
                              result.msAlign, result.msMerge, result.msFinish};
     jdoubleArray arr = env->NewDoubleArray(6);
     if (arr) env->SetDoubleArrayRegion(arr, 0, 6, stats);
+    return arr;
+}
+
+// Creative stacking. params = [keepFraction, rlIterations, rlSigma, sharpen, strength].
+// Returns [referenceIndex, framesUsed, ms] or null on failure.
+JNIEXPORT jdoubleArray JNICALL
+Java_dev_opencamera_pipeline_NativePipeline_nativeStack(JNIEnv *env, jobject, jlong handle,
+                                                        jint op, jint reference, jboolean align,
+                                                        jfloatArray params, jbyteArray out) {
+    Burst *b = fromHandle(handle);
+    if (!b || b->frames.empty() || op < 0 || op > 4) return nullptr;
+    const jsize need = jsize(size_t(b->width) * b->height * 3 / 2);
+    if (env->GetArrayLength(out) < need || !params || env->GetArrayLength(params) < 5) return nullptr;
+    jfloat p[5];
+    env->GetFloatArrayRegion(params, 0, 5, p);
+    mf::StackParams sp;
+    sp.op = static_cast<mf::StackOp>(op);
+    sp.reference = reference;
+    sp.align = align == JNI_TRUE;
+    sp.keepFraction = p[0];
+    sp.rlIterations = int(p[1]);
+    sp.rlSigma = p[2];
+    sp.sharpen = p[3];
+    sp.strength = p[4];
+    mf::StackResult result;
+    std::string error;
+    if (!mf::stackBurst(b->frames, sp, result, &error)) {
+        LOGE("stack op %d failed: %s", op, error.c_str());
+        return nullptr;
+    }
+    LOGI("stacked %d of %zu frames %dx%d op %d in %.0f ms", result.framesUsed, b->frames.size(),
+         b->width, b->height, op, result.ms);
+    const mf::Frame &img = result.image;
+    env->SetByteArrayRegion(out, 0, jsize(img.y.size()), reinterpret_cast<const jbyte *>(img.y.data()));
+    env->SetByteArrayRegion(out, jsize(img.y.size()), jsize(img.vu.size()),
+                            reinterpret_cast<const jbyte *>(img.vu.data()));
+    const jdouble stats[] = {double(result.referenceIndex), double(result.framesUsed), result.ms};
+    jdoubleArray arr = env->NewDoubleArray(3);
+    if (arr) env->SetDoubleArrayRegion(arr, 0, 3, stats);
+    return arr;
+}
+
+// Frame indices from sharpest to softest, or null.
+JNIEXPORT jintArray JNICALL
+Java_dev_opencamera_pipeline_NativePipeline_nativeRankSharpness(JNIEnv *env, jobject, jlong handle) {
+    Burst *b = fromHandle(handle);
+    if (!b || b->frames.empty()) return nullptr;
+    std::vector<int> order;
+    try {
+        order = mf::rankBySharpness(b->frames);
+    } catch (const std::exception &) {
+        return nullptr;
+    }
+    jintArray arr = env->NewIntArray(jsize(order.size()));
+    if (arr) env->SetIntArrayRegion(arr, 0, jsize(order.size()), reinterpret_cast<const jint *>(order.data()));
     return arr;
 }
 

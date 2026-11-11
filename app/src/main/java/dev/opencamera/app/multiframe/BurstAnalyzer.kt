@@ -29,7 +29,9 @@ class BurstAnalyzer : ImageAnalysis.Analyzer {
         var skipRemaining: Int,
         val ready: (CaptureResult?) -> Boolean,
         val done: CompletableDeferred<Collected>,
+        val stride: Int,
     ) {
+        var seen = 0
         var firstResult: CaptureResult? = null
         var rotation = 0
     }
@@ -44,20 +46,29 @@ class BurstAnalyzer : ImageAnalysis.Analyzer {
 
     @Volatile
     private var request: Request? = null
+
+    /**
+     * Sees every frame while no burst is armed (motion photo / pre-shot ring buffers, moon
+     * detection). Runs on the analysis thread; must not close the image and must not throw.
+     */
+    @Volatile
+    var frameTap: ((ImageProxy) -> Unit)? = null
     private var frameCounter = 0
 
     /**
      * Arms a burst. Frames are skipped while [ready] returns false (new exposure not applied
-     * yet), up to [maxSkip] frames.
+     * yet), up to [maxSkip] frames. Only every [stride]-th frame is kept, to spread a burst over
+     * time (passer-by removal).
      */
     fun arm(
         burst: Burst,
         count: Int,
         maxSkip: Int,
         ready: (CaptureResult?) -> Boolean,
+        stride: Int = 1,
     ): CompletableDeferred<Collected> {
         val done = CompletableDeferred<Collected>()
-        request = Request(burst, count, maxSkip, ready, done)
+        request = Request(burst, count, maxSkip, ready, done, stride.coerceAtLeast(1))
         return done
     }
 
@@ -77,6 +88,14 @@ class BurstAnalyzer : ImageAnalysis.Analyzer {
             frameSize = Size(image.width, image.height)
             val req = request
             if (req == null) {
+                frameTap?.let { tap ->
+                    try {
+                        tap(image)
+                    } catch (e: Exception) {
+                        Log.w(LOG_TAG, "Frame tap failed, removing it", e)
+                        frameTap = null
+                    }
+                }
                 if (frameCounter++ % 8 == 0) meter(image)
                 return
             }
@@ -85,6 +104,7 @@ class BurstAnalyzer : ImageAnalysis.Analyzer {
                 req.skipRemaining--
                 return
             }
+            if (req.seen++ % req.stride != 0) return
             val planes = image.planes
             val added = req.burst.addFrame(
                 planes[0].buffer, planes[0].rowStride,

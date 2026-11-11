@@ -12,17 +12,36 @@ import dev.opencamera.pipeline.looks.CubeParser
 import dev.opencamera.pipeline.looks.LookDescriptor
 import dev.opencamera.pipeline.looks.LookParams
 import dev.opencamera.pipeline.looks.Lut3d
+import dev.opencamera.pipeline.looks.UserLookStore
 import dev.opencamera.pipeline.watermark.WatermarkTemplate
 import org.json.JSONObject
+import java.io.File
 
-/** Built-in looks from `assets/looks`. LUTs are parsed on first use and cached. */
+/**
+ * Built-in looks from `assets/looks` plus user looks (colour match, imported `.cube`) from
+ * `files/looks/user`. LUTs are parsed on first use and cached.
+ */
 class LooksRepository private constructor(context: Context) {
     private val assets = context.applicationContext.assets
     private val luts = HashMap<String, Lut3d>()
+    val userLooks = UserLookStore(File(context.applicationContext.filesDir, "looks/user"))
 
-    val descriptors: List<LookDescriptor> by lazy {
+    private val builtIn: List<LookDescriptor> by lazy {
         val index = JSONObject(read("$ROOT/index.json")).getJSONArray("looks")
         List(index.length()) { LookDescriptor.parse(read("$ROOT/${index.getString(it)}/look.json")) }
+    }
+
+    @Volatile
+    private var user: List<LookDescriptor>? = null
+
+    val descriptors: List<LookDescriptor>
+        get() = builtIn + (user ?: userLooks.list().also { user = it })
+
+    /** Re-reads user looks after one was added or removed. */
+    @Synchronized
+    fun reloadUserLooks() {
+        user?.forEach { luts.remove(it.id) }
+        user = userLooks.list()
     }
 
     fun descriptor(id: String?) = descriptors.firstOrNull { it.id == id }
@@ -35,7 +54,8 @@ class LooksRepository private constructor(context: Context) {
 
     @Synchronized
     private fun lut(d: LookDescriptor): Lut3d = luts.getOrPut(d.id) {
-        CubeParser.parse(read("$ROOT/${d.id}/${d.lutFile}"))
+        if (d.id.startsWith(UserLookStore.PREFIX)) userLooks.lut(d)
+        else CubeParser.parse(read("$ROOT/${d.id}/${d.lutFile}"))
     }
 
     private fun read(path: String) = assets.open(path).bufferedReader().use { it.readText() }

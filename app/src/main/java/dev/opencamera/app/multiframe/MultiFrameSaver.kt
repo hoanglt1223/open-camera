@@ -32,7 +32,7 @@ object MultiFrameSaver {
     )
 
     fun save(context: Context, jpeg: ByteArray, width: Int, height: Int, meta: Metadata): Uri? {
-        val temp = File.createTempFile("mf", ".jpg", context.cacheDir)
+        val temp = File.createTempFile("merged", ".jpg", context.cacheDir)
         try {
             temp.writeBytes(jpeg)
             writeExif(temp, width, height, meta)

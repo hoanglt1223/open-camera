@@ -15,8 +15,9 @@ add_library(opencamera_mf STATIC
     mf/merge.cpp
     mf/pipeline.cpp
     mf/superres.cpp
+    stack/stack.cpp
 )
-target_include_directories(opencamera_mf PUBLIC mf)
+target_include_directories(opencamera_mf PUBLIC mf stack)
 if(MSVC)
     target_compile_options(opencamera_mf PRIVATE /O2 /fp:fast /EHsc)
 else()

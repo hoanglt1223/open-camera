@@ -122,11 +122,15 @@ class MultiFrameCaptureController(
         val captureMs: Long,
     )
 
-    /** Collects the burst frames. Restores exposure settings before returning. */
+    /**
+     * Collects the burst frames. Restores exposure settings before returning. [frameStride]
+     * keeps every n-th stream frame only.
+     */
     suspend fun capture(
         cameraControl: CameraControl,
         cameraInfo: CameraInfo,
         plan: BurstPlan,
+        frameStride: Int = 1,
     ): CapturedBurst {
         val size = checkNotNull(analyzer.frameSize)
         val burst = Burst(size.width, size.height, plan.frameCount)
@@ -171,8 +175,8 @@ class MultiFrameCaptureController(
                 }
                 maxSkip = if (index != savedEvIndex) 12 else 0
             }
-            val collected = withTimeout(plan.estimatedCaptureMs * 3 + 4000L) {
-                analyzer.arm(burst, plan.frameCount, maxSkip, ready).await()
+            val collected = withTimeout(plan.estimatedCaptureMs * 3 * frameStride + 4000L) {
+                analyzer.arm(burst, plan.frameCount, maxSkip, ready, frameStride).await()
             }
             return CapturedBurst(burst, plan, collected, SystemClock.elapsedRealtime() - start)
         } catch (e: Throwable) {
@@ -231,7 +235,7 @@ class MultiFrameCaptureController(
                                 "noise=${image.noiseSigma} weight=${image.meanWeight} ref=${image.referenceIndex}"
                     )
                 }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 Log.e(LOG_TAG, "Multi-frame processing failed", e)
             } finally {
                 _progress.value = null
@@ -260,7 +264,7 @@ class MultiFrameCaptureController(
         )
     }
 
-    private fun framesThatFit(width: Int, height: Int, wanted: Int): Int {
+    fun framesThatFit(width: Int, height: Int, wanted: Int): Int {
         val am = context.getSystemService(ActivityManager::class.java) ?: return wanted
         val info = ActivityManager.MemoryInfo().also { am.getMemoryInfo(it) }
         val pixels = width.toLong() * height

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="creative_off">Creative</string>
+    <string name="creative_moon">Moon</string>
+    <string name="creative_long_exposure">Long exposure</string>
+    <string name="creative_light_trails">Light trails</string>
+    <string name="creative_remove_people">Remove people</string>
+    <string name="creative_focus_stack">Focus stack</string>
+    <string name="creative_sports">Sports burst</string>
+    <string name="creative_unavailable">This mode needs the burst stream, which this camera cannot provide now. Taking a normal photo.</string>
+    <string name="creative_failed">Burst failed. Taking a normal photo.</string>
+    <string name="creative_moon_shake">Phone is moving: rest it on something steady. Shooting in 2 s.</string>
+    <string name="creative_moon_not_found">No moon found in the frame; metering the whole frame</string>
+    <string name="creative_moon_suggestion">Bright disc on a dark sky: try Moon mode (real detail from stacked frames, nothing painted in)</string>
+    <string name="creative_focus_unsupported">This camera cannot focus manually; focus stacking is unavailable</string>
+    <string name="motion_photo_on">Motion on</string>
+    <string name="motion_photo_off">Motion off</string>
+    <string name="pre_shot_on">Pre-shot on</string>
+    <string name="pre_shot_off">Pre-shot off</string>
+    <string name="look_color_match">+ Match colours…</string>
+
+    <string name="color_match_title">Match colours</string>
+    <string name="color_match_intro">Pick a reference photo whose colours you like and one of your own photos. The app learns the colour change on this phone and turns it into a look for the camera, your gallery photos and other editors (.cube).</string>
+    <string name="color_match_reference">Reference</string>
+    <string name="color_match_source">Your photo</string>
+    <string name="color_match_preview">Preview of your photo with the matched colours</string>
+    <string name="color_match_hold_to_compare">Touch and hold the preview to see the original</string>
+    <string name="color_match_method_fast">Fast</string>
+    <string name="color_match_method_histogram">Histogram</string>
+    <string name="color_match_method_best">Best</string>
+    <string name="color_match_skin">Protect skin tones</string>
+    <string name="color_match_strength">Strength</string>
+    <string name="color_match_strength_value">Strength %d%%</string>
+    <string name="color_match_name_hint">Look name</string>
+    <string name="color_match_default_name">My match</string>
+    <string name="color_match_save">Save look and use it in the camera</string>
+    <string name="color_match_apply_photos">Apply to photos…</string>
+    <string name="color_match_export">Export .cube</string>
+    <string name="color_match_import">Import .cube</string>
+    <string name="color_match_need_source">Now pick one of your photos</string>
+    <string name="color_match_need_look">Pick a reference and your photo first, or import a .cube</string>
+    <string name="color_match_working">Matching colours…</string>
+    <string name="color_match_failed">Could not match these photos</string>
+    <string name="color_match_done">%1$s match ready in %2$d ms</string>
+    <string name="color_match_cannot_open">Cannot open this image</string>
+    <string name="color_match_saved">Look saved and selected</string>
+    <string name="color_match_save_failed">Could not save the look</string>
+    <string name="color_match_exported">LUT exported</string>
+    <string name="color_match_export_failed">Could not export the LUT</string>
+    <string name="color_match_imported">LUT imported and selected</string>
+    <string name="color_match_import_failed">Not a usable .cube file: %s</string>
+    <string name="color_match_look_description">Colour match from a reference photo</string>
+    <string name="color_match_imported_description">Imported .cube LUT</string>
+    <plurals name="color_match_batch_queued">
+        <item quantity="one">%d photo queued; the copy goes to Pictures/Open Camera</item>
+        <item quantity="other">%d photos queued; copies go to Pictures/Open Camera</item>
+    </plurals>
+</resources>

@@ -25,6 +25,7 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import dev.opencamera.app.R
 import dev.opencamera.pipeline.StillProcessor
+import dev.opencamera.pipeline.creative.MotionPhotoFormat
 import dev.opencamera.pipeline.queue.Job
 import dev.opencamera.pipeline.queue.JobState
 import dev.opencamera.pipeline.queue.ProcessingQueue
@@ -129,6 +130,7 @@ class ProcessingService : Service() {
             val t = StillProcessor(contentResolver).process(
                 source, look, WatermarkTemplate.fromKey(job.watermark), Build.MODEL, tmp,
             )
+            carryOverMotionPhoto(source, tmp)
             Log.i(
                 TAG, "Job ${job.id} ${t.width}x${t.height} look=${job.lookId} frame=${job.watermark} " +
                     "decode=${t.decodeMs} look=${t.lookMs} frame=${t.frameMs} encode=${t.encodeMs} " +
@@ -155,6 +157,15 @@ class ProcessingService : Service() {
         } finally {
             tmp.delete()
         }
+    }
+
+    /** Keeps the clip of a motion photo on the re-rendered still; on failure the still alone is kept. */
+    private fun carryOverMotionPhoto(source: Uri, rendered: File) {
+        runCatching {
+            val original = contentResolver.openInputStream(source)?.use { it.readBytes() } ?: return
+            if (MotionPhotoFormat.videoLength(original) == null) return
+            rendered.writeBytes(MotionPhotoFormat.carryOver(original, rendered.readBytes()))
+        }.onFailure { Log.w(TAG, "Motion photo clip not carried over for $source", it) }
     }
 
     /** Idempotent: safe to repeat after a crash at any point. */

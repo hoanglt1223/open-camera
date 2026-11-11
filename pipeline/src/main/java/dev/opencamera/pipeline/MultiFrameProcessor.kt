@@ -70,6 +70,29 @@ class Burst(width: Int, height: Int, val capacity: Int) : AutoCloseable {
         )
     }
 
+    /** Combines the burst with a creative [op]; returns null if the native side rejected it. */
+    fun stack(op: StackOp, params: StackParams = StackParams()): MergedImage? {
+        check(handle != 0L) { "Burst closed" }
+        val out = ByteArray(width * height * 3 / 2)
+        val p = floatArrayOf(
+            params.keepFraction, params.rlIterations.toFloat(), params.rlSigma, params.sharpen, params.strength,
+        )
+        val stats = NativePipeline.nativeStack(handle, op.nativeId, params.reference, params.align, p, out)
+            ?: return null
+        return MergedImage(
+            width, height, out,
+            referenceIndex = stats[0].toInt(),
+            msMerge = stats[2].toLong(),
+            frameCount = stats[1].toInt(),
+        )
+    }
+
+    /** Frame indices from sharpest to softest; empty on failure. */
+    fun rankBySharpness(): IntArray {
+        check(handle != 0L) { "Burst closed" }
+        return NativePipeline.nativeRankSharpness(handle) ?: IntArray(0)
+    }
+
     /** Single frame copy, used as the fallback when merging fails. */
     fun exportFrame(index: Int): MergedImage? {
         check(handle != 0L) { "Burst closed" }
@@ -85,6 +108,34 @@ class Burst(width: Int, height: Int, val capacity: Int) : AutoCloseable {
         }
     }
 }
+
+/** Creative stacking operations; ids are shared with `stack/stack.h`. */
+enum class StackOp(val nativeId: Int) {
+    /** Simulated long exposure (silky water): aligned average. */
+    MEAN(0),
+
+    /** Light trails / light painting: lighten blend. */
+    MAX(1),
+
+    /** Passer-by removal: per-pixel median. */
+    MEDIAN(2),
+
+    /** Focus stacking: sharpest source per pixel, soft weights. */
+    FOCUS(3),
+
+    /** Moon: lucky imaging, average, mild Richardson-Lucy and unsharp mask. No synthesized detail. */
+    MOON(4),
+}
+
+data class StackParams(
+    val reference: Int = -1,
+    val align: Boolean = true,
+    val keepFraction: Float = 0.4f,
+    val rlIterations: Int = 8,
+    val rlSigma: Float = 1.2f,
+    val sharpen: Float = 0.5f,
+    val strength: Float = 1f,
+)
 
 class MergedImage(
     val width: Int,
@@ -124,5 +175,16 @@ object MultiFrameProcessor {
         if (merged != null) return merged
         Log.w(LOG_TAG, "Merge failed for ${burst.frameCount} frames, using a single frame")
         return burst.exportFrame(0)
+    }
+
+    /** Creative stack; on failure falls back to the sharpest single frame. */
+    fun stackOrFallback(burst: Burst, op: StackOp, params: StackParams = StackParams()): MergedImage? {
+        val stacked = runCatching { burst.stack(op, params) }
+            .onFailure { Log.e(LOG_TAG, "Stack threw", it) }
+            .getOrNull()
+        if (stacked != null) return stacked
+        Log.w(LOG_TAG, "Stack $op failed for ${burst.frameCount} frames, using a single frame")
+        val best = runCatching { burst.rankBySharpness().firstOrNull() }.getOrNull() ?: 0
+        return burst.exportFrame(best)
     }
 }

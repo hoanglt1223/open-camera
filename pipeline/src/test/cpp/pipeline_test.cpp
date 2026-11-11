@@ -19,6 +19,7 @@
 #include "finish.h"
 #include "merge.h"
 #include "pipeline.h"
+#include "stack.h"
 
 using namespace mf;
 
@@ -284,6 +285,121 @@ void timing(int w, int h, int n, Mode mode, const char *label) {
     check(ok, label);
 }
 
+Frame blurred(const Frame &f, float sigma) {
+    GrayF g(f.width, f.height), out;
+    for (size_t i = 0; i < f.y.size(); ++i) g.px[i] = f.y[i];
+    gaussianBlur(g, out, sigma);
+    Frame r = f;
+    for (size_t i = 0; i < r.y.size(); ++i) r.y[i] = clampU8(out.px[i]);
+    return r;
+}
+
+Frame addNoise(Frame f, float sigma, std::mt19937 &rng) {
+    std::normal_distribution<float> n(0, sigma);
+    for (auto &v : f.y) v = clampU8(v + n(rng));
+    return f;
+}
+
+void testStackOps() {
+    std::mt19937 rng(5);
+    const int w = 480, h = 360, n = 7;
+    Frame clean = render(w, h, 0, 0, 0, rng);
+    std::vector<Frame> frames;
+    for (int i = 0; i < n; ++i) {
+        Frame f = render(w, h, 0, 0, 8, rng);
+        // A walker that is somewhere else in every frame.
+        for (int y = 100; y < 160; ++y)
+            for (int x = 40 + 60 * i; x < 80 + 60 * i; ++x) f.y[size_t(y) * w + x] = 245;
+        frames.push_back(std::move(f));
+    }
+    StackParams p;
+    p.align = false;
+    StackResult r;
+    std::string err;
+    p.op = StackOp::Median;
+    check(stackBurst(frames, p, r, &err), "median stack succeeds");
+    double ghost = 0;
+    for (int y = 100; y < 160; ++y)
+        for (int x = 40; x < 80 + 60 * (n - 1); ++x)
+            ghost += std::fabs(double(r.image.y[size_t(y) * w + x]) - clean.y[size_t(y) * w + x]);
+    ghost /= 60.0 * (40 + 60 * (n - 1));
+    std::printf("  median: mean abs error on the walker path %.2f\n", ghost);
+    check(ghost < 8.0, "median stack removes a passer-by");
+
+    p.op = StackOp::Mean;
+    std::vector<Frame> still;
+    for (int i = 0; i < n; ++i) still.push_back(render(w, h, 0, 0, 8, rng));
+    check(stackBurst(still, p, r, &err), "mean stack succeeds");
+    const double single = psnrY(still[0], clean, 8), mean = psnrY(r.image, clean, 8);
+    std::printf("  mean: PSNR single %.2f dB, stacked %.2f dB\n", single, mean);
+    check(mean - single > 4.0, "mean stack averages noise like a long exposure");
+
+    p.op = StackOp::Max;
+    check(stackBurst(frames, p, r, &err), "max stack succeeds");
+    int lit = 0;
+    for (int i = 0; i < n; ++i) lit += r.image.y[size_t(130) * w + 60 + 60 * i] > 235;
+    check(lit == n, "max stack keeps every position of a moving light (trail)");
+}
+
+void testFocusStack() {
+    std::mt19937 rng(6);
+    const int w = 480, h = 360;
+    Frame clean = render(w, h, 0, 0, 0, rng);
+    Frame soft = blurred(clean, 3.0f);
+    Frame a = clean, b = clean;
+    for (int y = 0; y < h; ++y)
+        for (int x = 0; x < w; ++x) {
+            const size_t i = size_t(y) * w + x;
+            (x < w / 2 ? b : a).y[i] = soft.y[i];
+        }
+    std::vector<Frame> frames{addNoise(a, 2, rng), addNoise(b, 2, rng)};
+    StackParams p;
+    p.op = StackOp::Focus;
+    p.align = false;
+    StackResult r;
+    std::string err;
+    check(stackBurst(frames, p, r, &err), "focus stack succeeds");
+    const double pa = psnrY(frames[0], clean, 8), pb = psnrY(frames[1], clean, 8), ps = psnrY(r.image, clean, 8);
+    std::printf("  focus: PSNR near %.2f, far %.2f, stacked %.2f dB\n", pa, pb, ps);
+    check(ps > std::max(pa, pb) + 3.0, "focus stack is sharper than either source frame");
+}
+
+void testMoon() {
+    std::mt19937 rng(7);
+    const int w = 400, h = 400, r0 = 120;
+    Scene s;
+    Frame truth(w, h);
+    for (int y = 0; y < h; ++y)
+        for (int x = 0; x < w; ++x) {
+            const float d = std::hypot(x - 200.0f, y - 200.0f);
+            truth.y[size_t(y) * w + x] = d < r0 ? clampU8(0.9f * s(x * 0.7f, y * 0.7f)) : 6;
+        }
+    std::fill(truth.vu.begin(), truth.vu.end(), 128);
+    // Atmospheric seeing: frames blurred by different amounts, a few lucky ones nearly sharp.
+    std::vector<Frame> frames;
+    const float seeing[] = {2.6f, 1.3f, 2.2f, 3.0f, 1.2f, 2.4f, 2.8f, 1.4f, 2.0f, 2.5f};
+    for (float sg : seeing) frames.push_back(addNoise(blurred(truth, sg), 6, rng));
+    StackParams p;
+    p.op = StackOp::Moon;
+    p.align = false;
+    p.keepFraction = 0.3f;
+    StackResult r;
+    std::string err;
+    check(stackBurst(frames, p, r, &err), "moon stack succeeds");
+    check(r.framesUsed == 3, "lucky imaging keeps the sharpest 30%");
+    double best = 0, avg = 0;
+    for (auto &f : frames) {
+        best = std::max(best, psnrY(f, truth, 20));
+        avg += psnrY(f, truth, 20) / frames.size();
+    }
+    const double out = psnrY(r.image, truth, 20);
+    std::printf("  moon: PSNR average frame %.2f, best frame %.2f, result %.2f dB\n", avg, best, out);
+    check(out > best, "moon result beats the best single frame");
+    int clipped = 0;
+    for (uint8_t v : r.image.y) clipped += v >= 255;
+    check(clipped < w * h / 1000, "moon result is not clipped");
+}
+
 }  // namespace
 
 int main(int argc, char **argv) {
@@ -292,6 +408,9 @@ int main(int argc, char **argv) {
     testMergeSnrAndGhosts();
     testSuperRes();
     testToneMap();
+    testStackOps();
+    testFocusStack();
+    testMoon();
     if (perf) {
         timing(4000, 3000, 8, Mode::Hdr, "HDR");
         timing(4000, 3000, 12, Mode::Night, "Night");

@@ -140,6 +140,8 @@ import dev.opencamera.app.ui.views.IslandView
 import dev.opencamera.app.processing.LookPreferences
 import dev.opencamera.app.processing.ProcessingService
 import dev.opencamera.app.ui.looks.LookPickerView
+import dev.opencamera.app.modes.ColorMatchActivity
+import dev.opencamera.app.modes.CreativeMode
 import dev.opencamera.app.ui.views.LensSelectorLayout
 import dev.opencamera.app.ui.views.LevelerView
 import dev.opencamera.app.ui.views.PreviewBlurView
@@ -184,6 +186,12 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     private val micButton by lazy { findViewById<Button>(R.id.micButton) }
     private val multiFrameButton by lazy { findViewById<Button>(R.id.multiFrameButton) }
     private val multiFrameProgress by lazy { findViewById<LinearProgressIndicator>(R.id.multiFrameProgress) }
+    private val creativeButton by lazy { findViewById<Button>(R.id.creativeButton) }
+    private val motionPhotoButton by lazy { findViewById<Button>(R.id.motionPhotoButton) }
+    private val preShotButton by lazy { findViewById<Button>(R.id.preShotButton) }
+
+    /** Whether the last bind included the analysis stream; null before the first setting is seen. */
+    private var boundWithAnalysis: Boolean? = null
     private val previewBlurView by lazy { findViewById<PreviewBlurView>(R.id.previewBlurView) }
     private val proButton by lazy { findViewById<ImageButton>(R.id.proButton) }
     private val screenFlashView by lazy { findViewById<ScreenFlashView>(R.id.screenFlashView) }
@@ -467,6 +475,11 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         gridButton.setOnClickListener { viewModel.cycleGridMode() }
         timerButton.setOnClickListener { viewModel.toggleTimerMode() }
         multiFrameButton.setOnClickListener { viewModel.multiFrame.cycleSetting() }
+        creativeButton.setOnClickListener { viewModel.creative.cycleMode() }
+        motionPhotoButton.setOnClickListener {
+            viewModel.motionPhoto.setMotionPhoto(!viewModel.motionPhoto.motionPhoto.value)
+        }
+        preShotButton.setOnClickListener { viewModel.motionPhoto.setPreShot(!viewModel.motionPhoto.preShot.value) }
         lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onResume(owner: LifecycleOwner) = viewModel.multiFrame.motionMeter.start()
             override fun onPause(owner: LifecycleOwner) = viewModel.multiFrame.motionMeter.stop()
@@ -1049,7 +1062,6 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         }
 
         launch {
-            var boundWithMultiFrame: Boolean? = null
             viewModel.multiFrame.setting.collectLatest { setting ->
                 multiFrameButton.setCompoundDrawablesWithIntrinsicBounds(
                     0,
@@ -1073,17 +1085,47 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                     }
                 )
 
-                // The analysis stream is only bound while a multi-frame setting is active
-                val enabled = setting != MultiFrameSetting.OFF
-                val previous = boundWithMultiFrame
-                boundWithMultiFrame = enabled
-                if (previous != null && previous != enabled &&
-                    viewModel.cameraState.value == CameraState.IDLE
-                ) {
-                    viewModel.cameraConfiguration.replayCache.lastOrNull()?.let {
-                        bindCameraUseCases(it)
-                    }
-                }
+                rebindIfAnalysisChanged()
+            }
+        }
+
+        launch {
+            viewModel.creative.mode.collectLatest { mode ->
+                creativeButton.setText(mode.label)
+                creativeButton.isActivated = mode != CreativeMode.OFF
+                rebindIfAnalysisChanged()
+            }
+        }
+
+        launch {
+            viewModel.motionPhoto.motionPhoto.collectLatest { on ->
+                motionPhotoButton.setText(if (on) R.string.motion_photo_on else R.string.motion_photo_off)
+                rebindIfAnalysisChanged()
+            }
+        }
+
+        launch {
+            viewModel.motionPhoto.preShot.collectLatest { on ->
+                preShotButton.setText(if (on) R.string.pre_shot_on else R.string.pre_shot_off)
+                rebindIfAnalysisChanged()
+            }
+        }
+
+        launch {
+            viewModel.creative.messages.collect { res ->
+                Toast.makeText(this@CameraActivity, res, Toast.LENGTH_LONG).show()
+            }
+        }
+
+        launch {
+            var offered = false
+            viewModel.creative.moonSeen.collectLatest { seen ->
+                if (!seen || offered || viewModel.cameraMode.value != CameraMode.PHOTO) return@collectLatest
+                offered = true
+                Snackbar.make(mainLayout, R.string.creative_moon_suggestion, Snackbar.LENGTH_LONG)
+                    .setAction(R.string.creative_moon) { viewModel.creative.setMode(CreativeMode.MOON) }
+                    .show()
+                viewModel.creative.clearMoonSuggestion()
             }
         }
 
@@ -1605,6 +1647,16 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         Toast.makeText(this, R.string.stream_fallback_failed, Toast.LENGTH_LONG).show()
     }
 
+    /** The analysis stream is only bound while a multi-frame, creative or motion feature needs it. */
+    private fun rebindIfAnalysisChanged() {
+        val wanted = viewModel.wantsAnalysisStream
+        val previous = boundWithAnalysis
+        boundWithAnalysis = wanted
+        if (previous != null && previous != wanted && viewModel.cameraState.value == CameraState.IDLE) {
+            viewModel.cameraConfiguration.replayCache.lastOrNull()?.let { bindCameraUseCases(it) }
+        }
+    }
+
     /**
      * Last resort around the bind: a configuration that cannot be bound (unsupported mode,
      * format or extension) reopens the camera with plain preview + JPEG capture.
@@ -1715,9 +1767,10 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                         .build()
 
                 viewModel.multiFrame.analyzer.resetStream()
+                viewModel.motionPhoto.reset()
                 // RAW adds its own stream; skip the YUV burst stream to stay within the
                 // device's stream combinations (bursts are JPEG-only anyway).
-                if (viewModel.multiFrame.enabled &&
+                if (viewModel.wantsAnalysisStream &&
                     cameraConfiguration.photoOutputFormat == PhotoOutputFormat.JPEG &&
                     cameraConfiguration.extensionMode == ExtensionMode.NONE &&
                     cameraConfiguration.camera.cameraFacing != CameraFacing.FRONT
@@ -2083,14 +2136,28 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         super.onResume()
         // Picks up strength changes made in settings.
         if (viewFinder.controller != null) viewModel.lookController.refresh()
+        // Colour match may have added or selected a look.
+        refreshLookPicker()
+    }
+
+    private fun refreshLookPicker() {
+        val looks = viewModel.lookController
+        val items = listOf(LookPreferences.NONE to getString(R.string.look_none)) +
+                looks.repository.descriptors.map { it.id to it.name } +
+                (COLOR_MATCH_ITEM to getString(R.string.look_color_match))
+        lookPickerView.setLooks(items, looks.lookId.value)
     }
 
     private fun setupLookPicker() {
         val looks = viewModel.lookController
-        val items = listOf(LookPreferences.NONE to getString(R.string.look_none)) +
-                looks.repository.descriptors.map { it.id to it.name }
-        lookPickerView.setLooks(items, looks.lookId.value)
-        lookPickerView.onLookSelected = { looks.select(it) }
+        refreshLookPicker()
+        lookPickerView.onLookSelected = { id ->
+            if (id == COLOR_MATCH_ITEM) {
+                startActivity(Intent(this, ColorMatchActivity::class.java))
+            } else {
+                looks.select(id)
+            }
+        }
         lookButton.setOnClickListener { lookPickerView.isVisible = !lookPickerView.isVisible }
         lifecycleScope.launch {
             looks.lookId.collectLatest { id ->
@@ -2296,6 +2363,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
     companion object {
         private val LOG_TAG = CameraActivity::class.simpleName!!
+        private const val COLOR_MATCH_ITEM = "__color_match__"
 
         private const val MSG_HIDE_ZOOM_SLIDER = 0
         private const val MSG_HIDE_FOCUS_RING = 1

@@ -34,6 +34,7 @@ import androidx.core.location.LocationRequestCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
@@ -99,6 +100,9 @@ import dev.opencamera.app.models.ThermalStatus
 import dev.opencamera.app.models.TimerMode
 import dev.opencamera.app.multiframe.MultiFrameCaptureController
 import dev.opencamera.app.processing.BurstJobQueue
+import dev.opencamera.app.modes.CreativeCaptureController
+import dev.opencamera.app.modes.CreativeMode
+import dev.opencamera.app.modes.MotionPhotoController
 import dev.opencamera.app.processing.LookController
 import dev.opencamera.app.qr.QrImageAnalyzer
 import dev.opencamera.app.repositories.CameraRepository
@@ -174,6 +178,16 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
     val qrImageAnalyzer = QrImageAnalyzer(applicationContext, viewModelScope)
 
     val multiFrame = MultiFrameCaptureController(applicationContext, BurstJobQueue.get(applicationContext))
+
+    /** Moon, long exposure, light trails, passer-by removal, focus stacking, sports burst. */
+    val creative = CreativeCaptureController(applicationContext, multiFrame, BurstJobQueue.get(applicationContext))
+
+    /** Motion photo and pre-shot buffer, fed from the burst analysis stream. */
+    val motionPhoto = MotionPhotoController(applicationContext)
+
+    /** True when the analysis stream is needed by multi-frame, creative or motion features. */
+    val wantsAnalysisStream: Boolean
+        get() = multiFrame.enabled || creative.mode.value != CreativeMode.OFF || motionPhoto.active
 
     /**
      * Do not emit here directly, use [emitEvent].
@@ -1007,6 +1021,12 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         )
 
     init {
+        multiFrame.analyzer.frameTap = { image ->
+            creative.zoomRatio = cameraController.zoomState.value?.zoomRatio ?: 1f
+            creative.tap(image)
+            motionPhoto.tap(image)
+        }
+
         viewModelScope.launch {
             launch {
                 flashMode.collectLatest { flashMode ->
@@ -1117,11 +1137,25 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
             return
         }
 
+        if (allowMultiFrame && takeCreativePhoto()) {
+            return
+        }
+
         if (allowMultiFrame && takeMultiFramePhoto()) {
             return
         }
 
         cameraState.value = CameraState.TAKING_PHOTO
+
+        // Motion photo / pre-shot: the frames up to now are the "before" part.
+        val motionShutterTs = motionPhoto.shutterTimestamp()
+        val wantsMotion = !inSingleCaptureMode.value && motionPhoto.motionPhoto.value &&
+                cameraController.imageOutputFormat == ImageCapture.OUTPUT_FORMAT_JPEG
+        if (!inSingleCaptureMode.value && motionPhoto.preShot.value) {
+            viewModelScope.launch {
+                motionPhoto.savePreShot(System.currentTimeMillis()).forEach { mediaRepository.broadcastNewPicture(it) }
+            }
+        }
 
         val photoOutputStream = if (inSingleCaptureMode.value) {
             ByteArrayOutputStream(SINGLE_CAPTURE_PHOTO_BUFFER_INITIAL_SIZE_BYTES)
@@ -1184,7 +1218,15 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
                     output.savedUri?.let {
                         mediaRepository.broadcastNewPicture(it)
                         if (output.imageFormat !in RAW_FORMATS) {
-                            lookController.onPhotoSaved(it)
+                            if (wantsMotion && motionShutterTs != 0L) {
+                                // The look queue rewrites the JPEG; embed the clip first so it is carried over.
+                                viewModelScope.launch {
+                                    motionPhoto.embed(it, motionShutterTs)
+                                    lookController.onPhotoSaved(it)
+                                }
+                            } else {
+                                lookController.onPhotoSaved(it)
+                            }
                         }
                     }
                 }
@@ -1250,6 +1292,45 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
     }
 
     /**
+     * Runs the active creative mode. Returns false when the regular capture should be used
+     * instead; failures inside the creative capture also end in a regular photo.
+     */
+    @SuppressLint("RestrictedApi")
+    private fun takeCreativePhoto(): Boolean {
+        if (creative.mode.value == CreativeMode.OFF) return false
+        if (inSingleCaptureMode.value || cameraFacing.value == CameraFacing.FRONT) return false
+        if (cameraController.imageOutputFormat != ImageCapture.OUTPUT_FORMAT_JPEG) return false
+        val cameraControl = cameraController.cameraControl ?: return false
+        val cameraInfo = cameraController.cameraInfo ?: return false
+        if (multiFrame.analyzer.frameSize == null) return false
+
+        cameraState.value = CameraState.TAKING_PHOTO
+        viewModelScope.launch {
+            emitEvent(Event.PhotoCaptureStatus.CaptureStarted)
+            cameraSoundsUtils.playShutterClick()
+            val started = try {
+                creative.capture(cameraControl, cameraInfo, location.value) { uris ->
+                    for (uri in uris) {
+                        mediaRepository.broadcastNewPicture(uri)
+                        lookController.onPhotoSaved(uri)
+                    }
+                    uris.lastOrNull()?.let {
+                        emitEvent(Event.PhotoCaptureStatus.ImageSaved(ImageCapture.OutputFileResults(it, ImageFormat.JPEG), null))
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                Log.e(LOG_TAG, "Creative capture failed", e)
+                false
+            }
+            cameraState.value = CameraState.IDLE
+            if (!started) takePhoto(allowMultiFrame = false)
+        }
+        return true
+    }
+
+    /**
      * Captures a burst over the analysis stream when a multi-frame mode applies. Returns false
      * when the regular single capture should be used instead.
      */
@@ -1272,7 +1353,9 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
 
             val captured = try {
                 multiFrame.capture(cameraControl, cameraInfo, plan)
-            } catch (e: Exception) {
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
                 Log.e(LOG_TAG, "Burst capture failed, taking a single frame", e)
                 null
             }
