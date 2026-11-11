@@ -141,6 +141,9 @@ configure<GenerateBpPluginExtension> {
     versionName.set(android.defaultConfig.versionName!!)
     availableInAOSP.set { module: Module ->
         when {
+            // A BOM only pins versions; it has no library to link against.
+            module.name.endsWith("-bom") -> false
+
             module.group == "androidx.core" -> {
                 // We provide our own core-backported-fixes
                 module.name != "core-backported-fixes"

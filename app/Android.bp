@@ -66,7 +66,7 @@ android_app {
         "OpenCamera_androidx.camera_camera-video",
         "OpenCamera_androidx.camera_camera-view",
         "OpenCamera_androidx.camera.viewfinder_viewfinder-core",
-        "androidx.compose_compose-bom",
+        "OpenCamera_androidx.compose_compose-bom",
         "androidx.compose.animation_animation",
         "androidx.compose.animation_animation-core",
         "androidx.compose.foundation_foundation",

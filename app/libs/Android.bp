@@ -250,6 +250,18 @@ android_library_import {
     ],
 }
 
+java_library_static {
+    name: "OpenCamera_androidx.compose_compose-bom",
+    sdk_version: "36",
+    min_sdk_version: "26",
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    static_libs: [
+    ],
+}
+
 android_library_import {
     name: "OpenCamera_androidx.core_core-backported-fixes",
     aars: ["androidx/core/core-backported-fixes/1.0.0/core-backported-fixes-1.0.0.aar"],
