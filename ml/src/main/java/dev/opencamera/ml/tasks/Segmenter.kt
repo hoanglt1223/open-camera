@@ -8,6 +8,7 @@ package dev.opencamera.ml.tasks
 import android.graphics.Bitmap
 import dev.opencamera.ml.ImageTensors
 import dev.opencamera.ml.MlRuntime
+import kotlin.math.exp
 
 /** Single-channel probability map in [0, 1], row-major. */
 class Mask(val width: Int, val height: Int, val data: FloatArray = FloatArray(width * height)) {
@@ -72,14 +73,17 @@ class Segmenter(private val runtime: MlRuntime) {
         val body = FloatArray(n)
         for (i in 0 until n) {
             // Channels: background, hair, body skin, face skin, clothes, others (accessories).
+            // The model outputs logits: softmax per pixel.
             val o = i * CLASSES
+            var max = d[o]
+            for (c in 1 until CLASSES) max = maxOf(max, d[o + c])
             var sum = 0f
-            for (c in 0 until CLASSES) sum += d[o + c]
-            val s = if (sum > 0f) 1f / sum else 0f
-            person[i] = 1f - d[o] * s
-            hair[i] = d[o + 1] * s
-            body[i] = d[o + 2] * s
-            face[i] = d[o + 3] * s
+            for (c in 0 until CLASSES) sum += exp(d[o + c] - max)
+            val s = 1f / sum
+            person[i] = 1f - exp(d[o] - max) * s
+            hair[i] = exp(d[o + 1] - max) * s
+            body[i] = exp(d[o + 2] - max) * s
+            face[i] = exp(d[o + 3] - max) * s
         }
         return Result(Mask(SIZE, SIZE, person), Mask(SIZE, SIZE, hair), Mask(SIZE, SIZE, face), Mask(SIZE, SIZE, body), MULTICLASS)
     }
