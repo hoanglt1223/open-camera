@@ -29,3 +29,24 @@ Third-party libraries added for the extra capture modes (all Apache License 2.0)
   Used for document edge detection/rectification and panorama alignment.
 - AndroidX Media3 Transformer and Effect 1.10.0 - Apache-2.0. Used for post-processing
   (log grade LUT, gyro stabilization, short-video music).
+
+Photo editor (dev.opencamera.app.develop):
+- AndroidX HeifWriter 1.0.0 (androidx.heifwriter) - Apache-2.0. HEIF export.
+- LibRaw 0.22.3, Copyright 2008-2025 LibRaw LLC, used under the GNU Lesser General Public
+  License version 2.1 (LibRaw is dual licensed LGPL-2.1 / CDDL-1.0; this product chooses LGPL-2.1).
+  It reads camera-maker RAW files (CR2/CR3, NEF, ARW, RAF, ORF, RW2, ...).
+  * LibRaw is built unmodified as its own shared library, lib/<abi>/libopencamera_libraw.so,
+    and is loaded dynamically. The app's JNI glue (libopencamera_rawjni.so) only calls the
+    LibRaw C API, so you may replace libopencamera_libraw.so with your own build of a
+    compatible LibRaw version (same C API) and re-sign the APK.
+  * Complete corresponding source: pipeline/third_party/LibRaw in this repository (unmodified
+    LibRaw 0.22.3 sources and headers, build list in pipeline/src/main/cpp/CMakeLists.txt), and
+    the upstream release https://www.libraw.org/data/LibRaw-0.22.3.tar.gz
+    (SHA-256 789f3c33466210a1a0907f747a97c715d21bbf4af712f257fcbbd90111b227e4).
+  * License text: LICENSES/LGPL-2.1-only.txt. LibRaw contains code from dcraw (Dave Coffin),
+    DCB/FBDD (Jacek Gozdz, BSD-3-Clause), X3F tools (Roland Karlsson, BSD) and Adobe DNG SDK
+    1.4 pieces (MIT); see pipeline/third_party/LibRaw/COPYRIGHT.
+- DNG reading (subset reader, lossless JPEG decoder, Malvar-He-Cutler demosaic), dehaze (dark
+  channel prior, He et al. 2009), guided filter (He et al. 2010) and all develop shaders are
+  written for this project from the published specifications and papers. No code from
+  darktable, RawTherapee, Snapseed or Fossify; no Adobe camera profiles.

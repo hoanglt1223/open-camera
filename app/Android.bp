@@ -32,6 +32,8 @@ android_app {
         "libopencamera_pipeline",
         "libopencamera_looks",
         "libopencamera_ai",
+        "libopencamera_libraw",
+        "libopencamera_rawjni",
     ],
     // Models are memory-mapped from the APK.
     aaptflags: [
@@ -63,6 +65,7 @@ android_app {
         "androidx-constraintlayout_constraintlayout",
         "androidx.core_core-ktx",
         "androidx.exifinterface_exifinterface",
+        "androidx.heifwriter_heifwriter",
         "androidx.lifecycle_lifecycle-runtime",
         "androidx.lifecycle_lifecycle-runtime-ktx",
         "androidx.lifecycle_lifecycle-viewmodel-ktx",

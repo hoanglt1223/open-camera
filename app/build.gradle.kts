@@ -99,6 +99,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.exifinterface)
+    implementation(libs.androidx.heifwriter)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
@@ -115,6 +116,7 @@ dependencies {
     implementation(libs.zxing.cpp.android)
 
     testImplementation(libs.junit)
+    testImplementation(libs.json)
 }
 
 configure<GenerateBpPluginExtension> {
