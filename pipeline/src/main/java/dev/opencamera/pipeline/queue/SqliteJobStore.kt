@@ -13,7 +13,7 @@ import android.database.sqlite.SQLiteOpenHelper
 
 /** Persistent [JobStore]; survives process death. */
 class SqliteJobStore(context: Context) : JobStore {
-    private val helper = object : SQLiteOpenHelper(context.applicationContext, "processing_jobs.db", null, 2) {
+    private val helper = object : SQLiteOpenHelper(context.applicationContext, "processing_jobs.db", null, 3) {
         override fun onCreate(db: SQLiteDatabase) {
             db.execSQL(
                 """CREATE TABLE jobs (
@@ -31,10 +31,12 @@ class SqliteJobStore(context: Context) : JobStore {
                     created_at INTEGER NOT NULL,
                     updated_at INTEGER NOT NULL)"""
             )
+            db.execSQL(INDEX)
         }
 
         override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
             if (oldVersion < 2) db.execSQL("ALTER TABLE jobs ADD COLUMN ops TEXT")
+            if (oldVersion < 3) db.execSQL(INDEX)
         }
     }
 
@@ -49,6 +51,8 @@ class SqliteJobStore(context: Context) : JobStore {
     override fun findBySource(sourceUri: String) = query("source_uri = ?", arrayOf(sourceUri)).firstOrNull()
 
     override fun all() = query(null, null)
+
+    override fun pending() = query("state IN ('QUEUED','RUNNING','WRITTEN')", null)
 
     override fun delete(id: Long) {
         helper.writableDatabase.delete("jobs", "id = ?", arrayOf(id.toString()))
@@ -90,3 +94,5 @@ class SqliteJobStore(context: Context) : JobStore {
         updatedAt = getLong(getColumnIndexOrThrow("updated_at")),
     )
 }
+
+private const val INDEX = "CREATE INDEX IF NOT EXISTS jobs_state_due ON jobs (state, next_attempt_at)"

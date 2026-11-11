@@ -42,7 +42,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -58,9 +61,9 @@ import java.io.FileNotFoundException
  */
 @RequiresApi(Build.VERSION_CODES.Q)
 class ProcessingService : Service() {
-    // Queue decisions run on the main thread so they serialize with onStartCommand;
-    // rendering hops to Dispatchers.Default.
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    // Queue decisions (SQLite) run one at a time off the main thread; rendering hops to Default.
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
     private var worker: kotlinx.coroutines.Job? = null
     private lateinit var queue: ProcessingQueue
 
@@ -72,7 +75,8 @@ class ProcessingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (!startInForeground(pendingCount())) {
+        // The count is filled in by the worker; no database read on the main thread.
+        if (!startInForeground(1)) {
             // Jobs stay queued and resume on the next launch.
             stopSelf()
             return START_NOT_STICKY
@@ -95,12 +99,14 @@ class ProcessingService : Service() {
                 val job = queue.claimNext()
                 if (job == null) {
                     val due = queue.nextDueAt()
-                        ?: if (BurstJobQueue.get(this).pending.value > 0) {
-                            System.currentTimeMillis() + BURST_POLL_MS
-                        } else {
-                            break
-                        }
-                    delay((due - System.currentTimeMillis()).coerceAtLeast(50))
+                    val bursts = BurstJobQueue.get(this).pending
+                    if (due == null && bursts.value == 0) break
+                    // Sleep until a retry is due, a job is enqueued or the running merges finish.
+                    val seen = changes.value
+                    val wait = due?.let { (it - System.currentTimeMillis()).coerceAtLeast(50) } ?: Long.MAX_VALUE
+                    withTimeoutOrNull(wait) {
+                        combine(changes, bursts) { c, p -> c != seen || p == 0 }.first { it }
+                    }
                     continue
                 }
                 updateNotification(pendingCount())
@@ -328,7 +334,6 @@ class ProcessingService : Service() {
         private const val NOTIFICATION_ID = 0x0c01
         private const val PENDING_SUFFIX = "_oc"
         private const val EDIT_SUFFIX = "_edit"
-        private const val BURST_POLL_MS = 250L
 
         @Volatile
         private var sharedQueue: ProcessingQueue? = null
@@ -337,12 +342,17 @@ class ProcessingService : Service() {
             sharedQueue ?: ProcessingQueue(SqliteJobStore(context)).also { sharedQueue = it }
         }
 
+        /** Bumped on every enqueue so an idle worker wakes without polling. */
+        private val changes = MutableStateFlow(0L)
+
+        /** Blocking (SQLite); call off the main thread. */
         fun enqueue(context: Context, uri: Uri, lookId: String?, intensity: Float, watermark: String, ops: AiOps? = null) {
             queue(context).enqueue(uri.toString(), lookId, intensity, watermark, ops?.toJson())
+            changes.value++
             start(context)
         }
 
-        /** Restarts processing left over from a previous process. Call while in the foreground. */
+        /** Restarts processing left over from a previous process. Call in the foreground, off the main thread. */
         fun resumeIfPending(context: Context) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
             runCatching { enqueueOrphanBursts(context) }.onFailure { Log.w(TAG, "Burst recovery scan failed", it) }

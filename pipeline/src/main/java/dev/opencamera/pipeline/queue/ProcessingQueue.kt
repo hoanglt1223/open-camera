@@ -44,6 +44,9 @@ interface JobStore {
     fun findBySource(sourceUri: String): Job?
     fun all(): List<Job>
     fun delete(id: Long)
+
+    /** Jobs in a pending state; stores override this with an indexed query. */
+    fun pending(): List<Job> = all().filter { it.state.isPending }
 }
 
 class InMemoryJobStore : JobStore {
@@ -104,7 +107,7 @@ class ProcessingQueue(
     @Synchronized
     fun recover() {
         val now = clock()
-        store.all().filter { it.state == JobState.RUNNING }.forEach {
+        store.pending().filter { it.state == JobState.RUNNING }.forEach {
             store.update(failed(it, "Interrupted", retryable = true, now))
         }
         store.all().filter {
@@ -119,7 +122,7 @@ class ProcessingQueue(
     @Synchronized
     fun claimNext(): Job? {
         val now = clock()
-        val job = store.all()
+        val job = store.pending()
             .filter { (it.state == JobState.QUEUED || it.state == JobState.WRITTEN) && it.nextAttemptAt <= now }
             .minWithOrNull(compareBy<Job> { it.nextAttemptAt }.thenBy { it.id }) ?: return null
         if (job.state == JobState.WRITTEN) return job
@@ -145,11 +148,11 @@ class ProcessingQueue(
     }
 
     @Synchronized
-    fun pendingCount(): Int = store.all().count { it.state.isPending }
+    fun pendingCount(): Int = store.pending().size
 
     /** Earliest time a pending job becomes due, or null if nothing is pending. */
     @Synchronized
-    fun nextDueAt(): Long? = store.all().filter { it.state.isPending }.minOfOrNull { it.nextAttemptAt }
+    fun nextDueAt(): Long? = store.pending().minOfOrNull { it.nextAttemptAt }
 
     @Synchronized
     fun get(id: Long) = store.get(id)

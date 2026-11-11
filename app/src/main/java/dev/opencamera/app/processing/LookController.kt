@@ -61,8 +61,10 @@ class LookController(
         val key = prefs.lookId to prefs.intensity
         if (preloadedKey == key && preloaded != null) return
         preloadedKey = key
-        if (repository.descriptor(key.first) == null) {
+        if (key.first == LookPreferences.NONE) {
             preloaded = null
+            // Warm the look list (asset JSON) off the main thread for the picker.
+            scope.launch(Dispatchers.IO) { runCatching { repository.descriptors } }
             return
         }
         if (!previewEffectBlocked && processor == null) {
@@ -139,7 +141,8 @@ class LookController(
         val ops = runCatching { captureOps() }.getOrNull()?.takeUnless { it.isEmpty }
         if (look == null && frame == WatermarkTemplate.NONE && ops == null) return
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
-        ProcessingService.enqueue(app, uri, look, prefs.intensity, frame.key, ops)
+        val intensity = prefs.intensity
+        scope.launch(Dispatchers.IO) { ProcessingService.enqueue(app, uri, look, intensity, frame.key, ops) }
     }
 
     /**
@@ -170,10 +173,8 @@ class LookController(
             }
             if (applied != id to intensity) return@launch
             if (params == null) {
-                if (effectAttached) {
-                    cameraController.setEffects(emptySet())
-                    effectAttached = false
-                }
+                // The attached effect passes frames through unchanged; removing it would make
+                // CameraX rebind the whole session.
                 processor?.setLook(null)
                 return@launch
             }

@@ -27,9 +27,12 @@ import java.nio.ByteBuffer
 class LooksRepository private constructor(context: Context) {
     private val assets = context.applicationContext.assets
     private val lutCache = File(context.applicationContext.cacheDir, "luts")
-    private val appVersion = runCatching {
-        context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime
-    }.getOrDefault(0L)
+    private val app = context.applicationContext
+    private val appVersion by lazy {
+        runCatching {
+            app.packageManager.getPackageInfo(app.packageName, 0).lastUpdateTime
+        }.getOrDefault(0L)
+    }
     private val luts = HashMap<String, Lut3d>()
     val userLooks = UserLookStore(File(context.applicationContext.filesDir, "looks/user"))
 
@@ -41,14 +44,19 @@ class LooksRepository private constructor(context: Context) {
     @Volatile
     private var user: List<LookDescriptor>? = null
 
+    @Volatile
+    private var all: List<LookDescriptor>? = null
+
+    /** Built-in plus user looks; read once (assets and a directory listing), then cached. */
     val descriptors: List<LookDescriptor>
-        get() = builtIn + (user ?: userLooks.list().also { user = it })
+        get() = all ?: (builtIn + (user ?: userLooks.list().also { user = it })).also { all = it }
 
     /** Re-reads user looks after one was added or removed. */
     @Synchronized
     fun reloadUserLooks() {
         user?.forEach { luts.remove(it.id) }
         user = userLooks.list()
+        all = null
     }
 
     fun descriptor(id: String?) = descriptors.firstOrNull { it.id == id }
