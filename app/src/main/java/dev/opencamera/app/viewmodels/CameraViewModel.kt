@@ -212,7 +212,8 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
                 noExtension = cfg.extensionMode == ExtensionMode.NONE,
                 backCamera = cfg.camera.cameraFacing != CameraFacing.FRONT,
                 singleCaptureIntent = inSingleCaptureMode.value,
-                flashOff = flashMode.value == FlashMode.OFF || flashMode.value == FlashMode.TORCH,
+                // Auto flash never fired during bursts either; only a forced flash needs the JPEG path.
+                flashOff = flashMode.value != FlashMode.ON && flashMode.value != FlashMode.SCREEN,
                 manualExposure = multiFrame.manualExposureActive,
                 rawCapable = PhotoOutputFormat.RAW in cfg.camera.supportedPhotoOutputFormats,
                 source = multiFrame.source,
