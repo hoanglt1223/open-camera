@@ -48,7 +48,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.math.abs
@@ -236,18 +238,18 @@ class MultiFrameCaptureController(
                 } else {
                     savedEvIndex
                 }
-                if (index != savedEvIndex) cameraControl.setExposureCompensationIndex(index).await()
+                if (index != savedEvIndex) bounded("EV") { cameraControl.setExposureCompensationIndex(index).await() }
                 exposureReady = { r ->
                     r?.get(CaptureResult.CONTROL_AE_EXPOSURE_COMPENSATION) == index &&
                         r.get(CaptureResult.CONTROL_AE_STATE) != CaptureResult.CONTROL_AE_STATE_SEARCHING
                 }
                 maxSkip = if (index != savedEvIndex) 12 else 0
             }
-            c2.addCaptureRequestOptions(extra.build()).await()
+            bounded("burst options") { c2.addCaptureRequestOptions(extra.build()).await() }
             if (resetZoom) {
                 // Keep the viewfinder at the user's framing while the HAL streams the full field.
                 previewZoomCompensation?.invoke(zoom)
-                cameraControl.setZoomRatio(1f).await()
+                bounded("zoom 1x") { cameraControl.setZoomRatio(1f).await() }
                 maxSkip = maxOf(maxSkip, 6)
             }
             val ready: (CaptureResult?) -> Boolean = if (resetZoom) {
@@ -263,12 +265,19 @@ class MultiFrameCaptureController(
                 val size = checkNotNull(analyzer.frameSize)
                 val burst = Burst(size.width, size.height, plan.frameCount)
                 try {
-                    burst to withTimeout(plan.estimatedCaptureMs * 3 * frameStride + 4000L) {
+                    burst to // Full-size YUV streams can run well below 30 fps on some HALs.
+                    withTimeout(maxOf(plan.estimatedCaptureMs * 3, plan.frameCount * SLOW_FRAME_MS) * frameStride + 4000L) {
                         analyzer.arm(burst, plan.frameCount, maxSkip, ready, frameStride).await()
                     }
                 } catch (e: Throwable) {
                     analyzer.disarm()
+                    val got = burst.frameCount
                     burst.close()
+                    // A timeout is a CancellationException; callers would treat it as a cancelled
+                    // shot and never leave the capturing state, so report it as a failure.
+                    if (e is TimeoutCancellationException) {
+                        throw IllegalStateException("Burst timed out with $got of ${plan.frameCount} frames", e)
+                    }
                     throw e
                 }
             }
@@ -282,9 +291,19 @@ class MultiFrameCaptureController(
                 runCatching { cameraControl.setExposureCompensationIndex(savedEvIndex) }
             }
             if (resetZoom) {
-                runCatching { cameraControl.setZoomRatio(zoom).await() }
+                runCatching { bounded("zoom restore") { cameraControl.setZoomRatio(zoom).await() } }
                 previewZoomCompensation?.invoke(1f)
             }
+        }
+    }
+
+    /**
+     * CameraX control futures can stay pending (e.g. an EV change the camera-pipe backend never
+     * confirms); the frame checks after them verify the state anyway, so never wait forever.
+     */
+    private suspend fun bounded(what: String, block: suspend () -> Unit) {
+        if (withTimeoutOrNull(CONTROL_TIMEOUT_MS) { block() } == null) {
+            Log.w(LOG_TAG, "$what not confirmed within $CONTROL_TIMEOUT_MS ms, continuing")
         }
     }
 
@@ -447,6 +466,8 @@ class MultiFrameCaptureController(
     }
 
     companion object {
+        private const val CONTROL_TIMEOUT_MS = 3000L
+        private const val SLOW_FRAME_MS = 500L
         private const val LOG_TAG = "MultiFrame"
         private const val KEY_SETTING = "multi_frame_setting"
         private const val KEY_SOURCE = "multi_frame_source"
