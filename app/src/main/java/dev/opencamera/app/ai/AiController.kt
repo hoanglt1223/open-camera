@@ -160,7 +160,8 @@ class AiController(
             // Only the blurred background is drawn over the live preview (subject transparent),
             // and only once a person is steadily detected; no subject means no blur at all.
             val bokehBitmap = if (wantBokeh) guard("live portrait", { liveBokehOk = false }) {
-                val p = bokeh.prepare(small, 0, LIVE_LONG_SIDE, preferMulticlass = false)
+                // The selfie segmenter finds "people" in clutter; only blur once a face confirms one.
+                val p = if (personConfirmed(small)) bokeh.prepare(small, 0, LIVE_LONG_SIDE, preferMulticlass = false) else null
                 try {
                     stabilizer.update(p?.mask)?.let { m ->
                         p?.let { bokeh.renderBackgroundLayer(it, m, BokehProcessor.Params(settings.portraitAperture)) }
@@ -180,6 +181,21 @@ class AiController(
         } finally {
             small.recycle()
         }
+    }
+
+    private var faceSeenAt = 0L
+    private var faceCheckedAt = 0L
+
+    /** A face seen within [FACE_HOLD_MS]; the detector runs at most every [FACE_CHECK_MS]. */
+    private fun personConfirmed(frame: Bitmap): Boolean {
+        val now = SystemClock.uptimeMillis()
+        if (now - faceCheckedAt >= FACE_CHECK_MS) {
+            faceCheckedAt = now
+            val found = runCatching { faces.detectBoxes(frame, 1) }.getOrNull()
+                ?.any { it.second >= FACE_MIN_SCORE } == true
+            if (found) faceSeenAt = now
+        }
+        return now - faceSeenAt <= FACE_HOLD_MS
     }
 
     /** Normalized first row where the salient subject covers a few percent of the width. */
@@ -247,6 +263,9 @@ class AiController(
     private companion object {
         const val TAG = "AiController"
         const val LIVE_LONG_SIDE = 480
+        const val FACE_CHECK_MS = 300L
+        const val FACE_HOLD_MS = 1200L
+        const val FACE_MIN_SCORE = 0.6f
         const val LIVE_FRAME_MS = 66L
         const val IDLE_MS = 250L
         const val SCENE_INTERVAL_MS = 1000L
