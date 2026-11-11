@@ -147,9 +147,11 @@ class DevelopDialogs(private val a: DevelopActivity) {
 
     fun savePreset(done: () -> Unit) = groupsPicker(R.string.develop_preset_save, includeMasksOption = false) { groups, _ ->
         textInput(R.string.develop_preset_name, "Preset") { name ->
-            a.presets.save(name, groups, a.stack)
-            a.toast(a.getString(R.string.develop_preset_saved))
-            done()
+            val stack = a.stack
+            onIo({ a.presets.save(name, groups, stack) }) {
+                a.toast(a.getString(R.string.develop_preset_saved))
+                done()
+            }
         }
     }
 
@@ -181,16 +183,24 @@ class DevelopDialogs(private val a: DevelopActivity) {
         a.openDocument.launch(arrayOf("*/*"))
     }
 
+    /** Preset files are written off the main thread; [then] runs on it afterwards, also after a failure. */
+    private fun onIo(block: () -> Unit, then: () -> Unit) {
+        a.lifecycleScope.launch {
+            withContext(Dispatchers.IO) { runCatching(block).onFailure { Log.w("DevelopDialogs", "Preset write failed", it) } }
+            then()
+        }
+    }
+
     fun presetMenu(p: Preset, changed: () -> Unit) {
         val actions = mutableListOf(R.string.develop_preset_export)
         if (!p.builtIn) actions += listOf(R.string.develop_preset_rename, R.string.develop_preset_up, R.string.develop_preset_down, R.string.develop_preset_delete)
         dialog().setTitle(p.name).setItems(actions.map { a.getString(it) }.toTypedArray()) { _, w ->
             when (actions[w]) {
                 R.string.develop_preset_export -> sharePreset(p)
-                R.string.develop_preset_rename -> textInput(R.string.develop_preset_rename, p.name) { a.presets.rename(p.id, it); changed() }
-                R.string.develop_preset_up -> { a.presets.move(p.id, -1); changed() }
-                R.string.develop_preset_down -> { a.presets.move(p.id, 1); changed() }
-                R.string.develop_preset_delete -> { a.presets.delete(p.id); changed() }
+                R.string.develop_preset_rename -> textInput(R.string.develop_preset_rename, p.name) { onIo({ a.presets.rename(p.id, it) }, changed) }
+                R.string.develop_preset_up -> onIo({ a.presets.move(p.id, -1) }, changed)
+                R.string.develop_preset_down -> onIo({ a.presets.move(p.id, 1) }, changed)
+                R.string.develop_preset_delete -> onIo({ a.presets.delete(p.id) }, changed)
             }
         }.show()
     }
