@@ -77,6 +77,14 @@ object CameraControllerInterop {
         false
     }
 
+    /** Size of the bound still stream; null before the session is configured or on failure. */
+    fun imageCaptureResolution(controller: CameraController): android.util.Size? = try {
+        controller.mImageCapture.resolutionInfo?.resolution
+    } catch (e: Throwable) {
+        Log.w(TAG, "Cannot read the still stream size", e)
+        null
+    }
+
     private fun swap(controller: CameraController): Boolean = try {
         val s = checkNotNull(spec)
         val builder = ImageAnalysis.Builder()
