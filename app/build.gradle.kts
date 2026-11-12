@@ -53,6 +53,9 @@ android {
             isShrinkResources = true
 
             signingConfig = signingConfigs.findByName("release")
+            // The embedded git state differs between a clone and a worktree; keep it out so the
+            // APK only depends on the sources.
+            vcsInfo.include = false
 
             // Includes the default ProGuard rules files.
             setProguardFiles(
