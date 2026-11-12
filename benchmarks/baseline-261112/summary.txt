@@ -1,0 +1,93 @@
+run: benchmarks/baseline-261112
+previous: -
+
+benchmark                metric                         stat       prev      now   change
+coldStart                OcBindCount                    median        -      1.0         
+coldStart                timeToFullDisplayMs            median        -     1833         
+coldStart                timeToInitialDisplayMs         median        -      719         
+editorSliderDrag         frameCount                     median        -      646         
+editorSliderDrag         frameDurationCpuMs             P95           -     20.2         
+editorSliderDrag         frameOverrunMs                 P95           -     21.7         
+editorSliderDrag         mainFrameMaxMs                 median        -     38.0         
+lensSwitch               OcBindCount                    median        -      4.0         
+lensSwitch               OcLensTapToPreviewAverageMs    median        -      557         
+lensSwitch               OcLensTapToPreviewMaxMs        median        -      595         
+lensSwitch               frameCount                     median        -      195         
+lensSwitch               frameDurationCpuMs             P95           -     31.6         
+lensSwitch               frameOverrunMs                 P95           -     20.0         
+lensSwitch               mainFrameMaxMs                 median        -     33.7         
+modeSwitchSameSession    OcBindCount                    median        -      0.0         
+modeSwitchSameSession    OcOpenProAverageMs             median        -     45.5         
+modeSwitchSameSession    OcOpenProMaxMs                 median        -     46.9         
+modeSwitchSameSession    frameCount                     median        -      367         
+modeSwitchSameSession    frameDurationCpuMs             P95           -     14.7         
+modeSwitchSameSession    frameOverrunMs                 P95           -      0.9         
+modeSwitchSameSession    mainFrameMaxMs                 median        -     22.1         
+openEditor               frameCount                     median        -     42.0         
+openEditor               frameDurationCpuMs             P95           -     52.0         
+openEditor               frameOverrunMs                 P95           -     62.0         
+openEditor               mainFrameMaxMs                 median        -     51.0         
+openEditor               timeToInitialDisplayMs         median        -     86.1         
+openGallery              OcOpenGalleryAverageMs         median        -     56.4         
+openGallery              OcOpenGalleryMaxMs             median        -     56.4         
+openGallery              frameCount                     median        -     43.0         
+openGallery              frameDurationCpuMs             P95           -     33.6         
+openGallery              frameOverrunMs                 P95           -     32.4         
+openGallery              mainFrameMaxMs                 median        -     56.1         
+openLooks                OcOpenLooksAverageMs           median        -     30.3         
+openLooks                OcOpenLooksMaxMs               median        -     38.2         
+openLooks                frameCount                     median        -      120         
+openLooks                frameDurationCpuMs             P95           -     15.2         
+openLooks                frameOverrunMs                 P95           -      3.3         
+openLooks                mainFrameMaxMs                 median        -     21.9         
+openPro                  OcBindCount                    median        -      0.0         
+openPro                  OcOpenProAverageMs             median        -     36.8         
+openPro                  OcOpenProMaxMs                 median        -     41.1         
+openPro                  frameCount                     median        -      238         
+openPro                  frameDurationCpuMs             P95           -     12.3         
+openPro                  frameOverrunMs                 P95           -      7.0         
+openPro                  mainFrameMaxMs                 median        -     29.4         
+openSettings             OcOpenSettingsAverageMs        median        -      160         
+openSettings             OcOpenSettingsMaxMs            median        -      175         
+openSettings             frameCount                     median        -      203         
+openSettings             frameDurationCpuMs             P95           -     30.2         
+openSettings             frameOverrunMs                 P95           -     37.8         
+openSettings             mainFrameMaxMs                 median        -     84.6         
+photoVideo               OcBindCount                    median        -      4.0         
+photoVideo               OcModeTapToPreviewAverageMs    median        -      601         
+photoVideo               OcModeTapToPreviewMaxMs        median        -      621         
+photoVideo               frameCount                     median        -      257         
+photoVideo               frameDurationCpuMs             P95           -     29.0         
+photoVideo               frameOverrunMs                 P95           -     25.3         
+photoVideo               mainFrameMaxMs                 median        -     27.1         
+proDialDrag              OcBindCount                    median        -      0.0         
+proDialDrag              frameCount                     median        -      390         
+proDialDrag              frameDurationCpuMs             P95           -     17.2         
+proDialDrag              frameOverrunMs                 P95           -      5.4         
+proDialDrag              mainFrameMaxMs                 median        -     18.5         
+shutterToReady           OcShutterToReadyAverageMs      median        -     2063         
+shutterToReady           OcShutterToReadyMaxMs          median        -     3783         
+shutterToReady           frameCount                     median        -      678         
+shutterToReady           frameDurationCpuMs             P95           -     26.9         
+shutterToReady           frameOverrunMs                 P95           -     18.9         
+shutterToReady           mainFrameMaxMs                 median        -     30.3         
+
+acceptance row                                   threshold      now  result
+Mở app nguội → khung ngắm đầu tiên                     700     1833  MISSED
+Đổi chế độ cùng use case: không bind lại               0.0      0.0  ok
+Đổi chế độ cùng use case: frame p95                   16.7     14.7  ok
+Ảnh ↔ Video: chạm → khung ngắm mới                     400      621  MISSED
+Ảnh ↔ Video: frame main thread dài nhất               50.0     27.1  ok
+Mở Cài đặt: phản hồi chạm                              100      175  MISSED
+Mở Cài đặt: frame p95                                 16.7     30.2  MISSED
+Mở bộ lọc: phản hồi chạm                               100     38.2  ok
+Mở bộ lọc: frame p95                                  16.7     15.2  ok
+Mở bảng Pro: phản hồi chạm                             100     41.1  ok
+Mở bảng Pro: frame p95                                16.7     12.3  ok
+Mở thư viện: phản hồi chạm                             100     56.4  ok
+Mở trình sửa ảnh: hiển thị đầu                         100     86.1  ok
+Mở trình sửa ảnh: frame p95                           16.7     52.0  MISSED
+Kéo thanh trượt Pro: frame p95                        16.7     17.2  MISSED
+Kéo thanh trượt sửa ảnh: frame p95                    16.7     20.2  MISSED
+Đổi ống kính 0.6× ↔ 1×: chạm → khung ngắm                -      557  info
+Bấm chụp → nút sẵn sàng (Ảnh)                          300     3783  MISSED

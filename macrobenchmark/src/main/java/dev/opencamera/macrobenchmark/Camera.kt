@@ -49,6 +49,9 @@ object Camera {
         device.findObject(res("looks_strip"))?.let { tap("looks"); Thread.sleep(600) }
     }
 
+    /** Each step is visible from the previous one (the carousel only shows neighbours). */
+    val SAME_SESSION_MODES = listOf("PORTRAIT", "NIGHT", "PHOTO", "PRO", "PHOTO")
+
     /** Taps a mode tab unless it is already selected; returns whether a tap happened. */
     fun MacrobenchmarkScope.selectMode(mode: String, settleMs: Long = 900): Boolean {
         val tab = find("mode_$mode")
@@ -69,11 +72,12 @@ object Camera {
 
     /** Newest photo in MediaStore, read through the shell so the test needs no storage permission. */
     fun MacrobenchmarkScope.latestImage(): Uri {
+        // UiAutomation runs the command without a shell, so no quoted sort clause: take the max id.
         val out = device.executeShellCommand(
-            "content query --uri content://media/external/images/media --projection _id --sort \"_id DESC\""
+            "content query --uri content://media/external/images/media --projection _id"
         )
-        val id = Regex("_id=(\\d+)").find(out)?.groupValues?.get(1)
-            ?: error("No photo in MediaStore; run the shutter benchmark first")
+        val id = Regex("_id=(\\d+)").findAll(out).maxOfOrNull { it.groupValues[1].toLong() }
+            ?: error("No photo in MediaStore; take one first")
         return Uri.parse("content://media/external/images/media/$id")
     }
 

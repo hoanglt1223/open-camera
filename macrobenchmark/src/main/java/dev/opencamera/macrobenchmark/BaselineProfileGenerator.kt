@@ -32,7 +32,7 @@ class BaselineProfileGenerator {
     fun generate() = rule.collect(packageName = Camera.PACKAGE, includeInStartupProfile = true) {
         pressHome()
         startCamera()
-        for (m in listOf("PORTRAIT", "NIGHT", "PRO", "PHOTO")) selectMode(m)
+        for (m in Camera.SAME_SESSION_MODES) selectMode(m)
         selectMode("PRO"); dragDial("pro_dial", 4); selectMode("PHOTO")
         selectMode("VIDEO", Camera.PREVIEW_SETTLE_MS); selectMode("PHOTO", Camera.PREVIEW_SETTLE_MS)
         tap("lens_0.6"); Thread.sleep(Camera.PREVIEW_SETTLE_MS); tap("lens_1"); Thread.sleep(Camera.PREVIEW_SETTLE_MS)

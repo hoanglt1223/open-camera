@@ -75,10 +75,10 @@ class CameraBenchmarks {
         Thread.sleep(Camera.PREVIEW_SETTLE_MS)
     }
 
-    /** Photo -> Portrait -> Night -> Pro -> Photo, twice: should keep the session (0 binds). */
+    /** Photo -> Portrait -> Night -> Photo -> Pro -> Photo, twice: should keep the session (0 binds). */
     @Test
     fun modeSwitchSameSession() = run(listOf(frames, longestMainFrame, binds) + section("OcOpenPro")) {
-        repeat(2) { for (m in listOf("PORTRAIT", "NIGHT", "PRO", "PHOTO")) selectMode(m) }
+        repeat(2) { for (m in Camera.SAME_SESSION_MODES) selectMode(m) }
     }
 
     /** Photo <-> Video, twice; each switch rebinds today. */
