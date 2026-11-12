@@ -162,6 +162,7 @@ class ProModeUi(
         baseOptions = base
         afLocked = false
         appliedRequest = null
+        basePending = true
         caps = ProCapabilities.from(cameraInfo).also {
             settings = store.load(storeKey(it)).clampTo(it.ranges)
             Log.d(LOG_TAG, "Camera ${it.cameraId}: manualSensor=${it.manualSensor} " +
@@ -186,6 +187,7 @@ class ProModeUi(
 
     /** Request-relevant Pro state last sent to [control]; null after a bind or while Pro is off. */
     private var appliedRequest: ProSettings? = null
+    private var basePending = false
 
     private fun applyOptions() {
         // Only stops multi-frame plans; the session layout stays, so no dial ever rebinds.
@@ -195,7 +197,10 @@ class ProModeUi(
         val control = control ?: return
         val base = baseOptions ?: return
         val request = settings.copy(peaking = false, zebra = false, histogram = false).takeIf { active }
-        if (request == appliedRequest) return
+        // After a bind (or a Photo <-> Video switch in a shared session) the base options must be
+        // sent even with Pro off: they carry the mode's frame rate and stabilization.
+        if (request == appliedRequest && !basePending) return
+        basePending = false
         val previous = appliedRequest
         appliedRequest = request
         if (request == null) {

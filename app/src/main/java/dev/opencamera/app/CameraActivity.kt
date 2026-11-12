@@ -151,6 +151,7 @@ import dev.opencamera.app.models.MediaType
 import dev.opencamera.app.models.Permission
 import dev.opencamera.app.models.PermissionState
 import dev.opencamera.app.models.PhotoOutputFormat
+import dev.opencamera.capture.SharedSessionPolicy
 import dev.opencamera.app.models.Rotation
 import dev.opencamera.app.models.ThermalStatus
 import dev.opencamera.app.models.TimerMode
@@ -746,6 +747,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             override fun pause() {
                 previewBlurView.freeze()
                 previewBlurView.isVisible = true
+                sharedBound = null
                 viewModel.cameraController.unbind()
             }
 
@@ -896,6 +898,11 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                 // Let the mode change draw its frame first; the bind (CameraX must be configured on
                 // the main thread) then runs in a frame of its own.
                 viewModel.cameraState.first { it == CameraState.IDLE }
+                val shared = sharedBound
+                if (shared != null && sharedPair(cameraConfiguration) == shared) {
+                    switchInSharedSession(cameraConfiguration)
+                    return@collectLatest
+                }
                 // A new preview box (photo 3:4 <-> video 9:16) changes PreviewView's viewport, and a
                 // bound controller rebinds on that layout by itself: a second full bind per switch.
                 // Unbind first so the relayout lands on an idle controller, then bind once.
@@ -1992,6 +1999,114 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     private var lastModeTapMs = 0L
     private var previewLayoutKey: Any? = null
 
+    /** Photo/Video pair bound together in one session; null when the last bind was per mode. */
+    private var sharedBound: Pair<CameraConfiguration.Photo, CameraConfiguration.Video>? = null
+
+    /** Cameras where a shared session failed or lowered the still size; per process. */
+    private val sharedUnsupported = mutableSetOf<String>()
+
+    /**
+     * The Photo/Video pair [config] belongs to when both can share one session, else null. The
+     * preview box only matches in the skinned layout with a 16:9 photo (video is always 9:16).
+     */
+    private fun sharedPair(
+        config: CameraConfiguration,
+    ): Pair<CameraConfiguration.Photo, CameraConfiguration.Video>? = FeatureGuard.attempt(LOG_TAG, "Shared session check") {
+        val other = viewModel.counterpartConfiguration(config) ?: return@attempt null
+        val photo = (config as? CameraConfiguration.Photo ?: other as? CameraConfiguration.Photo) ?: return@attempt null
+        val video = (config as? CameraConfiguration.Video ?: other as? CameraConfiguration.Video) ?: return@attempt null
+        val eligible = SharedSessionPolicy.eligible(
+            SharedSessionPolicy.Inputs(
+                photoStream = viewModel.desiredStreamConfig(photo),
+                photoJpeg = photo.photoOutputFormat == PhotoOutputFormat.JPEG,
+                noExtension = viewModel.resolveExtensionMode(photo) == ExtensionMode.NONE &&
+                    viewModel.bridgedOemFeature(photo) == null,
+                analysisStream = viewModel.wantsAnalysisStream,
+                zsl = photo.photoCaptureMode == ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG,
+                samePreviewBox = overlayActive && photo.photoAspectRatio == AspectRatio.RATIO_16_9,
+                videoSdr = video.videoDynamicRange == VideoDynamicRange.SDR,
+                videoHighFrameRate = (video.videoFrameRate?.value ?: 30) > 30,
+                singleCaptureIntent = viewModel.inSingleCaptureMode.value,
+                knownUnsupported = photo.camera.cameraId in sharedUnsupported,
+            )
+        )
+        if (eligible) photo to video else null
+    }
+
+    private fun markSharedUnsupported(cameraId: String, why: String) {
+        Log.w(LOG_TAG, "Shared Photo + Video session not used on camera $cameraId: $why")
+        sharedUnsupported += cameraId
+    }
+
+    /** Photo <-> Video inside a shared session: the preview keeps running, only options change. */
+    private fun switchInSharedSession(cameraConfiguration: CameraConfiguration) {
+        Log.i(PERF_TAG, "mode switch in shared session, no bind (${SystemClock.uptimeMillis() - lastModeTapMs} ms after mode tap)")
+        boundStreams = boundStreamsKey(cameraConfiguration)
+        PerfTrace.end(PerfTrace.MODE_TO_PREVIEW)
+        applySessionOptions(cameraConfiguration, ExtensionMode.NONE)
+    }
+
+    /**
+     * A shared session may get a smaller still stream than the photo-only one (the HAL has no
+     * combination for full-size JPEG next to video). Then the camera falls back to per-mode binds.
+     */
+    @androidx.annotation.OptIn(ExperimentalCamera2Interop::class)
+    private fun verifySharedPhotoSize(pair: Pair<CameraConfiguration.Photo, CameraConfiguration.Video>) {
+        lifecycleScope.launch {
+            val photo = pair.first
+            val degraded = FeatureGuard.attempt(LOG_TAG, "Checking the shared still size") {
+                val controller = viewModel.cameraController
+                controller.initializationFuture.await()
+                val bound = withTimeoutOrNull(SHARED_SIZE_TIMEOUT_MS) {
+                    while (CameraControllerInterop.imageCaptureResolution(controller) == null) delay(50)
+                    CameraControllerInterop.imageCaptureResolution(controller)
+                }
+                val info = controller.cameraInfo
+                val map = info?.let {
+                    Camera2CameraInfo.from(it)
+                        .getCameraCharacteristic(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+                }
+                val sizes = map?.let {
+                    it.getOutputSizes(ImageFormat.JPEG).orEmpty().toList() +
+                        if (photo.enableHighResolution) it.getHighResolutionOutputSizes(ImageFormat.JPEG).orEmpty().toList() else emptyList()
+                }.orEmpty()
+                val wide = sizes.filter {
+                    val r = maxOf(it.width, it.height).toFloat() / minOf(it.width, it.height)
+                    kotlin.math.abs(r - 16f / 9f) < 0.02f
+                }.ifEmpty { sizes }
+                val expected = wide.maxOfOrNull { it.width.toLong() * it.height }
+                Log.i(LOG_TAG, "Shared session still size $bound, photo-only would be ${wide.maxByOrNull { it.width.toLong() * it.height }}")
+                SharedSessionPolicy.photoDegraded(bound?.let { it.width.toLong() * it.height }, expected)
+            } ?: true
+            if (!degraded || sharedBound != pair) return@launch
+            markSharedUnsupported(photo.camera.cameraId, "still size lowered")
+            viewModel.cameraState.first { it == CameraState.IDLE }
+            val current = viewModel.cameraConfiguration.replayCache.lastOrNull() ?: return@launch
+            if (sharedBound == pair) bindCameraUseCases(current, "shared-fallback")
+        }
+    }
+
+    private var prewarmedCameraId: String? = null
+
+    /**
+     * Called when the user starts dragging the mode carousel: warms the video capability lookup
+     * (EncoderProfiles) of the open camera, which the first VideoCapture bind otherwise pays on
+     * the main thread. Runs when the main thread goes idle so the drag frames are not delayed.
+     */
+    private fun prewarmModeSwitch() {
+        val cameraId = viewModel.cameraConfiguration.replayCache.lastOrNull()?.camera?.cameraId ?: return
+        if (prewarmedCameraId == cameraId) return
+        prewarmedCameraId = cameraId
+        Looper.myQueue().addIdleHandler {
+            FeatureGuard.attempt(LOG_TAG, "Mode switch prewarm") {
+                val info = viewModel.cameraController.cameraInfo ?: return@attempt
+                androidx.camera.video.Recorder.getVideoCapabilities(info)
+                    .getSupportedQualities(androidx.camera.core.DynamicRange.SDR)
+            }
+            false
+        }
+    }
+
     private fun bindCameraUseCases(cameraConfiguration: CameraConfiguration, reason: String = "config") {
         if (viewModel.cameraState.value != CameraState.IDLE) {
             // Not a bind failure: the change is retried once the capture is done.
@@ -2039,11 +2154,57 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                         }
                     )
                     .build()
+                sharedBound = null
                 viewModel.cameraController.setEnabledUseCases(CameraController.IMAGE_CAPTURE)
                 viewModel.cameraController.bindToLifecycle(this)
             }
             Toast.makeText(this, R.string.stream_fallback_baseline, Toast.LENGTH_LONG).show()
         }
+    }
+
+    /** Quality, dynamic range and mirroring of the controller's VideoCapture. */
+    private fun configureVideoCapture(cameraConfiguration: CameraConfiguration.Video) {
+        // Check whether or not the video quality is supported
+        val videoQualityInfo = cameraConfiguration.camera.supportedVideoQualities[
+            cameraConfiguration.videoQuality
+        ] ?: error("Video quality not supported by the camera")
+
+        require(
+            videoQualityInfo.supportedFrameRates.contains(
+                cameraConfiguration.videoFrameRate
+            )
+        ) {
+            "Video frame rate not supported with the requested video quality"
+        }
+
+        require(
+            videoQualityInfo.supportedDynamicRanges.contains(
+                cameraConfiguration.videoDynamicRange
+            )
+        ) {
+            "Video dynamic range not supported with the requested video quality"
+        }
+
+        // Set the quality
+        viewModel.cameraController.videoCaptureQualitySelector =
+            QualitySelector.from(cameraConfiguration.videoQuality)
+
+        // Set the dynamic range
+        viewModel.cameraController.videoCaptureDynamicRange =
+            cameraConfiguration.videoDynamicRange.dynamicRange
+
+        // Set video mirror mode
+        viewModel.cameraController.videoCaptureMirrorMode =
+            when (cameraConfiguration.videoMirrorMode) {
+                VideoMirrorMode.OFF -> MirrorMode.MIRROR_MODE_OFF
+                VideoMirrorMode.ON -> MirrorMode.MIRROR_MODE_ON
+                VideoMirrorMode.ON_FFC_ONLY -> when (
+                    cameraConfiguration.camera.cameraFacing
+                ) {
+                    CameraFacing.FRONT -> MirrorMode.MIRROR_MODE_ON
+                    else -> MirrorMode.MIRROR_MODE_OFF
+                }
+            }
     }
 
     private fun bindCameraUseCasesOrThrow(cameraConfiguration: CameraConfiguration) {
@@ -2065,6 +2226,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         previewBlurView.isVisible = true
 
         // Unbind previous use cases
+        sharedBound = null
         viewModel.cameraController.unbind()
         viewModel.multiFrame.streamConfig = StreamConfig.STANDARD
 
@@ -2093,29 +2255,33 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         }
 
         // Initialize the use case we want and set its properties
-        val cameraUseCases = when (cameraConfiguration) {
+        // Photo and Video share one session when the device allows it (see SharedSessionPolicy);
+        // the use cases are then set up from both halves of the pair.
+        val shared = sharedPair(cameraConfiguration)
+        val useCaseConfig = shared?.first ?: cameraConfiguration
+        var cameraUseCases = when (useCaseConfig) {
             is CameraConfiguration.Photo -> {
                 require(
-                    cameraConfiguration.photoCaptureMode != ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG
-                            || cameraConfiguration.camera.supportsZsl
+                    useCaseConfig.photoCaptureMode != ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG
+                            || useCaseConfig.camera.supportsZsl
                 ) {
                     "Requested ZSL capture mode when the camera doesn't support it"
                 }
 
                 require(
-                    cameraConfiguration.camera.supportedPhotoOutputFormats.contains(
-                        cameraConfiguration.photoOutputFormat
+                    useCaseConfig.camera.supportedPhotoOutputFormats.contains(
+                        useCaseConfig.photoOutputFormat
                     )
                 ) {
                     "Selected photo output format (${
-                        cameraConfiguration.photoOutputFormat
-                    } not supported by camera ${cameraConfiguration.camera.cameraId})"
+                        useCaseConfig.photoOutputFormat
+                    } not supported by camera ${useCaseConfig.camera.cameraId})"
                 }
 
-                viewModel.cameraController.imageCaptureMode = cameraConfiguration.photoCaptureMode
+                viewModel.cameraController.imageCaptureMode = useCaseConfig.photoCaptureMode
 
                 viewModel.cameraController.imageOutputFormat = when (
-                    cameraConfiguration.photoOutputFormat
+                    useCaseConfig.photoOutputFormat
                 ) {
                     PhotoOutputFormat.JPEG -> ImageCapture.OUTPUT_FORMAT_JPEG
                     PhotoOutputFormat.JPEG_ULTRA_HDR -> ImageCapture.OUTPUT_FORMAT_JPEG_ULTRA_HDR
@@ -2127,12 +2293,12 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                     ResolutionSelector.Builder()
                         .setAspectRatioStrategy(
                             AspectRatioStrategy(
-                                cameraConfiguration.photoAspectRatio,
+                                useCaseConfig.photoAspectRatio,
                                 AspectRatioStrategy.FALLBACK_RULE_AUTO,
                             )
                         )
                         .setAllowedResolutionMode(
-                            if (cameraConfiguration.enableHighResolution) {
+                            if (useCaseConfig.enableHighResolution) {
                                 ResolutionSelector.PREFER_HIGHER_RESOLUTION_OVER_CAPTURE_RATE
                             } else {
                                 ResolutionSelector.PREFER_CAPTURE_RATE_OVER_HIGHER_RESOLUTION
@@ -2143,22 +2309,22 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                 viewModel.multiFrame.analyzer.resetStream()
                 viewModel.motionPhoto.reset()
                 viewModel.multiFrame.resultTracker.clear()
-                val streamConfig = viewModel.desiredStreamConfig(cameraConfiguration)
-                boundStreams = boundStreamsKey(cameraConfiguration)
+                val streamConfig = viewModel.desiredStreamConfig(useCaseConfig)
+                boundStreams = boundStreamsKey(useCaseConfig)
                 viewModel.multiFrame.streamConfig = streamConfig
                 if (streamConfig != StreamConfig.STANDARD) {
-                    fullResUseCases(cameraConfiguration, streamConfig)
+                    fullResUseCases(useCaseConfig, streamConfig)
                 } else if (viewModel.wantsAnalysisStream &&
-                    cameraConfiguration.photoOutputFormat == PhotoOutputFormat.JPEG &&
+                    useCaseConfig.photoOutputFormat == PhotoOutputFormat.JPEG &&
                     extensionMode == ExtensionMode.NONE &&
-                    cameraConfiguration.camera.cameraFacing != CameraFacing.FRONT
+                    useCaseConfig.camera.cameraFacing != CameraFacing.FRONT
                 ) {
                     // Full resolution YUV stream for multi-frame bursts
                     viewModel.cameraController.imageAnalysisResolutionSelector =
                         ResolutionSelector.Builder()
                             .setAspectRatioStrategy(
                                 AspectRatioStrategy(
-                                    cameraConfiguration.photoAspectRatio,
+                                    useCaseConfig.photoAspectRatio,
                                     AspectRatioStrategy.FALLBACK_RULE_AUTO,
                                 )
                             )
@@ -2174,48 +2340,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             }
 
             is CameraConfiguration.Video -> {
-                // Check whether or not the video quality is supported
-                val videoQualityInfo = cameraConfiguration.camera.supportedVideoQualities[
-                    cameraConfiguration.videoQuality
-                ] ?: error("Video quality not supported by the camera")
-
-                require(
-                    videoQualityInfo.supportedFrameRates.contains(
-                        cameraConfiguration.videoFrameRate
-                    )
-                ) {
-                    "Video frame rate not supported with the requested video quality"
-                }
-
-                require(
-                    videoQualityInfo.supportedDynamicRanges.contains(
-                        cameraConfiguration.videoDynamicRange
-                    )
-                ) {
-                    "Video dynamic range not supported with the requested video quality"
-                }
-
-                // Set the quality
-                viewModel.cameraController.videoCaptureQualitySelector =
-                    QualitySelector.from(cameraConfiguration.videoQuality)
-
-                // Set the dynamic range
-                viewModel.cameraController.videoCaptureDynamicRange =
-                    cameraConfiguration.videoDynamicRange.dynamicRange
-
-                // Set video mirror mode
-                viewModel.cameraController.videoCaptureMirrorMode =
-                    when (cameraConfiguration.videoMirrorMode) {
-                        VideoMirrorMode.OFF -> MirrorMode.MIRROR_MODE_OFF
-                        VideoMirrorMode.ON -> MirrorMode.MIRROR_MODE_ON
-                        VideoMirrorMode.ON_FFC_ONLY -> when (
-                            cameraConfiguration.camera.cameraFacing
-                        ) {
-                            CameraFacing.FRONT -> MirrorMode.MIRROR_MODE_ON
-                            else -> MirrorMode.MIRROR_MODE_OFF
-                        }
-                    }
-
+                configureVideoCapture(useCaseConfig)
                 CameraController.VIDEO_CAPTURE
             }
 
@@ -2227,6 +2352,11 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                 CameraController.IMAGE_ANALYSIS
             }
         }
+
+        val sharedReady = shared != null && FeatureGuard.attempt(LOG_TAG, "Shared session video setup") {
+            configureVideoCapture(shared.second)
+        } != null
+        if (shared != null && !sharedReady) markSharedUnsupported(shared.first.camera.cameraId, "video setup failed")
 
         // Get the camera selector
         val cameraSelector = viewModel.getExtensionEnabledCameraSelector(
@@ -2261,8 +2391,25 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             verifyFullResStream(cameraConfiguration, fullRes)
         } else {
             viewModel.lookController.attachIfReady()
-            if (!bindWithFallback(cameraUseCases, quiet = bridgedOemFeature != null)) {
-                check(bridgedOemFeature == null) { "OEM ${bridgedOemFeature?.key} could not be bound" }
+            val sharedOk = sharedReady && FeatureGuard.attempt(LOG_TAG, "Binding the shared Photo + Video session") {
+                viewModel.cameraController.setEnabledUseCases(cameraUseCases or CameraController.VIDEO_CAPTURE)
+                viewModel.cameraController.bindToLifecycle(this)
+            } != null
+            if (sharedOk) {
+                sharedBound = shared
+                verifySharedPhotoSize(shared!!)
+            } else {
+                if (shared != null) {
+                    if (sharedReady) markSharedUnsupported(cameraConfiguration.camera.cameraId, "bind failed")
+                    cameraUseCases = if (cameraConfiguration is CameraConfiguration.Video) {
+                        CameraController.VIDEO_CAPTURE
+                    } else {
+                        cameraUseCases and CameraController.VIDEO_CAPTURE.inv()
+                    }
+                }
+                if (!bindWithFallback(cameraUseCases, quiet = bridgedOemFeature != null)) {
+                    check(bridgedOemFeature == null) { "OEM ${bridgedOemFeature?.key} could not be bound" }
+                }
             }
         }
         if (bridgedOemFeature != lastBridgedOemFeature) {
@@ -2274,7 +2421,15 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             lastBridgedOemFeature = bridgedOemFeature
         }
 
-        // Wait for camera to be ready
+        // Wait for camera to be ready, then set the request options
+        applySessionOptions(cameraConfiguration, extensionMode)
+    }
+
+    /**
+     * Request options of [cameraConfiguration] once the camera is ready: after a bind, and on a
+     * Photo <-> Video switch inside a shared session, where they are the only change.
+     */
+    private fun applySessionOptions(cameraConfiguration: CameraConfiguration, extensionMode: Int) {
         lifecycleScope.launch {
             FeatureGuard.attempt(LOG_TAG, "Camera initialization") {
                 viewModel.cameraController.initializationFuture.await()
@@ -3294,6 +3449,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
         override fun selectMode(mode: UiMode) = selectUiMode(mode)
 
+        override fun modeDragStarted() = act("prewarm") { prewarmModeSwitch() }
+
         override fun openMoreMode(mode: VideoMode) = act("more") {
             dismissKeyguardAndRun {
                 startActivity(
@@ -3372,6 +3529,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         private const val RELAYOUT_WAIT_MS = 250L
         const val PERF_TAG = "OcPerf"
         private const val FULL_RES_STREAM_TIMEOUT_MS = 4000L
+        private const val SHARED_SIZE_TIMEOUT_MS = 2000L
         private const val CAPTURE_RESULT_WAIT_MS = 800L
         private const val FULL_RES_MIN_PIXELS = 6_000_000L
         private val METERING_STREAM_SIZE = Size(1280, 960)

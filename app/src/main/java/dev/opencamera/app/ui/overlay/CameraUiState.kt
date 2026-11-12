@@ -142,6 +142,9 @@ data class CameraUiState(
 interface CameraUiActions {
     fun shutter()
     fun selectMode(mode: UiMode)
+
+    /** The mode carousel drag began; a chance to prepare the next mode. */
+    fun modeDragStarted() {}
     fun openMoreMode(mode: VideoMode)
     fun setCreative(mode: CreativeMode)
     fun setMultiFrame(setting: MultiFrameSetting)

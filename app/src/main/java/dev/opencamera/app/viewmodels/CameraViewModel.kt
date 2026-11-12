@@ -239,6 +239,18 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         )
     )
 
+    /** The Video configuration for a Photo one on the same camera and vice versa; null otherwise. */
+    fun counterpartConfiguration(cfg: CameraConfiguration): CameraConfiguration? =
+        FeatureGuard.attempt(LOG_TAG, "Counterpart configuration") {
+            val mode = when (cfg) {
+                is CameraConfiguration.Photo -> CameraMode.VIDEO
+                is CameraConfiguration.Video -> CameraMode.PHOTO
+                is CameraConfiguration.Qr -> return@attempt null
+            }
+            if (!cfg.camera.supportsCameraMode(mode)) null
+            else createInitialCameraConfiguration(cfg.camera, mode)
+        }
+
     private val rawLargerCache = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
 
     /** RAW_SENSOR has at least 20% more pixels than the largest YUV output (e.g. 12 MP vs 8 MP). */

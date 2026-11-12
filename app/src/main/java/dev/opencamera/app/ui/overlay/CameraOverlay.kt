@@ -826,7 +826,7 @@ private fun ModeCarousel(state: CameraUiState, actions: CameraUiActions, ui: Ove
             .height(48.dp)
             .pointerInput("carousel") {
                 detectHorizontalDragGestures(
-                    onDragStart = { drag = 0f },
+                    onDragStart = { drag = 0f; actions.modeDragStarted() },
                     onDragEnd = {
                         if (abs(drag) > threshold && enabledNow) {
                             val forward = (drag < 0) != rtl
