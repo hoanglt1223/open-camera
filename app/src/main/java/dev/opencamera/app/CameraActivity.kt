@@ -827,6 +827,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
     override fun onDestroy() {
         overlay?.destroy()
+        // The callback spec holds the view model's analyzer; it must not outlive it.
+        if (isFinishing) CameraControllerInterop.detach()
         viewModel.multiFrame.previewZoomCompensation = null
         viewModel.multiFrame.burstHost = null
 

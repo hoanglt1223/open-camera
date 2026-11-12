@@ -1221,6 +1221,10 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
     }
 
     override fun onCleared() {
+        // CameraX keeps the last capture graph of each camera id after unbind; its analysis use
+        // case must not reach back into this view model through the analyzer.
+        multiFrame.analyzer.frameTap = null
+        runCatching { cameraController.clearImageAnalysisAnalyzer() }
         cameraController.unbind()
         lookController.release()
 
