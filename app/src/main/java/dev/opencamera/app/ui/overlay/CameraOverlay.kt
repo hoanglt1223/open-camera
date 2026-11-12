@@ -66,12 +66,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -100,6 +102,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -259,8 +262,9 @@ fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiS
                 val pro = state.pro
                 if (state.uiMode == UiMode.PRO && pro != null && pro.available) {
                     ProPanel(pro, actions)
-                } else if (!ui.looksOpen || state.cameraMode != CameraMode.PHOTO) {
-                    LensRow(state.forLens(), actions)
+                } else {
+                    if (!ui.looksOpen || state.cameraMode != CameraMode.PHOTO) LensRow(state.forLens(), actions)
+                    if (pro != null && pro.available) ProPanelWarmUp(pro, actions)
                 }
                 Spacer(Modifier.height(4.dp))
                 Box(
@@ -1155,3 +1159,36 @@ fun SheetTitle(text: String) {
 }
 
 
+
+/**
+ * The first composition of [ProPanel] costs about 100 ms of measure and layout (class loading,
+ * text layout, JIT), which landed on the first swipe into Pro. Once the preview has settled the
+ * panel is composed and measured a single time without being placed, so it never draws or takes
+ * input, then dropped.
+ */
+@Composable
+private fun ProPanelWarmUp(pro: ProUiState, actions: CameraUiActions) {
+    var phase by remember { mutableIntStateOf(if (proWarmedUp) 2 else 0) }
+    if (phase == 2) return
+    LaunchedEffect(Unit) {
+        delay(PRO_WARM_UP_DELAY_MS)
+        phase = 1
+        withFrameNanos { }
+        withFrameNanos { }
+        proWarmedUp = true
+        phase = 2
+    }
+    if (phase == 1) {
+        Box(
+            Modifier
+                .layout { measurable, constraints ->
+                    measurable.measure(constraints)
+                    layout(0, 0) {}
+                }
+                .clearAndSetSemantics {},
+        ) { ProPanel(pro, actions) }
+    }
+}
+
+private var proWarmedUp = false
+private const val PRO_WARM_UP_DELAY_MS = 1500L
