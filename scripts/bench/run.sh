@@ -91,6 +91,8 @@ grep -q "FAILURES!!!\|INSTRUMENTATION_FAILED\|Process crashed" "$log" && status=
 files=$(adb_ shell "ls $DEVICE_OUT 2>/dev/null" | tr -d '\r')
 if [ "$profile" = 1 ]; then
   prof=$(echo "$files" | grep -- '-baseline-prof.txt$' | grep -v startup | head -1)
+  # benchmark 1.5 with includeInStartupProfile writes only the startup file (same rules).
+  [ -n "$prof" ] || prof=$(echo "$files" | grep -- '-startup-prof.txt$' | head -1)
   [ -n "$prof" ] || { echo "no baseline profile produced" >&2; exit 1; }
   tmp=$(mktemp)
   adb_ pull "$DEVICE_OUT/$prof" "$tmp" >/dev/null

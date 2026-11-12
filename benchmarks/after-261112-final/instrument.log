@@ -1,0 +1,1542 @@
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=
+dev.opencamera.macrobenchmark.CameraBenchmarks:
+INSTRUMENTATION_STATUS: test=lensSwitch
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_lensSwitch_iter000_2026-11-12-15-38-08.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_lensSwitch_iter000_2026-11-12-15-38-08.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_lensSwitch_iter001_2026-11-12-15-38-22.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_lensSwitch_iter001_2026-11-12-15-38-22.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_lensSwitch_iter002_2026-11-12-15-38-36.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_lensSwitch_iter002_2026-11-12-15-38-36.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_lensSwitch_iter003_2026-11-12-15-38-50.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_lensSwitch_iter003_2026-11-12-15-38-50.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_lensSwitch_iter004_2026-11-12-15-39-04.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_lensSwitch_iter004_2026-11-12-15-39-04.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: android.studio.display.benchmark=CameraBenchmarks_lensSwitch
+  OcBindCount                   [min   4.0](file://CameraBenchmarks_lensSwitch_iter000_2026-11-12-15-38-08.perfetto-trace),   [median   4.0](file://CameraBenchmarks_lensSwitch_iter002_2026-11-12-15-38-36.perfetto-trace),   [max   4.0](file://CameraBenchmarks_lensSwitch_iter000_2026-11-12-15-38-08.perfetto-trace)
+  OcLensTapToPreviewAverageMs   [min 512.9](file://CameraBenchmarks_lensSwitch_iter001_2026-11-12-15-38-22.perfetto-trace),   [median 582.3](file://CameraBenchmarks_lensSwitch_iter002_2026-11-12-15-38-36.perfetto-trace),   [max 648.0](file://CameraBenchmarks_lensSwitch_iter003_2026-11-12-15-38-50.perfetto-trace)
+  OcLensTapToPreviewMaxMs       [min 538.1](file://CameraBenchmarks_lensSwitch_iter001_2026-11-12-15-38-22.perfetto-trace),   [median 632.1](file://CameraBenchmarks_lensSwitch_iter002_2026-11-12-15-38-36.perfetto-trace),   [max 667.4](file://CameraBenchmarks_lensSwitch_iter003_2026-11-12-15-38-50.perfetto-trace)
+  frameCount                    [min 183.0](file://CameraBenchmarks_lensSwitch_iter000_2026-11-12-15-38-08.perfetto-trace),   [median 196.0](file://CameraBenchmarks_lensSwitch_iter002_2026-11-12-15-38-36.perfetto-trace),   [max 197.0](file://CameraBenchmarks_lensSwitch_iter001_2026-11-12-15-38-22.perfetto-trace)
+  mainFrameMaxMs                [min  22.1](file://CameraBenchmarks_lensSwitch_iter003_2026-11-12-15-38-50.perfetto-trace),   [median  24.4](file://CameraBenchmarks_lensSwitch_iter002_2026-11-12-15-38-36.perfetto-trace),   [max  45.5](file://CameraBenchmarks_lensSwitch_iter000_2026-11-12-15-38-08.perfetto-trace)
+  frameDurationCpuMs            P50    5.4,   P90   18.9,   P95   23.3,   P99   32.9
+  frameOverrunMs                P50   -8.7,   P90    4.9,   P95   12.6,   P99   23.2
+    Traces: Iteration [0](file://CameraBenchmarks_lensSwitch_iter000_2026-11-12-15-38-08.perfetto-trace) [1](file://CameraBenchmarks_lensSwitch_iter001_2026-11-12-15-38-22.perfetto-trace) [2](file://CameraBenchmarks_lensSwitch_iter002_2026-11-12-15-38-36.perfetto-trace) [3](file://CameraBenchmarks_lensSwitch_iter003_2026-11-12-15-38-50.perfetto-trace) [4](file://CameraBenchmarks_lensSwitch_iter004_2026-11-12-15-39-04.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark=CameraBenchmarks_lensSwitch
+  OcBindCount                   [min   4.0](file://CameraBenchmarks_lensSwitch_iter000_2026-11-12-15-38-08.perfetto-trace),   [median   4.0](file://CameraBenchmarks_lensSwitch_iter002_2026-11-12-15-38-36.perfetto-trace),   [max   4.0](file://CameraBenchmarks_lensSwitch_iter000_2026-11-12-15-38-08.perfetto-trace)
+  OcLensTapToPreviewAverageMs   [min 512.9](file://CameraBenchmarks_lensSwitch_iter001_2026-11-12-15-38-22.perfetto-trace),   [median 582.3](file://CameraBenchmarks_lensSwitch_iter002_2026-11-12-15-38-36.perfetto-trace),   [max 648.0](file://CameraBenchmarks_lensSwitch_iter003_2026-11-12-15-38-50.perfetto-trace)
+  OcLensTapToPreviewMaxMs       [min 538.1](file://CameraBenchmarks_lensSwitch_iter001_2026-11-12-15-38-22.perfetto-trace),   [median 632.1](file://CameraBenchmarks_lensSwitch_iter002_2026-11-12-15-38-36.perfetto-trace),   [max 667.4](file://CameraBenchmarks_lensSwitch_iter003_2026-11-12-15-38-50.perfetto-trace)
+  frameCount                    [min 183.0](file://CameraBenchmarks_lensSwitch_iter000_2026-11-12-15-38-08.perfetto-trace),   [median 196.0](file://CameraBenchmarks_lensSwitch_iter002_2026-11-12-15-38-36.perfetto-trace),   [max 197.0](file://CameraBenchmarks_lensSwitch_iter001_2026-11-12-15-38-22.perfetto-trace)
+  mainFrameMaxMs                [min  22.1](file://CameraBenchmarks_lensSwitch_iter003_2026-11-12-15-38-50.perfetto-trace),   [median  24.4](file://CameraBenchmarks_lensSwitch_iter002_2026-11-12-15-38-36.perfetto-trace),   [max  45.5](file://CameraBenchmarks_lensSwitch_iter000_2026-11-12-15-38-08.perfetto-trace)
+  frameDurationCpuMs            P50    5.4,   P90   18.9,   P95   23.3,   P99   32.9
+  frameOverrunMs                P50   -8.7,   P90    4.9,   P95   12.6,   P99   23.2
+    Traces: Iteration [0](file://CameraBenchmarks_lensSwitch_iter000_2026-11-12-15-38-08.perfetto-trace) [1](file://CameraBenchmarks_lensSwitch_iter001_2026-11-12-15-38-22.perfetto-trace) [2](file://CameraBenchmarks_lensSwitch_iter002_2026-11-12-15-38-36.perfetto-trace) [3](file://CameraBenchmarks_lensSwitch_iter003_2026-11-12-15-38-50.perfetto-trace) [4](file://CameraBenchmarks_lensSwitch_iter004_2026-11-12-15-39-04.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark=CameraBenchmarks_lensSwitch
+  OcBindCount                   [min   4.0](file://CameraBenchmarks_lensSwitch_iter000_2026-11-12-15-38-08.perfetto-trace),   [median   4.0](file://CameraBenchmarks_lensSwitch_iter002_2026-11-12-15-38-36.perfetto-trace),   [max   4.0](file://CameraBenchmarks_lensSwitch_iter000_2026-11-12-15-38-08.perfetto-trace)
+  OcLensTapToPreviewAverageMs   [min 512.9](file://CameraBenchmarks_lensSwitch_iter001_2026-11-12-15-38-22.perfetto-trace),   [median 582.3](file://CameraBenchmarks_lensSwitch_iter002_2026-11-12-15-38-36.perfetto-trace),   [max 648.0](file://CameraBenchmarks_lensSwitch_iter003_2026-11-12-15-38-50.perfetto-trace)
+  OcLensTapToPreviewMaxMs       [min 538.1](file://CameraBenchmarks_lensSwitch_iter001_2026-11-12-15-38-22.perfetto-trace),   [median 632.1](file://CameraBenchmarks_lensSwitch_iter002_2026-11-12-15-38-36.perfetto-trace),   [max 667.4](file://CameraBenchmarks_lensSwitch_iter003_2026-11-12-15-38-50.perfetto-trace)
+  frameCount                    [min 183.0](file://CameraBenchmarks_lensSwitch_iter000_2026-11-12-15-38-08.perfetto-trace),   [median 196.0](file://CameraBenchmarks_lensSwitch_iter002_2026-11-12-15-38-36.perfetto-trace),   [max 197.0](file://CameraBenchmarks_lensSwitch_iter001_2026-11-12-15-38-22.perfetto-trace)
+  mainFrameMaxMs                [min  22.1](file://CameraBenchmarks_lensSwitch_iter003_2026-11-12-15-38-50.perfetto-trace),   [median  24.4](file://CameraBenchmarks_lensSwitch_iter002_2026-11-12-15-38-36.perfetto-trace),   [max  45.5](file://CameraBenchmarks_lensSwitch_iter000_2026-11-12-15-38-08.perfetto-trace)
+  frameDurationCpuMs            P50    5.4,   P90   18.9,   P95   23.3,   P99   32.9
+  frameOverrunMs                P50   -8.7,   P90    4.9,   P95   12.6,   P99   23.2
+    Traces: Iteration [0](file://CameraBenchmarks_lensSwitch_iter000_2026-11-12-15-38-08.perfetto-trace) [1](file://CameraBenchmarks_lensSwitch_iter001_2026-11-12-15-38-22.perfetto-trace) [2](file://CameraBenchmarks_lensSwitch_iter002_2026-11-12-15-38-36.perfetto-trace) [3](file://CameraBenchmarks_lensSwitch_iter003_2026-11-12-15-38-50.perfetto-trace) [4](file://CameraBenchmarks_lensSwitch_iter004_2026-11-12-15-39-04.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: frame_count_max=197.0
+INSTRUMENTATION_STATUS: frame_count_median=196.0
+INSTRUMENTATION_STATUS: frame_count_min=183.0
+INSTRUMENTATION_STATUS: frame_count_stddev=5.9413803110051795
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p50=5.355886
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p90=18.9299162
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p95=23.340608899999996
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p99=32.90700518000002
+INSTRUMENTATION_STATUS: frame_overrun_millis_p50=-8.725015
+INSTRUMENTATION_STATUS: frame_overrun_millis_p90=4.948774599999999
+INSTRUMENTATION_STATUS: frame_overrun_millis_p95=12.562193799999992
+INSTRUMENTATION_STATUS: frame_overrun_millis_p99=23.210430560000034
+INSTRUMENTATION_STATUS: main_frame_max_millis_max=45.520625
+INSTRUMENTATION_STATUS: main_frame_max_millis_median=24.429791
+INSTRUMENTATION_STATUS: main_frame_max_millis_min=22.067083
+INSTRUMENTATION_STATUS: main_frame_max_millis_stddev=9.698025232088089
+INSTRUMENTATION_STATUS: oc_bind_count_max=4.0
+INSTRUMENTATION_STATUS: oc_bind_count_median=4.0
+INSTRUMENTATION_STATUS: oc_bind_count_min=4.0
+INSTRUMENTATION_STATUS: oc_bind_count_stddev=0.0
+INSTRUMENTATION_STATUS: oc_lens_tap_to_preview_average_millis_max=648.01699175
+INSTRUMENTATION_STATUS: oc_lens_tap_to_preview_average_millis_median=582.25315125
+INSTRUMENTATION_STATUS: oc_lens_tap_to_preview_average_millis_min=512.903828
+INSTRUMENTATION_STATUS: oc_lens_tap_to_preview_average_millis_stddev=52.81207070317118
+INSTRUMENTATION_STATUS: oc_lens_tap_to_preview_max_millis_max=667.449063
+INSTRUMENTATION_STATUS: oc_lens_tap_to_preview_max_millis_median=632.070364
+INSTRUMENTATION_STATUS: oc_lens_tap_to_preview_max_millis_min=538.134584
+INSTRUMENTATION_STATUS: oc_lens_tap_to_preview_max_millis_stddev=53.55668024833837
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=lensSwitch
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=openPro
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openPro_iter001_2026-11-12-15-39-35.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openPro_iter001_2026-11-12-15-39-35.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openPro_iter002_2026-11-12-15-39-49.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openPro_iter002_2026-11-12-15-39-49.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openPro_iter003_2026-11-12-15-40-03.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openPro_iter003_2026-11-12-15-40-03.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openPro_iter004_2026-11-12-15-40-17.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openPro_iter004_2026-11-12-15-40-17.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: android.studio.display.benchmark=CameraBenchmarks_openPro
+  OcBindCount          [min   0.0](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace),   [median   0.0](file://CameraBenchmarks_openPro_iter002_2026-11-12-15-39-49.perfetto-trace),   [max   0.0](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace)
+  OcOpenProAverageMs   [min  28.2](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace),   [median  32.7](file://CameraBenchmarks_openPro_iter002_2026-11-12-15-39-49.perfetto-trace),   [max  33.9](file://CameraBenchmarks_openPro_iter001_2026-11-12-15-39-35.perfetto-trace)
+  OcOpenProMaxMs       [min  29.7](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace),   [median  36.9](file://CameraBenchmarks_openPro_iter002_2026-11-12-15-39-49.perfetto-trace),   [max  42.5](file://CameraBenchmarks_openPro_iter001_2026-11-12-15-39-35.perfetto-trace)
+  frameCount           [min 234.0](file://CameraBenchmarks_openPro_iter001_2026-11-12-15-39-35.perfetto-trace),   [median 236.0](file://CameraBenchmarks_openPro_iter002_2026-11-12-15-39-49.perfetto-trace),   [max 419.0](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace)
+  mainFrameMaxMs       [min  15.7](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace),   [median  16.7](file://CameraBenchmarks_openPro_iter002_2026-11-12-15-39-49.perfetto-trace),   [max  19.3](file://CameraBenchmarks_openPro_iter003_2026-11-12-15-40-03.perfetto-trace)
+  frameDurationCpuMs   P50    5.6,   P90   12.5,   P95   14.0,   P99   18.0
+  frameOverrunMs       P50   -8.6,   P90   -1.3,   P95    0.7,   P99    4.6
+    Traces: Iteration [0](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace) [1](file://CameraBenchmarks_openPro_iter001_2026-11-12-15-39-35.perfetto-trace) [2](file://CameraBenchmarks_openPro_iter002_2026-11-12-15-39-49.perfetto-trace) [3](file://CameraBenchmarks_openPro_iter003_2026-11-12-15-40-03.perfetto-trace) [4](file://CameraBenchmarks_openPro_iter004_2026-11-12-15-40-17.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark=CameraBenchmarks_openPro
+  OcBindCount          [min   0.0](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace),   [median   0.0](file://CameraBenchmarks_openPro_iter002_2026-11-12-15-39-49.perfetto-trace),   [max   0.0](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace)
+  OcOpenProAverageMs   [min  28.2](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace),   [median  32.7](file://CameraBenchmarks_openPro_iter002_2026-11-12-15-39-49.perfetto-trace),   [max  33.9](file://CameraBenchmarks_openPro_iter001_2026-11-12-15-39-35.perfetto-trace)
+  OcOpenProMaxMs       [min  29.7](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace),   [median  36.9](file://CameraBenchmarks_openPro_iter002_2026-11-12-15-39-49.perfetto-trace),   [max  42.5](file://CameraBenchmarks_openPro_iter001_2026-11-12-15-39-35.perfetto-trace)
+  frameCount           [min 234.0](file://CameraBenchmarks_openPro_iter001_2026-11-12-15-39-35.perfetto-trace),   [median 236.0](file://CameraBenchmarks_openPro_iter002_2026-11-12-15-39-49.perfetto-trace),   [max 419.0](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace)
+  mainFrameMaxMs       [min  15.7](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace),   [median  16.7](file://CameraBenchmarks_openPro_iter002_2026-11-12-15-39-49.perfetto-trace),   [max  19.3](file://CameraBenchmarks_openPro_iter003_2026-11-12-15-40-03.perfetto-trace)
+  frameDurationCpuMs   P50    5.6,   P90   12.5,   P95   14.0,   P99   18.0
+  frameOverrunMs       P50   -8.6,   P90   -1.3,   P95    0.7,   P99    4.6
+    Traces: Iteration [0](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace) [1](file://CameraBenchmarks_openPro_iter001_2026-11-12-15-39-35.perfetto-trace) [2](file://CameraBenchmarks_openPro_iter002_2026-11-12-15-39-49.perfetto-trace) [3](file://CameraBenchmarks_openPro_iter003_2026-11-12-15-40-03.perfetto-trace) [4](file://CameraBenchmarks_openPro_iter004_2026-11-12-15-40-17.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark=CameraBenchmarks_openPro
+  OcBindCount          [min   0.0](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace),   [median   0.0](file://CameraBenchmarks_openPro_iter002_2026-11-12-15-39-49.perfetto-trace),   [max   0.0](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace)
+  OcOpenProAverageMs   [min  28.2](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace),   [median  32.7](file://CameraBenchmarks_openPro_iter002_2026-11-12-15-39-49.perfetto-trace),   [max  33.9](file://CameraBenchmarks_openPro_iter001_2026-11-12-15-39-35.perfetto-trace)
+  OcOpenProMaxMs       [min  29.7](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace),   [median  36.9](file://CameraBenchmarks_openPro_iter002_2026-11-12-15-39-49.perfetto-trace),   [max  42.5](file://CameraBenchmarks_openPro_iter001_2026-11-12-15-39-35.perfetto-trace)
+  frameCount           [min 234.0](file://CameraBenchmarks_openPro_iter001_2026-11-12-15-39-35.perfetto-trace),   [median 236.0](file://CameraBenchmarks_openPro_iter002_2026-11-12-15-39-49.perfetto-trace),   [max 419.0](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace)
+  mainFrameMaxMs       [min  15.7](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace),   [median  16.7](file://CameraBenchmarks_openPro_iter002_2026-11-12-15-39-49.perfetto-trace),   [max  19.3](file://CameraBenchmarks_openPro_iter003_2026-11-12-15-40-03.perfetto-trace)
+  frameDurationCpuMs   P50    5.6,   P90   12.5,   P95   14.0,   P99   18.0
+  frameOverrunMs       P50   -8.6,   P90   -1.3,   P95    0.7,   P99    4.6
+    Traces: Iteration [0](file://CameraBenchmarks_openPro_iter000_2026-11-12-15-39-21.perfetto-trace) [1](file://CameraBenchmarks_openPro_iter001_2026-11-12-15-39-35.perfetto-trace) [2](file://CameraBenchmarks_openPro_iter002_2026-11-12-15-39-49.perfetto-trace) [3](file://CameraBenchmarks_openPro_iter003_2026-11-12-15-40-03.perfetto-trace) [4](file://CameraBenchmarks_openPro_iter004_2026-11-12-15-40-17.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: frame_count_max=419.0
+INSTRUMENTATION_STATUS: frame_count_median=236.0
+INSTRUMENTATION_STATUS: frame_count_min=234.0
+INSTRUMENTATION_STATUS: frame_count_stddev=82.0713104562124
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p50=5.56
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p90=12.549271
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p95=14.04099
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p99=18.038343400000006
+INSTRUMENTATION_STATUS: frame_overrun_millis_p50=-8.641121
+INSTRUMENTATION_STATUS: frame_overrun_millis_p90=-1.261046
+INSTRUMENTATION_STATUS: frame_overrun_millis_p95=0.687918
+INSTRUMENTATION_STATUS: frame_overrun_millis_p99=4.629201200000003
+INSTRUMENTATION_STATUS: main_frame_max_millis_max=19.271614
+INSTRUMENTATION_STATUS: main_frame_max_millis_median=16.716406
+INSTRUMENTATION_STATUS: main_frame_max_millis_min=15.654948
+INSTRUMENTATION_STATUS: main_frame_max_millis_stddev=1.395633114999354
+INSTRUMENTATION_STATUS: oc_bind_count_max=0.0
+INSTRUMENTATION_STATUS: oc_bind_count_median=0.0
+INSTRUMENTATION_STATUS: oc_bind_count_min=0.0
+INSTRUMENTATION_STATUS: oc_bind_count_stddev=0.0
+INSTRUMENTATION_STATUS: oc_open_pro_average_millis_max=33.923559000000004
+INSTRUMENTATION_STATUS: oc_open_pro_average_millis_median=32.667933999999995
+INSTRUMENTATION_STATUS: oc_open_pro_average_millis_min=28.155538000000004
+INSTRUMENTATION_STATUS: oc_open_pro_average_millis_stddev=2.237614933931431
+INSTRUMENTATION_STATUS: oc_open_pro_max_millis_max=42.537552
+INSTRUMENTATION_STATUS: oc_open_pro_max_millis_median=36.906615
+INSTRUMENTATION_STATUS: oc_open_pro_max_millis_min=29.734479
+INSTRUMENTATION_STATUS: oc_open_pro_max_millis_stddev=4.630650238326308
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=openPro
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=photoVideo
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_photoVideo_iter001_2026-11-12-15-40-47.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_photoVideo_iter001_2026-11-12-15-40-47.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_photoVideo_iter002_2026-11-12-15-41-01.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_photoVideo_iter002_2026-11-12-15-41-01.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_photoVideo_iter003_2026-11-12-15-41-16.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_photoVideo_iter003_2026-11-12-15-41-16.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_photoVideo_iter004_2026-11-12-15-41-31.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_photoVideo_iter004_2026-11-12-15-41-31.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: android.studio.display.benchmark=CameraBenchmarks_photoVideo
+  OcBindCount                   [min   4.0](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace),   [median   4.0](file://CameraBenchmarks_photoVideo_iter002_2026-11-12-15-41-01.perfetto-trace),   [max   4.0](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace)
+  OcModeTapToPreviewAverageMs   [min 569.1](file://CameraBenchmarks_photoVideo_iter001_2026-11-12-15-40-47.perfetto-trace),   [median 575.8](file://CameraBenchmarks_photoVideo_iter002_2026-11-12-15-41-01.perfetto-trace),   [max 593.7](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace)
+  OcModeTapToPreviewMaxMs       [min 579.0](file://CameraBenchmarks_photoVideo_iter001_2026-11-12-15-40-47.perfetto-trace),   [median 603.4](file://CameraBenchmarks_photoVideo_iter002_2026-11-12-15-41-01.perfetto-trace),   [max 619.2](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace)
+  frameCount                    [min 252.0](file://CameraBenchmarks_photoVideo_iter003_2026-11-12-15-41-16.perfetto-trace),   [median 255.0](file://CameraBenchmarks_photoVideo_iter002_2026-11-12-15-41-01.perfetto-trace),   [max 257.0](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace)
+  mainFrameMaxMs                [min  28.6](file://CameraBenchmarks_photoVideo_iter004_2026-11-12-15-41-31.perfetto-trace),   [median  38.6](file://CameraBenchmarks_photoVideo_iter002_2026-11-12-15-41-01.perfetto-trace),   [max  39.2](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace)
+  frameDurationCpuMs            P50    9.7,   P90   28.2,   P95   29.8,   P99   44.5
+  frameOverrunMs                P50   -2.8,   P90   16.1,   P95   20.5,   P99   31.9
+    Traces: Iteration [0](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace) [1](file://CameraBenchmarks_photoVideo_iter001_2026-11-12-15-40-47.perfetto-trace) [2](file://CameraBenchmarks_photoVideo_iter002_2026-11-12-15-41-01.perfetto-trace) [3](file://CameraBenchmarks_photoVideo_iter003_2026-11-12-15-41-16.perfetto-trace) [4](file://CameraBenchmarks_photoVideo_iter004_2026-11-12-15-41-31.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark=CameraBenchmarks_photoVideo
+  OcBindCount                   [min   4.0](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace),   [median   4.0](file://CameraBenchmarks_photoVideo_iter002_2026-11-12-15-41-01.perfetto-trace),   [max   4.0](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace)
+  OcModeTapToPreviewAverageMs   [min 569.1](file://CameraBenchmarks_photoVideo_iter001_2026-11-12-15-40-47.perfetto-trace),   [median 575.8](file://CameraBenchmarks_photoVideo_iter002_2026-11-12-15-41-01.perfetto-trace),   [max 593.7](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace)
+  OcModeTapToPreviewMaxMs       [min 579.0](file://CameraBenchmarks_photoVideo_iter001_2026-11-12-15-40-47.perfetto-trace),   [median 603.4](file://CameraBenchmarks_photoVideo_iter002_2026-11-12-15-41-01.perfetto-trace),   [max 619.2](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace)
+  frameCount                    [min 252.0](file://CameraBenchmarks_photoVideo_iter003_2026-11-12-15-41-16.perfetto-trace),   [median 255.0](file://CameraBenchmarks_photoVideo_iter002_2026-11-12-15-41-01.perfetto-trace),   [max 257.0](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace)
+  mainFrameMaxMs                [min  28.6](file://CameraBenchmarks_photoVideo_iter004_2026-11-12-15-41-31.perfetto-trace),   [median  38.6](file://CameraBenchmarks_photoVideo_iter002_2026-11-12-15-41-01.perfetto-trace),   [max  39.2](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace)
+  frameDurationCpuMs            P50    9.7,   P90   28.2,   P95   29.8,   P99   44.5
+  frameOverrunMs                P50   -2.8,   P90   16.1,   P95   20.5,   P99   31.9
+    Traces: Iteration [0](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace) [1](file://CameraBenchmarks_photoVideo_iter001_2026-11-12-15-40-47.perfetto-trace) [2](file://CameraBenchmarks_photoVideo_iter002_2026-11-12-15-41-01.perfetto-trace) [3](file://CameraBenchmarks_photoVideo_iter003_2026-11-12-15-41-16.perfetto-trace) [4](file://CameraBenchmarks_photoVideo_iter004_2026-11-12-15-41-31.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark=CameraBenchmarks_photoVideo
+  OcBindCount                   [min   4.0](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace),   [median   4.0](file://CameraBenchmarks_photoVideo_iter002_2026-11-12-15-41-01.perfetto-trace),   [max   4.0](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace)
+  OcModeTapToPreviewAverageMs   [min 569.1](file://CameraBenchmarks_photoVideo_iter001_2026-11-12-15-40-47.perfetto-trace),   [median 575.8](file://CameraBenchmarks_photoVideo_iter002_2026-11-12-15-41-01.perfetto-trace),   [max 593.7](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace)
+  OcModeTapToPreviewMaxMs       [min 579.0](file://CameraBenchmarks_photoVideo_iter001_2026-11-12-15-40-47.perfetto-trace),   [median 603.4](file://CameraBenchmarks_photoVideo_iter002_2026-11-12-15-41-01.perfetto-trace),   [max 619.2](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace)
+  frameCount                    [min 252.0](file://CameraBenchmarks_photoVideo_iter003_2026-11-12-15-41-16.perfetto-trace),   [median 255.0](file://CameraBenchmarks_photoVideo_iter002_2026-11-12-15-41-01.perfetto-trace),   [max 257.0](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace)
+  mainFrameMaxMs                [min  28.6](file://CameraBenchmarks_photoVideo_iter004_2026-11-12-15-41-31.perfetto-trace),   [median  38.6](file://CameraBenchmarks_photoVideo_iter002_2026-11-12-15-41-01.perfetto-trace),   [max  39.2](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace)
+  frameDurationCpuMs            P50    9.7,   P90   28.2,   P95   29.8,   P99   44.5
+  frameOverrunMs                P50   -2.8,   P90   16.1,   P95   20.5,   P99   31.9
+    Traces: Iteration [0](file://CameraBenchmarks_photoVideo_iter000_2026-11-12-15-40-33.perfetto-trace) [1](file://CameraBenchmarks_photoVideo_iter001_2026-11-12-15-40-47.perfetto-trace) [2](file://CameraBenchmarks_photoVideo_iter002_2026-11-12-15-41-01.perfetto-trace) [3](file://CameraBenchmarks_photoVideo_iter003_2026-11-12-15-41-16.perfetto-trace) [4](file://CameraBenchmarks_photoVideo_iter004_2026-11-12-15-41-31.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: frame_count_max=257.0
+INSTRUMENTATION_STATUS: frame_count_median=255.0
+INSTRUMENTATION_STATUS: frame_count_min=252.0
+INSTRUMENTATION_STATUS: frame_count_stddev=1.9235384061671346
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p50=9.749505
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p90=28.245182300000003
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p95=29.829502849999997
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p99=44.49909374999999
+INSTRUMENTATION_STATUS: frame_overrun_millis_p50=-2.7688865
+INSTRUMENTATION_STATUS: frame_overrun_millis_p90=16.061985800000002
+INSTRUMENTATION_STATUS: frame_overrun_millis_p95=20.54004315
+INSTRUMENTATION_STATUS: frame_overrun_millis_p99=31.90623025
+INSTRUMENTATION_STATUS: main_frame_max_millis_max=39.235416
+INSTRUMENTATION_STATUS: main_frame_max_millis_median=38.606198
+INSTRUMENTATION_STATUS: main_frame_max_millis_min=28.643438
+INSTRUMENTATION_STATUS: main_frame_max_millis_stddev=4.988960616270807
+INSTRUMENTATION_STATUS: oc_bind_count_max=4.0
+INSTRUMENTATION_STATUS: oc_bind_count_median=4.0
+INSTRUMENTATION_STATUS: oc_bind_count_min=4.0
+INSTRUMENTATION_STATUS: oc_bind_count_stddev=0.0
+INSTRUMENTATION_STATUS: oc_mode_tap_to_preview_average_millis_max=593.659245
+INSTRUMENTATION_STATUS: oc_mode_tap_to_preview_average_millis_median=575.765078
+INSTRUMENTATION_STATUS: oc_mode_tap_to_preview_average_millis_min=569.1053775
+INSTRUMENTATION_STATUS: oc_mode_tap_to_preview_average_millis_stddev=9.14520059148844
+INSTRUMENTATION_STATUS: oc_mode_tap_to_preview_max_millis_max=619.21849
+INSTRUMENTATION_STATUS: oc_mode_tap_to_preview_max_millis_median=603.426249
+INSTRUMENTATION_STATUS: oc_mode_tap_to_preview_max_millis_min=579.04427
+INSTRUMENTATION_STATUS: oc_mode_tap_to_preview_max_millis_stddev=16.68497888721383
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=photoVideo
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=shutterToReady
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_shutterToReady_iter000_2026-11-12-15-41-49.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_shutterToReady_iter000_2026-11-12-15-41-49.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_shutterToReady_iter001_2026-11-12-15-42-08.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_shutterToReady_iter001_2026-11-12-15-42-08.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_shutterToReady_iter002_2026-11-12-15-42-28.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_shutterToReady_iter002_2026-11-12-15-42-28.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_shutterToReady_iter003_2026-11-12-15-42-47.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_shutterToReady_iter003_2026-11-12-15-42-47.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_shutterToReady_iter004_2026-11-12-15-43-08.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_shutterToReady_iter004_2026-11-12-15-43-08.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: android.studio.display.benchmark=CameraBenchmarks_shutterToReady
+  OcShutterToReadyAverageMs   [min 1,820.0](file://CameraBenchmarks_shutterToReady_iter000_2026-11-12-15-41-49.perfetto-trace),   [median 1,901.9](file://CameraBenchmarks_shutterToReady_iter002_2026-11-12-15-42-28.perfetto-trace),   [max 1,981.7](file://CameraBenchmarks_shutterToReady_iter003_2026-11-12-15-42-47.perfetto-trace)
+  OcShutterToReadyMaxMs       [min 3,434.9](file://CameraBenchmarks_shutterToReady_iter001_2026-11-12-15-42-08.perfetto-trace),   [median 3,456.6](file://CameraBenchmarks_shutterToReady_iter002_2026-11-12-15-42-28.perfetto-trace),   [max 3,616.1](file://CameraBenchmarks_shutterToReady_iter003_2026-11-12-15-42-47.perfetto-trace)
+  frameCount                  [min   629.0](file://CameraBenchmarks_shutterToReady_iter000_2026-11-12-15-41-49.perfetto-trace),   [median   636.0](file://CameraBenchmarks_shutterToReady_iter002_2026-11-12-15-42-28.perfetto-trace),   [max   656.0](file://CameraBenchmarks_shutterToReady_iter003_2026-11-12-15-42-47.perfetto-trace)
+  mainFrameMaxMs              [min    24.3](file://CameraBenchmarks_shutterToReady_iter001_2026-11-12-15-42-08.perfetto-trace),   [median    35.1](file://CameraBenchmarks_shutterToReady_iter002_2026-11-12-15-42-28.perfetto-trace),   [max    48.1](file://CameraBenchmarks_shutterToReady_iter003_2026-11-12-15-42-47.perfetto-trace)
+  frameDurationCpuMs          P50      6.7,   P90     22.2,   P95     27.1,   P99     35.3
+  frameOverrunMs              P50     -6.7,   P90     15.2,   P95     21.0,   P99     35.9
+    Traces: Iteration [0](file://CameraBenchmarks_shutterToReady_iter000_2026-11-12-15-41-49.perfetto-trace) [1](file://CameraBenchmarks_shutterToReady_iter001_2026-11-12-15-42-08.perfetto-trace) [2](file://CameraBenchmarks_shutterToReady_iter002_2026-11-12-15-42-28.perfetto-trace) [3](file://CameraBenchmarks_shutterToReady_iter003_2026-11-12-15-42-47.perfetto-trace) [4](file://CameraBenchmarks_shutterToReady_iter004_2026-11-12-15-43-08.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark=CameraBenchmarks_shutterToReady
+  OcShutterToReadyAverageMs   [min 1,820.0](file://CameraBenchmarks_shutterToReady_iter000_2026-11-12-15-41-49.perfetto-trace),   [median 1,901.9](file://CameraBenchmarks_shutterToReady_iter002_2026-11-12-15-42-28.perfetto-trace),   [max 1,981.7](file://CameraBenchmarks_shutterToReady_iter003_2026-11-12-15-42-47.perfetto-trace)
+  OcShutterToReadyMaxMs       [min 3,434.9](file://CameraBenchmarks_shutterToReady_iter001_2026-11-12-15-42-08.perfetto-trace),   [median 3,456.6](file://CameraBenchmarks_shutterToReady_iter002_2026-11-12-15-42-28.perfetto-trace),   [max 3,616.1](file://CameraBenchmarks_shutterToReady_iter003_2026-11-12-15-42-47.perfetto-trace)
+  frameCount                  [min   629.0](file://CameraBenchmarks_shutterToReady_iter000_2026-11-12-15-41-49.perfetto-trace),   [median   636.0](file://CameraBenchmarks_shutterToReady_iter002_2026-11-12-15-42-28.perfetto-trace),   [max   656.0](file://CameraBenchmarks_shutterToReady_iter003_2026-11-12-15-42-47.perfetto-trace)
+  mainFrameMaxMs              [min    24.3](file://CameraBenchmarks_shutterToReady_iter001_2026-11-12-15-42-08.perfetto-trace),   [median    35.1](file://CameraBenchmarks_shutterToReady_iter002_2026-11-12-15-42-28.perfetto-trace),   [max    48.1](file://CameraBenchmarks_shutterToReady_iter003_2026-11-12-15-42-47.perfetto-trace)
+  frameDurationCpuMs          P50      6.7,   P90     22.2,   P95     27.1,   P99     35.3
+  frameOverrunMs              P50     -6.7,   P90     15.2,   P95     21.0,   P99     35.9
+    Traces: Iteration [0](file://CameraBenchmarks_shutterToReady_iter000_2026-11-12-15-41-49.perfetto-trace) [1](file://CameraBenchmarks_shutterToReady_iter001_2026-11-12-15-42-08.perfetto-trace) [2](file://CameraBenchmarks_shutterToReady_iter002_2026-11-12-15-42-28.perfetto-trace) [3](file://CameraBenchmarks_shutterToReady_iter003_2026-11-12-15-42-47.perfetto-trace) [4](file://CameraBenchmarks_shutterToReady_iter004_2026-11-12-15-43-08.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark=CameraBenchmarks_shutterToReady
+  OcShutterToReadyAverageMs   [min 1,820.0](file://CameraBenchmarks_shutterToReady_iter000_2026-11-12-15-41-49.perfetto-trace),   [median 1,901.9](file://CameraBenchmarks_shutterToReady_iter002_2026-11-12-15-42-28.perfetto-trace),   [max 1,981.7](file://CameraBenchmarks_shutterToReady_iter003_2026-11-12-15-42-47.perfetto-trace)
+  OcShutterToReadyMaxMs       [min 3,434.9](file://CameraBenchmarks_shutterToReady_iter001_2026-11-12-15-42-08.perfetto-trace),   [median 3,456.6](file://CameraBenchmarks_shutterToReady_iter002_2026-11-12-15-42-28.perfetto-trace),   [max 3,616.1](file://CameraBenchmarks_shutterToReady_iter003_2026-11-12-15-42-47.perfetto-trace)
+  frameCount                  [min   629.0](file://CameraBenchmarks_shutterToReady_iter000_2026-11-12-15-41-49.perfetto-trace),   [median   636.0](file://CameraBenchmarks_shutterToReady_iter002_2026-11-12-15-42-28.perfetto-trace),   [max   656.0](file://CameraBenchmarks_shutterToReady_iter003_2026-11-12-15-42-47.perfetto-trace)
+  mainFrameMaxMs              [min    24.3](file://CameraBenchmarks_shutterToReady_iter001_2026-11-12-15-42-08.perfetto-trace),   [median    35.1](file://CameraBenchmarks_shutterToReady_iter002_2026-11-12-15-42-28.perfetto-trace),   [max    48.1](file://CameraBenchmarks_shutterToReady_iter003_2026-11-12-15-42-47.perfetto-trace)
+  frameDurationCpuMs          P50      6.7,   P90     22.2,   P95     27.1,   P99     35.3
+  frameOverrunMs              P50     -6.7,   P90     15.2,   P95     21.0,   P99     35.9
+    Traces: Iteration [0](file://CameraBenchmarks_shutterToReady_iter000_2026-11-12-15-41-49.perfetto-trace) [1](file://CameraBenchmarks_shutterToReady_iter001_2026-11-12-15-42-08.perfetto-trace) [2](file://CameraBenchmarks_shutterToReady_iter002_2026-11-12-15-42-28.perfetto-trace) [3](file://CameraBenchmarks_shutterToReady_iter003_2026-11-12-15-42-47.perfetto-trace) [4](file://CameraBenchmarks_shutterToReady_iter004_2026-11-12-15-43-08.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: frame_count_max=656.0
+INSTRUMENTATION_STATUS: frame_count_median=636.0
+INSTRUMENTATION_STATUS: frame_count_min=629.0
+INSTRUMENTATION_STATUS: frame_count_stddev=10.549881515922346
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p50=6.6815105
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p90=22.2288388
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p95=27.124979549999995
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p99=35.25146124000005
+INSTRUMENTATION_STATUS: frame_overrun_millis_p50=-6.7313495
+INSTRUMENTATION_STATUS: frame_overrun_millis_p90=15.152252000000002
+INSTRUMENTATION_STATUS: frame_overrun_millis_p95=21.036495349999996
+INSTRUMENTATION_STATUS: frame_overrun_millis_p99=35.908975540000014
+INSTRUMENTATION_STATUS: main_frame_max_millis_max=48.060937
+INSTRUMENTATION_STATUS: main_frame_max_millis_median=35.055834
+INSTRUMENTATION_STATUS: main_frame_max_millis_min=24.310573
+INSTRUMENTATION_STATUS: main_frame_max_millis_stddev=9.383677117202579
+INSTRUMENTATION_STATUS: oc_shutter_to_ready_average_millis_max=1981.681797
+INSTRUMENTATION_STATUS: oc_shutter_to_ready_average_millis_median=1901.8734365
+INSTRUMENTATION_STATUS: oc_shutter_to_ready_average_millis_min=1820.037056
+INSTRUMENTATION_STATUS: oc_shutter_to_ready_average_millis_stddev=61.975787413149625
+INSTRUMENTATION_STATUS: oc_shutter_to_ready_max_millis_max=3616.128489
+INSTRUMENTATION_STATUS: oc_shutter_to_ready_max_millis_median=3456.58104
+INSTRUMENTATION_STATUS: oc_shutter_to_ready_max_millis_min=3434.941145
+INSTRUMENTATION_STATUS: oc_shutter_to_ready_max_millis_stddev=76.4507989513391
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=shutterToReady
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=openGallery
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openGallery_iter000_2026-11-12-15-43-27.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openGallery_iter000_2026-11-12-15-43-27.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openGallery_iter001_2026-11-12-15-43-41.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openGallery_iter001_2026-11-12-15-43-41.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openGallery_iter003_2026-11-12-15-44-06.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openGallery_iter003_2026-11-12-15-44-06.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openGallery_iter004_2026-11-12-15-44-19.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openGallery_iter004_2026-11-12-15-44-19.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: android.studio.display.benchmark=CameraBenchmarks_openGallery
+  OcOpenGalleryAverageMs   [min 36.1](file://CameraBenchmarks_openGallery_iter000_2026-11-12-15-43-27.perfetto-trace),   [median 45.1](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace),   [max 54.2](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace)
+  OcOpenGalleryMaxMs       [min 36.1](file://CameraBenchmarks_openGallery_iter000_2026-11-12-15-43-27.perfetto-trace),   [median 45.1](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace),   [max 54.2](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace)
+  frameCount               [min 33.0](file://CameraBenchmarks_openGallery_iter001_2026-11-12-15-43-41.perfetto-trace),   [median 34.0](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace),   [max 35.0](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace)
+  mainFrameMaxMs           [min 25.5](file://CameraBenchmarks_openGallery_iter001_2026-11-12-15-43-41.perfetto-trace),   [median 33.6](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace),   [max 53.3](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace)
+  frameDurationCpuMs       P50  13.0,   P90  26.3,   P95  31.8,   P99  50.1
+  frameOverrunMs           P50   4.4,   P90  20.5,   P95  46.3,   P99  68.5
+    Traces: Iteration [0](file://CameraBenchmarks_openGallery_iter000_2026-11-12-15-43-27.perfetto-trace) [1](file://CameraBenchmarks_openGallery_iter001_2026-11-12-15-43-41.perfetto-trace) [2](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace) [3](file://CameraBenchmarks_openGallery_iter003_2026-11-12-15-44-06.perfetto-trace) [4](file://CameraBenchmarks_openGallery_iter004_2026-11-12-15-44-19.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark=CameraBenchmarks_openGallery
+  OcOpenGalleryAverageMs   [min 36.1](file://CameraBenchmarks_openGallery_iter000_2026-11-12-15-43-27.perfetto-trace),   [median 45.1](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace),   [max 54.2](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace)
+  OcOpenGalleryMaxMs       [min 36.1](file://CameraBenchmarks_openGallery_iter000_2026-11-12-15-43-27.perfetto-trace),   [median 45.1](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace),   [max 54.2](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace)
+  frameCount               [min 33.0](file://CameraBenchmarks_openGallery_iter001_2026-11-12-15-43-41.perfetto-trace),   [median 34.0](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace),   [max 35.0](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace)
+  mainFrameMaxMs           [min 25.5](file://CameraBenchmarks_openGallery_iter001_2026-11-12-15-43-41.perfetto-trace),   [median 33.6](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace),   [max 53.3](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace)
+  frameDurationCpuMs       P50  13.0,   P90  26.3,   P95  31.8,   P99  50.1
+  frameOverrunMs           P50   4.4,   P90  20.5,   P95  46.3,   P99  68.5
+    Traces: Iteration [0](file://CameraBenchmarks_openGallery_iter000_2026-11-12-15-43-27.perfetto-trace) [1](file://CameraBenchmarks_openGallery_iter001_2026-11-12-15-43-41.perfetto-trace) [2](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace) [3](file://CameraBenchmarks_openGallery_iter003_2026-11-12-15-44-06.perfetto-trace) [4](file://CameraBenchmarks_openGallery_iter004_2026-11-12-15-44-19.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark=CameraBenchmarks_openGallery
+  OcOpenGalleryAverageMs   [min 36.1](file://CameraBenchmarks_openGallery_iter000_2026-11-12-15-43-27.perfetto-trace),   [median 45.1](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace),   [max 54.2](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace)
+  OcOpenGalleryMaxMs       [min 36.1](file://CameraBenchmarks_openGallery_iter000_2026-11-12-15-43-27.perfetto-trace),   [median 45.1](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace),   [max 54.2](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace)
+  frameCount               [min 33.0](file://CameraBenchmarks_openGallery_iter001_2026-11-12-15-43-41.perfetto-trace),   [median 34.0](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace),   [max 35.0](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace)
+  mainFrameMaxMs           [min 25.5](file://CameraBenchmarks_openGallery_iter001_2026-11-12-15-43-41.perfetto-trace),   [median 33.6](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace),   [max 53.3](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace)
+  frameDurationCpuMs       P50  13.0,   P90  26.3,   P95  31.8,   P99  50.1
+  frameOverrunMs           P50   4.4,   P90  20.5,   P95  46.3,   P99  68.5
+    Traces: Iteration [0](file://CameraBenchmarks_openGallery_iter000_2026-11-12-15-43-27.perfetto-trace) [1](file://CameraBenchmarks_openGallery_iter001_2026-11-12-15-43-41.perfetto-trace) [2](file://CameraBenchmarks_openGallery_iter002_2026-11-12-15-43-53.perfetto-trace) [3](file://CameraBenchmarks_openGallery_iter003_2026-11-12-15-44-06.perfetto-trace) [4](file://CameraBenchmarks_openGallery_iter004_2026-11-12-15-44-19.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: frame_count_max=35.0
+INSTRUMENTATION_STATUS: frame_count_median=34.0
+INSTRUMENTATION_STATUS: frame_count_min=33.0
+INSTRUMENTATION_STATUS: frame_count_stddev=0.8366600265340756
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p50=12.993594
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p90=26.3259478
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p95=31.804822399999992
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p99=50.08244803999999
+INSTRUMENTATION_STATUS: frame_overrun_millis_p50=4.44465
+INSTRUMENTATION_STATUS: frame_overrun_millis_p90=20.505807600000026
+INSTRUMENTATION_STATUS: frame_overrun_millis_p95=46.33949699999998
+INSTRUMENTATION_STATUS: frame_overrun_millis_p99=68.47588675999997
+INSTRUMENTATION_STATUS: main_frame_max_millis_max=53.349792
+INSTRUMENTATION_STATUS: main_frame_max_millis_median=33.599323
+INSTRUMENTATION_STATUS: main_frame_max_millis_min=25.515833
+INSTRUMENTATION_STATUS: main_frame_max_millis_stddev=12.285937852588653
+INSTRUMENTATION_STATUS: oc_open_gallery_average_millis_max=54.191667
+INSTRUMENTATION_STATUS: oc_open_gallery_average_millis_median=45.142656
+INSTRUMENTATION_STATUS: oc_open_gallery_average_millis_min=36.083177
+INSTRUMENTATION_STATUS: oc_open_gallery_average_millis_stddev=6.406127237987965
+INSTRUMENTATION_STATUS: oc_open_gallery_max_millis_max=54.191667
+INSTRUMENTATION_STATUS: oc_open_gallery_max_millis_median=45.142656
+INSTRUMENTATION_STATUS: oc_open_gallery_max_millis_min=36.083177
+INSTRUMENTATION_STATUS: oc_open_gallery_max_millis_stddev=6.406127237987965
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=openGallery
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=6
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=openSettings
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openSettings_iter000_2026-11-12-15-44-38.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openSettings_iter000_2026-11-12-15-44-38.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openSettings_iter001_2026-11-12-15-44-59.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openSettings_iter001_2026-11-12-15-44-59.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openSettings_iter002_2026-11-12-15-45-19.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openSettings_iter002_2026-11-12-15-45-19.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openSettings_iter003_2026-11-12-15-45-38.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openSettings_iter003_2026-11-12-15-45-38.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openSettings_iter004_2026-11-12-15-45-59.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openSettings_iter004_2026-11-12-15-45-59.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: android.studio.display.benchmark=CameraBenchmarks_openSettings
+  OcOpenSettingsAverageMs   [min 127.7](file://CameraBenchmarks_openSettings_iter004_2026-11-12-15-45-59.perfetto-trace),   [median 130.0](file://CameraBenchmarks_openSettings_iter002_2026-11-12-15-45-19.perfetto-trace),   [max 158.6](file://CameraBenchmarks_openSettings_iter000_2026-11-12-15-44-38.perfetto-trace)
+  OcOpenSettingsMaxMs       [min 129.3](file://CameraBenchmarks_openSettings_iter003_2026-11-12-15-45-38.perfetto-trace),   [median 137.3](file://CameraBenchmarks_openSettings_iter002_2026-11-12-15-45-19.perfetto-trace),   [max 173.6](file://CameraBenchmarks_openSettings_iter000_2026-11-12-15-44-38.perfetto-trace)
+  frameCount                [min 151.0](file://CameraBenchmarks_openSettings_iter002_2026-11-12-15-45-19.perfetto-trace),   [median 187.0](file://CameraBenchmarks_openSettings_iter002_2026-11-12-15-45-19.perfetto-trace),   [max 214.0](file://CameraBenchmarks_openSettings_iter001_2026-11-12-15-44-59.perfetto-trace)
+  mainFrameMaxMs            [min  70.1](file://CameraBenchmarks_openSettings_iter003_2026-11-12-15-45-38.perfetto-trace),   [median  74.5](file://CameraBenchmarks_openSettings_iter002_2026-11-12-15-45-19.perfetto-trace),   [max 109.2](file://CameraBenchmarks_openSettings_iter000_2026-11-12-15-44-38.perfetto-trace)
+  frameDurationCpuMs        P50    8.7,   P90   26.8,   P95   31.4,   P99   62.3
+  frameOverrunMs            P50   -3.6,   P90   21.9,   P95   45.1,   P99   71.2
+    Traces: Iteration [0](file://CameraBenchmarks_openSettings_iter000_2026-11-12-15-44-38.perfetto-trace) [1](file://CameraBenchmarks_openSettings_iter001_2026-11-12-15-44-59.perfetto-trace) [2](file://CameraBenchmarks_openSettings_iter002_2026-11-12-15-45-19.perfetto-trace) [3](file://CameraBenchmarks_openSettings_iter003_2026-11-12-15-45-38.perfetto-trace) [4](file://CameraBenchmarks_openSettings_iter004_2026-11-12-15-45-59.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark=CameraBenchmarks_openSettings
+  OcOpenSettingsAverageMs   [min 127.7](file://CameraBenchmarks_openSettings_iter004_2026-11-12-15-45-59.perfetto-trace),   [median 130.0](file://CameraBenchmarks_openSettings_iter002_2026-11-12-15-45-19.perfetto-trace),   [max 158.6](file://CameraBenchmarks_openSettings_iter000_2026-11-12-15-44-38.perfetto-trace)
+  OcOpenSettingsMaxMs       [min 129.3](file://CameraBenchmarks_openSettings_iter003_2026-11-12-15-45-38.perfetto-trace),   [median 137.3](file://CameraBenchmarks_openSettings_iter002_2026-11-12-15-45-19.perfetto-trace),   [max 173.6](file://CameraBenchmarks_openSettings_iter000_2026-11-12-15-44-38.perfetto-trace)
+  frameCount                [min 151.0](file://CameraBenchmarks_openSettings_iter002_2026-11-12-15-45-19.perfetto-trace),   [median 187.0](file://CameraBenchmarks_openSettings_iter002_2026-11-12-15-45-19.perfetto-trace),   [max 214.0](file://CameraBenchmarks_openSettings_iter001_2026-11-12-15-44-59.perfetto-trace)
+  mainFrameMaxMs            [min  70.1](file://CameraBenchmarks_openSettings_iter003_2026-11-12-15-45-38.perfetto-trace),   [median  74.5](file://CameraBenchmarks_openSettings_iter002_2026-11-12-15-45-19.perfetto-trace),   [max 109.2](file://CameraBenchmarks_openSettings_iter000_2026-11-12-15-44-38.perfetto-trace)
+  frameDurationCpuMs        P50    8.7,   P90   26.8,   P95   31.4,   P99   62.3
+  frameOverrunMs            P50   -3.6,   P90   21.9,   P95   45.1,   P99   71.2
+    Traces: Iteration [0](file://CameraBenchmarks_openSettings_iter000_2026-11-12-15-44-38.perfetto-trace) [1](file://CameraBenchmarks_openSettings_iter001_2026-11-12-15-44-59.perfetto-trace) [2](file://CameraBenchmarks_openSettings_iter002_2026-11-12-15-45-19.perfetto-trace) [3](file://CameraBenchmarks_openSettings_iter003_2026-11-12-15-45-38.perfetto-trace) [4](file://CameraBenchmarks_openSettings_iter004_2026-11-12-15-45-59.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark=CameraBenchmarks_openSettings
+  OcOpenSettingsAverageMs   [min 127.7](file://CameraBenchmarks_openSettings_iter004_2026-11-12-15-45-59.perfetto-trace),   [median 130.0](file://CameraBenchmarks_openSettings_iter002_2026-11-12-15-45-19.perfetto-trace),   [max 158.6](file://CameraBenchmarks_openSettings_iter000_2026-11-12-15-44-38.perfetto-trace)
+  OcOpenSettingsMaxMs       [min 129.3](file://CameraBenchmarks_openSettings_iter003_2026-11-12-15-45-38.perfetto-trace),   [median 137.3](file://CameraBenchmarks_openSettings_iter002_2026-11-12-15-45-19.perfetto-trace),   [max 173.6](file://CameraBenchmarks_openSettings_iter000_2026-11-12-15-44-38.perfetto-trace)
+  frameCount                [min 151.0](file://CameraBenchmarks_openSettings_iter002_2026-11-12-15-45-19.perfetto-trace),   [median 187.0](file://CameraBenchmarks_openSettings_iter002_2026-11-12-15-45-19.perfetto-trace),   [max 214.0](file://CameraBenchmarks_openSettings_iter001_2026-11-12-15-44-59.perfetto-trace)
+  mainFrameMaxMs            [min  70.1](file://CameraBenchmarks_openSettings_iter003_2026-11-12-15-45-38.perfetto-trace),   [median  74.5](file://CameraBenchmarks_openSettings_iter002_2026-11-12-15-45-19.perfetto-trace),   [max 109.2](file://CameraBenchmarks_openSettings_iter000_2026-11-12-15-44-38.perfetto-trace)
+  frameDurationCpuMs        P50    8.7,   P90   26.8,   P95   31.4,   P99   62.3
+  frameOverrunMs            P50   -3.6,   P90   21.9,   P95   45.1,   P99   71.2
+    Traces: Iteration [0](file://CameraBenchmarks_openSettings_iter000_2026-11-12-15-44-38.perfetto-trace) [1](file://CameraBenchmarks_openSettings_iter001_2026-11-12-15-44-59.perfetto-trace) [2](file://CameraBenchmarks_openSettings_iter002_2026-11-12-15-45-19.perfetto-trace) [3](file://CameraBenchmarks_openSettings_iter003_2026-11-12-15-45-38.perfetto-trace) [4](file://CameraBenchmarks_openSettings_iter004_2026-11-12-15-45-59.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: frame_count_max=214.0
+INSTRUMENTATION_STATUS: frame_count_median=187.0
+INSTRUMENTATION_STATUS: frame_count_min=151.0
+INSTRUMENTATION_STATUS: frame_count_stddev=23.41580662714825
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p50=8.657812
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p90=26.823354399999996
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p95=31.364479699999997
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p99=62.34110138000018
+INSTRUMENTATION_STATUS: frame_overrun_millis_p50=-3.566222
+INSTRUMENTATION_STATUS: frame_overrun_millis_p90=21.945563799999995
+INSTRUMENTATION_STATUS: frame_overrun_millis_p95=45.139793999999924
+INSTRUMENTATION_STATUS: frame_overrun_millis_p99=71.15020314000002
+INSTRUMENTATION_STATUS: main_frame_max_millis_max=109.181406
+INSTRUMENTATION_STATUS: main_frame_max_millis_median=74.538333
+INSTRUMENTATION_STATUS: main_frame_max_millis_min=70.097813
+INSTRUMENTATION_STATUS: main_frame_max_millis_stddev=16.092373273972658
+INSTRUMENTATION_STATUS: oc_open_settings_average_millis_max=158.5592705
+INSTRUMENTATION_STATUS: oc_open_settings_average_millis_median=130.0447915
+INSTRUMENTATION_STATUS: oc_open_settings_average_millis_min=127.7252865
+INSTRUMENTATION_STATUS: oc_open_settings_average_millis_stddev=13.079067479561326
+INSTRUMENTATION_STATUS: oc_open_settings_max_millis_max=173.645833
+INSTRUMENTATION_STATUS: oc_open_settings_max_millis_median=137.349844
+INSTRUMENTATION_STATUS: oc_open_settings_max_millis_min=129.295156
+INSTRUMENTATION_STATUS: oc_open_settings_max_millis_stddev=18.251125057908208
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=6
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=openSettings
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=7
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=openEditor
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openEditor_iter000_2026-11-12-15-46-21.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openEditor_iter000_2026-11-12-15-46-21.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openEditor_iter001_2026-11-12-15-46-31.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openEditor_iter001_2026-11-12-15-46-31.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openEditor_iter002_2026-11-12-15-46-41.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openEditor_iter002_2026-11-12-15-46-41.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openEditor_iter003_2026-11-12-15-46-50.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openEditor_iter003_2026-11-12-15-46-50.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openEditor_iter004_2026-11-12-15-47-00.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openEditor_iter004_2026-11-12-15-47-00.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: android.studio.display.benchmark=CameraBenchmarks_openEditor
+  frameCount               [min 40.0](file://CameraBenchmarks_openEditor_iter001_2026-11-12-15-46-31.perfetto-trace),   [median 40.0](file://CameraBenchmarks_openEditor_iter002_2026-11-12-15-46-41.perfetto-trace),   [max 45.0](file://CameraBenchmarks_openEditor_iter003_2026-11-12-15-46-50.perfetto-trace)
+  mainFrameMaxMs           [min 45.5](file://CameraBenchmarks_openEditor_iter004_2026-11-12-15-47-00.perfetto-trace),   [median 50.3](file://CameraBenchmarks_openEditor_iter002_2026-11-12-15-46-41.perfetto-trace),   [max 69.4](file://CameraBenchmarks_openEditor_iter002_2026-11-12-15-46-41.perfetto-trace)
+  timeToInitialDisplayMs   [min 46.3](file://CameraBenchmarks_openEditor_iter001_2026-11-12-15-46-31.perfetto-trace),   [median 54.8](file://CameraBenchmarks_openEditor_iter002_2026-11-12-15-46-41.perfetto-trace),   [max 68.6](file://CameraBenchmarks_openEditor_iter003_2026-11-12-15-46-50.perfetto-trace)
+  frameDurationCpuMs       P50  20.1,   P90  38.9,   P95  49.5,   P99  59.3
+  frameOverrunMs           P50  13.7,   P90  49.0,   P95  62.0,   P99  76.1
+    Traces: Iteration [0](file://CameraBenchmarks_openEditor_iter000_2026-11-12-15-46-21.perfetto-trace) [1](file://CameraBenchmarks_openEditor_iter001_2026-11-12-15-46-31.perfetto-trace) [2](file://CameraBenchmarks_openEditor_iter002_2026-11-12-15-46-41.perfetto-trace) [3](file://CameraBenchmarks_openEditor_iter003_2026-11-12-15-46-50.perfetto-trace) [4](file://CameraBenchmarks_openEditor_iter004_2026-11-12-15-47-00.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark=CameraBenchmarks_openEditor
+  frameCount               [min 40.0](file://CameraBenchmarks_openEditor_iter001_2026-11-12-15-46-31.perfetto-trace),   [median 40.0](file://CameraBenchmarks_openEditor_iter002_2026-11-12-15-46-41.perfetto-trace),   [max 45.0](file://CameraBenchmarks_openEditor_iter003_2026-11-12-15-46-50.perfetto-trace)
+  mainFrameMaxMs           [min 45.5](file://CameraBenchmarks_openEditor_iter004_2026-11-12-15-47-00.perfetto-trace),   [median 50.3](file://CameraBenchmarks_openEditor_iter002_2026-11-12-15-46-41.perfetto-trace),   [max 69.4](file://CameraBenchmarks_openEditor_iter002_2026-11-12-15-46-41.perfetto-trace)
+  timeToInitialDisplayMs   [min 46.3](file://CameraBenchmarks_openEditor_iter001_2026-11-12-15-46-31.perfetto-trace),   [median 54.8](file://CameraBenchmarks_openEditor_iter002_2026-11-12-15-46-41.perfetto-trace),   [max 68.6](file://CameraBenchmarks_openEditor_iter003_2026-11-12-15-46-50.perfetto-trace)
+  frameDurationCpuMs       P50  20.1,   P90  38.9,   P95  49.5,   P99  59.3
+  frameOverrunMs           P50  13.7,   P90  49.0,   P95  62.0,   P99  76.1
+    Traces: Iteration [0](file://CameraBenchmarks_openEditor_iter000_2026-11-12-15-46-21.perfetto-trace) [1](file://CameraBenchmarks_openEditor_iter001_2026-11-12-15-46-31.perfetto-trace) [2](file://CameraBenchmarks_openEditor_iter002_2026-11-12-15-46-41.perfetto-trace) [3](file://CameraBenchmarks_openEditor_iter003_2026-11-12-15-46-50.perfetto-trace) [4](file://CameraBenchmarks_openEditor_iter004_2026-11-12-15-47-00.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark=CameraBenchmarks_openEditor
+  frameCount               [min 40.0](file://CameraBenchmarks_openEditor_iter001_2026-11-12-15-46-31.perfetto-trace),   [median 40.0](file://CameraBenchmarks_openEditor_iter002_2026-11-12-15-46-41.perfetto-trace),   [max 45.0](file://CameraBenchmarks_openEditor_iter003_2026-11-12-15-46-50.perfetto-trace)
+  mainFrameMaxMs           [min 45.5](file://CameraBenchmarks_openEditor_iter004_2026-11-12-15-47-00.perfetto-trace),   [median 50.3](file://CameraBenchmarks_openEditor_iter002_2026-11-12-15-46-41.perfetto-trace),   [max 69.4](file://CameraBenchmarks_openEditor_iter002_2026-11-12-15-46-41.perfetto-trace)
+  timeToInitialDisplayMs   [min 46.3](file://CameraBenchmarks_openEditor_iter001_2026-11-12-15-46-31.perfetto-trace),   [median 54.8](file://CameraBenchmarks_openEditor_iter002_2026-11-12-15-46-41.perfetto-trace),   [max 68.6](file://CameraBenchmarks_openEditor_iter003_2026-11-12-15-46-50.perfetto-trace)
+  frameDurationCpuMs       P50  20.1,   P90  38.9,   P95  49.5,   P99  59.3
+  frameOverrunMs           P50  13.7,   P90  49.0,   P95  62.0,   P99  76.1
+    Traces: Iteration [0](file://CameraBenchmarks_openEditor_iter000_2026-11-12-15-46-21.perfetto-trace) [1](file://CameraBenchmarks_openEditor_iter001_2026-11-12-15-46-31.perfetto-trace) [2](file://CameraBenchmarks_openEditor_iter002_2026-11-12-15-46-41.perfetto-trace) [3](file://CameraBenchmarks_openEditor_iter003_2026-11-12-15-46-50.perfetto-trace) [4](file://CameraBenchmarks_openEditor_iter004_2026-11-12-15-47-00.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: frame_count_max=45.0
+INSTRUMENTATION_STATUS: frame_count_median=40.0
+INSTRUMENTATION_STATUS: frame_count_min=40.0
+INSTRUMENTATION_STATUS: frame_count_stddev=2.4899799195977463
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p50=20.100677
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p90=38.8933332
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p95=49.499260199999995
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p99=59.3149478
+INSTRUMENTATION_STATUS: frame_overrun_millis_p50=13.701258
+INSTRUMENTATION_STATUS: frame_overrun_millis_p90=49.048105400000004
+INSTRUMENTATION_STATUS: frame_overrun_millis_p95=61.962824600000005
+INSTRUMENTATION_STATUS: frame_overrun_millis_p99=76.11259592
+INSTRUMENTATION_STATUS: main_frame_max_millis_max=69.409479
+INSTRUMENTATION_STATUS: main_frame_max_millis_median=50.328385
+INSTRUMENTATION_STATUS: main_frame_max_millis_min=45.515521
+INSTRUMENTATION_STATUS: main_frame_max_millis_stddev=11.483830194276596
+INSTRUMENTATION_STATUS: time_to_initial_display_millis_max=68.633437
+INSTRUMENTATION_STATUS: time_to_initial_display_millis_median=54.783177
+INSTRUMENTATION_STATUS: time_to_initial_display_millis_min=46.28849
+INSTRUMENTATION_STATUS: time_to_initial_display_millis_stddev=9.398086096296506
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=7
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=openEditor
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=8
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=modeSwitchSameSession
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_modeSwitchSameSession_iter000_2026-11-12-15-47-18.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_modeSwitchSameSession_iter000_2026-11-12-15-47-18.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_modeSwitchSameSession_iter001_2026-11-12-15-47-40.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_modeSwitchSameSession_iter001_2026-11-12-15-47-40.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_modeSwitchSameSession_iter003_2026-11-12-15-48-20.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_modeSwitchSameSession_iter003_2026-11-12-15-48-20.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_modeSwitchSameSession_iter004_2026-11-12-15-48-40.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_modeSwitchSameSession_iter004_2026-11-12-15-48-40.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: android.studio.display.benchmark=CameraBenchmarks_modeSwitchSameSession
+  OcBindCount          [min   0.0](file://CameraBenchmarks_modeSwitchSameSession_iter000_2026-11-12-15-47-18.perfetto-trace),   [median   0.0](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace),   [max   0.0](file://CameraBenchmarks_modeSwitchSameSession_iter000_2026-11-12-15-47-18.perfetto-trace)
+  OcOpenProAverageMs   [min  24.9](file://CameraBenchmarks_modeSwitchSameSession_iter003_2026-11-12-15-48-20.perfetto-trace),   [median  33.3](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace),   [max  44.9](file://CameraBenchmarks_modeSwitchSameSession_iter004_2026-11-12-15-48-40.perfetto-trace)
+  OcOpenProMaxMs       [min  25.2](file://CameraBenchmarks_modeSwitchSameSession_iter003_2026-11-12-15-48-20.perfetto-trace),   [median  36.1](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace),   [max  45.1](file://CameraBenchmarks_modeSwitchSameSession_iter004_2026-11-12-15-48-40.perfetto-trace)
+  frameCount           [min 366.0](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace),   [median 366.0](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace),   [max 573.0](file://CameraBenchmarks_modeSwitchSameSession_iter000_2026-11-12-15-47-18.perfetto-trace)
+  mainFrameMaxMs       [min  14.6](file://CameraBenchmarks_modeSwitchSameSession_iter001_2026-11-12-15-47-40.perfetto-trace),   [median  17.3](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace),   [max  21.6](file://CameraBenchmarks_modeSwitchSameSession_iter000_2026-11-12-15-47-18.perfetto-trace)
+  frameDurationCpuMs   P50    5.2,   P90   11.8,   P95   13.5,   P99   17.5
+  frameOverrunMs       P50   -9.7,   P90   -2.0,   P95    0.1,   P99    4.2
+    Traces: Iteration [0](file://CameraBenchmarks_modeSwitchSameSession_iter000_2026-11-12-15-47-18.perfetto-trace) [1](file://CameraBenchmarks_modeSwitchSameSession_iter001_2026-11-12-15-47-40.perfetto-trace) [2](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace) [3](file://CameraBenchmarks_modeSwitchSameSession_iter003_2026-11-12-15-48-20.perfetto-trace) [4](file://CameraBenchmarks_modeSwitchSameSession_iter004_2026-11-12-15-48-40.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark=CameraBenchmarks_modeSwitchSameSession
+  OcBindCount          [min   0.0](file://CameraBenchmarks_modeSwitchSameSession_iter000_2026-11-12-15-47-18.perfetto-trace),   [median   0.0](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace),   [max   0.0](file://CameraBenchmarks_modeSwitchSameSession_iter000_2026-11-12-15-47-18.perfetto-trace)
+  OcOpenProAverageMs   [min  24.9](file://CameraBenchmarks_modeSwitchSameSession_iter003_2026-11-12-15-48-20.perfetto-trace),   [median  33.3](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace),   [max  44.9](file://CameraBenchmarks_modeSwitchSameSession_iter004_2026-11-12-15-48-40.perfetto-trace)
+  OcOpenProMaxMs       [min  25.2](file://CameraBenchmarks_modeSwitchSameSession_iter003_2026-11-12-15-48-20.perfetto-trace),   [median  36.1](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace),   [max  45.1](file://CameraBenchmarks_modeSwitchSameSession_iter004_2026-11-12-15-48-40.perfetto-trace)
+  frameCount           [min 366.0](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace),   [median 366.0](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace),   [max 573.0](file://CameraBenchmarks_modeSwitchSameSession_iter000_2026-11-12-15-47-18.perfetto-trace)
+  mainFrameMaxMs       [min  14.6](file://CameraBenchmarks_modeSwitchSameSession_iter001_2026-11-12-15-47-40.perfetto-trace),   [median  17.3](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace),   [max  21.6](file://CameraBenchmarks_modeSwitchSameSession_iter000_2026-11-12-15-47-18.perfetto-trace)
+  frameDurationCpuMs   P50    5.2,   P90   11.8,   P95   13.5,   P99   17.5
+  frameOverrunMs       P50   -9.7,   P90   -2.0,   P95    0.1,   P99    4.2
+    Traces: Iteration [0](file://CameraBenchmarks_modeSwitchSameSession_iter000_2026-11-12-15-47-18.perfetto-trace) [1](file://CameraBenchmarks_modeSwitchSameSession_iter001_2026-11-12-15-47-40.perfetto-trace) [2](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace) [3](file://CameraBenchmarks_modeSwitchSameSession_iter003_2026-11-12-15-48-20.perfetto-trace) [4](file://CameraBenchmarks_modeSwitchSameSession_iter004_2026-11-12-15-48-40.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark=CameraBenchmarks_modeSwitchSameSession
+  OcBindCount          [min   0.0](file://CameraBenchmarks_modeSwitchSameSession_iter000_2026-11-12-15-47-18.perfetto-trace),   [median   0.0](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace),   [max   0.0](file://CameraBenchmarks_modeSwitchSameSession_iter000_2026-11-12-15-47-18.perfetto-trace)
+  OcOpenProAverageMs   [min  24.9](file://CameraBenchmarks_modeSwitchSameSession_iter003_2026-11-12-15-48-20.perfetto-trace),   [median  33.3](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace),   [max  44.9](file://CameraBenchmarks_modeSwitchSameSession_iter004_2026-11-12-15-48-40.perfetto-trace)
+  OcOpenProMaxMs       [min  25.2](file://CameraBenchmarks_modeSwitchSameSession_iter003_2026-11-12-15-48-20.perfetto-trace),   [median  36.1](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace),   [max  45.1](file://CameraBenchmarks_modeSwitchSameSession_iter004_2026-11-12-15-48-40.perfetto-trace)
+  frameCount           [min 366.0](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace),   [median 366.0](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace),   [max 573.0](file://CameraBenchmarks_modeSwitchSameSession_iter000_2026-11-12-15-47-18.perfetto-trace)
+  mainFrameMaxMs       [min  14.6](file://CameraBenchmarks_modeSwitchSameSession_iter001_2026-11-12-15-47-40.perfetto-trace),   [median  17.3](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace),   [max  21.6](file://CameraBenchmarks_modeSwitchSameSession_iter000_2026-11-12-15-47-18.perfetto-trace)
+  frameDurationCpuMs   P50    5.2,   P90   11.8,   P95   13.5,   P99   17.5
+  frameOverrunMs       P50   -9.7,   P90   -2.0,   P95    0.1,   P99    4.2
+    Traces: Iteration [0](file://CameraBenchmarks_modeSwitchSameSession_iter000_2026-11-12-15-47-18.perfetto-trace) [1](file://CameraBenchmarks_modeSwitchSameSession_iter001_2026-11-12-15-47-40.perfetto-trace) [2](file://CameraBenchmarks_modeSwitchSameSession_iter002_2026-11-12-15-48-00.perfetto-trace) [3](file://CameraBenchmarks_modeSwitchSameSession_iter003_2026-11-12-15-48-20.perfetto-trace) [4](file://CameraBenchmarks_modeSwitchSameSession_iter004_2026-11-12-15-48-40.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: frame_count_max=573.0
+INSTRUMENTATION_STATUS: frame_count_median=366.0
+INSTRUMENTATION_STATUS: frame_count_min=366.0
+INSTRUMENTATION_STATUS: frame_count_stddev=92.24695116913078
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p50=5.1977865
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p90=11.757276200000002
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p95=13.507887149999998
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p99=17.48427924999998
+INSTRUMENTATION_STATUS: frame_overrun_millis_p50=-9.6905075
+INSTRUMENTATION_STATUS: frame_overrun_millis_p90=-2.0413451999999994
+INSTRUMENTATION_STATUS: frame_overrun_millis_p95=0.07604299999999982
+INSTRUMENTATION_STATUS: frame_overrun_millis_p99=4.188376109999998
+INSTRUMENTATION_STATUS: main_frame_max_millis_max=21.571927
+INSTRUMENTATION_STATUS: main_frame_max_millis_median=17.338125
+INSTRUMENTATION_STATUS: main_frame_max_millis_min=14.580885
+INSTRUMENTATION_STATUS: main_frame_max_millis_stddev=2.7749315059106046
+INSTRUMENTATION_STATUS: oc_bind_count_max=0.0
+INSTRUMENTATION_STATUS: oc_bind_count_median=0.0
+INSTRUMENTATION_STATUS: oc_bind_count_min=0.0
+INSTRUMENTATION_STATUS: oc_bind_count_stddev=0.0
+INSTRUMENTATION_STATUS: oc_open_pro_average_millis_max=44.9319535
+INSTRUMENTATION_STATUS: oc_open_pro_average_millis_median=33.2980995
+INSTRUMENTATION_STATUS: oc_open_pro_average_millis_min=24.870417
+INSTRUMENTATION_STATUS: oc_open_pro_average_millis_stddev=7.372663649514846
+INSTRUMENTATION_STATUS: oc_open_pro_max_millis_max=45.106771
+INSTRUMENTATION_STATUS: oc_open_pro_max_millis_median=36.066979
+INSTRUMENTATION_STATUS: oc_open_pro_max_millis_min=25.173021
+INSTRUMENTATION_STATUS: oc_open_pro_max_millis_stddev=8.063918281827513
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=8
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=modeSwitchSameSession
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=9
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=editorSliderDrag
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_editorSliderDrag_iter000_2026-11-12-15-48-59.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_editorSliderDrag_iter000_2026-11-12-15-48-59.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_editorSliderDrag_iter001_2026-11-12-15-49-19.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_editorSliderDrag_iter001_2026-11-12-15-49-19.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_editorSliderDrag_iter002_2026-11-12-15-49-39.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_editorSliderDrag_iter002_2026-11-12-15-49-39.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_editorSliderDrag_iter003_2026-11-12-15-49-58.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_editorSliderDrag_iter003_2026-11-12-15-49-58.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_editorSliderDrag_iter004_2026-11-12-15-50-17.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_editorSliderDrag_iter004_2026-11-12-15-50-17.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: android.studio.display.benchmark=CameraBenchmarks_editorSliderDrag
+  frameCount           [min 620.0](file://CameraBenchmarks_editorSliderDrag_iter004_2026-11-12-15-50-17.perfetto-trace),   [median 633.0](file://CameraBenchmarks_editorSliderDrag_iter002_2026-11-12-15-49-39.perfetto-trace),   [max 642.0](file://CameraBenchmarks_editorSliderDrag_iter000_2026-11-12-15-48-59.perfetto-trace)
+  mainFrameMaxMs       [min  40.4](file://CameraBenchmarks_editorSliderDrag_iter003_2026-11-12-15-49-58.perfetto-trace),   [median  44.5](file://CameraBenchmarks_editorSliderDrag_iter002_2026-11-12-15-49-39.perfetto-trace),   [max  50.3](file://CameraBenchmarks_editorSliderDrag_iter004_2026-11-12-15-50-17.perfetto-trace)
+  frameDurationCpuMs   P50    8.5,   P90   15.9,   P95   20.6,   P99   45.2
+  frameOverrunMs       P50   -3.2,   P90   10.1,   P95   23.5,   P99   38.4
+    Traces: Iteration [0](file://CameraBenchmarks_editorSliderDrag_iter000_2026-11-12-15-48-59.perfetto-trace) [1](file://CameraBenchmarks_editorSliderDrag_iter001_2026-11-12-15-49-19.perfetto-trace) [2](file://CameraBenchmarks_editorSliderDrag_iter002_2026-11-12-15-49-39.perfetto-trace) [3](file://CameraBenchmarks_editorSliderDrag_iter003_2026-11-12-15-49-58.perfetto-trace) [4](file://CameraBenchmarks_editorSliderDrag_iter004_2026-11-12-15-50-17.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark=CameraBenchmarks_editorSliderDrag
+  frameCount           [min 620.0](file://CameraBenchmarks_editorSliderDrag_iter004_2026-11-12-15-50-17.perfetto-trace),   [median 633.0](file://CameraBenchmarks_editorSliderDrag_iter002_2026-11-12-15-49-39.perfetto-trace),   [max 642.0](file://CameraBenchmarks_editorSliderDrag_iter000_2026-11-12-15-48-59.perfetto-trace)
+  mainFrameMaxMs       [min  40.4](file://CameraBenchmarks_editorSliderDrag_iter003_2026-11-12-15-49-58.perfetto-trace),   [median  44.5](file://CameraBenchmarks_editorSliderDrag_iter002_2026-11-12-15-49-39.perfetto-trace),   [max  50.3](file://CameraBenchmarks_editorSliderDrag_iter004_2026-11-12-15-50-17.perfetto-trace)
+  frameDurationCpuMs   P50    8.5,   P90   15.9,   P95   20.6,   P99   45.2
+  frameOverrunMs       P50   -3.2,   P90   10.1,   P95   23.5,   P99   38.4
+    Traces: Iteration [0](file://CameraBenchmarks_editorSliderDrag_iter000_2026-11-12-15-48-59.perfetto-trace) [1](file://CameraBenchmarks_editorSliderDrag_iter001_2026-11-12-15-49-19.perfetto-trace) [2](file://CameraBenchmarks_editorSliderDrag_iter002_2026-11-12-15-49-39.perfetto-trace) [3](file://CameraBenchmarks_editorSliderDrag_iter003_2026-11-12-15-49-58.perfetto-trace) [4](file://CameraBenchmarks_editorSliderDrag_iter004_2026-11-12-15-50-17.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark=CameraBenchmarks_editorSliderDrag
+  frameCount           [min 620.0](file://CameraBenchmarks_editorSliderDrag_iter004_2026-11-12-15-50-17.perfetto-trace),   [median 633.0](file://CameraBenchmarks_editorSliderDrag_iter002_2026-11-12-15-49-39.perfetto-trace),   [max 642.0](file://CameraBenchmarks_editorSliderDrag_iter000_2026-11-12-15-48-59.perfetto-trace)
+  mainFrameMaxMs       [min  40.4](file://CameraBenchmarks_editorSliderDrag_iter003_2026-11-12-15-49-58.perfetto-trace),   [median  44.5](file://CameraBenchmarks_editorSliderDrag_iter002_2026-11-12-15-49-39.perfetto-trace),   [max  50.3](file://CameraBenchmarks_editorSliderDrag_iter004_2026-11-12-15-50-17.perfetto-trace)
+  frameDurationCpuMs   P50    8.5,   P90   15.9,   P95   20.6,   P99   45.2
+  frameOverrunMs       P50   -3.2,   P90   10.1,   P95   23.5,   P99   38.4
+    Traces: Iteration [0](file://CameraBenchmarks_editorSliderDrag_iter000_2026-11-12-15-48-59.perfetto-trace) [1](file://CameraBenchmarks_editorSliderDrag_iter001_2026-11-12-15-49-19.perfetto-trace) [2](file://CameraBenchmarks_editorSliderDrag_iter002_2026-11-12-15-49-39.perfetto-trace) [3](file://CameraBenchmarks_editorSliderDrag_iter003_2026-11-12-15-49-58.perfetto-trace) [4](file://CameraBenchmarks_editorSliderDrag_iter004_2026-11-12-15-50-17.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: frame_count_max=642.0
+INSTRUMENTATION_STATUS: frame_count_median=633.0
+INSTRUMENTATION_STATUS: frame_count_min=620.0
+INSTRUMENTATION_STATUS: frame_count_stddev=8.514693182963201
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p50=8.509948
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p90=15.947301799999998
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p95=20.608749799999984
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p99=45.2297918
+INSTRUMENTATION_STATUS: frame_overrun_millis_p50=-3.204724
+INSTRUMENTATION_STATUS: frame_overrun_millis_p90=10.063205799999995
+INSTRUMENTATION_STATUS: frame_overrun_millis_p95=23.499106399999967
+INSTRUMENTATION_STATUS: frame_overrun_millis_p99=38.440288800000005
+INSTRUMENTATION_STATUS: main_frame_max_millis_max=50.317187
+INSTRUMENTATION_STATUS: main_frame_max_millis_median=44.52401
+INSTRUMENTATION_STATUS: main_frame_max_millis_min=40.449167
+INSTRUMENTATION_STATUS: main_frame_max_millis_stddev=3.829177619461023
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=9
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=editorSliderDrag
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=10
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=proDialDrag
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_proDialDrag_iter000_2026-11-12-15-50-36.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_proDialDrag_iter000_2026-11-12-15-50-36.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_proDialDrag_iter001_2026-11-12-15-50-58.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_proDialDrag_iter001_2026-11-12-15-50-58.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_proDialDrag_iter002_2026-11-12-15-51-19.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_proDialDrag_iter002_2026-11-12-15-51-19.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_proDialDrag_iter003_2026-11-12-15-51-40.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_proDialDrag_iter003_2026-11-12-15-51-40.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_proDialDrag_iter004_2026-11-12-15-52-01.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_proDialDrag_iter004_2026-11-12-15-52-01.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: android.studio.display.benchmark=CameraBenchmarks_proDialDrag
+  OcBindCount          [min   0.0](file://CameraBenchmarks_proDialDrag_iter000_2026-11-12-15-50-36.perfetto-trace),   [median   0.0](file://CameraBenchmarks_proDialDrag_iter002_2026-11-12-15-51-19.perfetto-trace),   [max   0.0](file://CameraBenchmarks_proDialDrag_iter000_2026-11-12-15-50-36.perfetto-trace)
+  frameCount           [min 388.0](file://CameraBenchmarks_proDialDrag_iter003_2026-11-12-15-51-40.perfetto-trace),   [median 393.0](file://CameraBenchmarks_proDialDrag_iter002_2026-11-12-15-51-19.perfetto-trace),   [max 655.0](file://CameraBenchmarks_proDialDrag_iter000_2026-11-12-15-50-36.perfetto-trace)
+  mainFrameMaxMs       [min  10.7](file://CameraBenchmarks_proDialDrag_iter004_2026-11-12-15-52-01.perfetto-trace),   [median  14.5](file://CameraBenchmarks_proDialDrag_iter002_2026-11-12-15-51-19.perfetto-trace),   [max  71.7](file://CameraBenchmarks_proDialDrag_iter000_2026-11-12-15-50-36.perfetto-trace)
+  frameDurationCpuMs   P50    7.1,   P90   13.5,   P95   14.2,   P99   16.6
+  frameOverrunMs       P50   -7.2,   P90   -0.5,   P95    1.2,   P99    5.9
+    Traces: Iteration [0](file://CameraBenchmarks_proDialDrag_iter000_2026-11-12-15-50-36.perfetto-trace) [1](file://CameraBenchmarks_proDialDrag_iter001_2026-11-12-15-50-58.perfetto-trace) [2](file://CameraBenchmarks_proDialDrag_iter002_2026-11-12-15-51-19.perfetto-trace) [3](file://CameraBenchmarks_proDialDrag_iter003_2026-11-12-15-51-40.perfetto-trace) [4](file://CameraBenchmarks_proDialDrag_iter004_2026-11-12-15-52-01.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark=CameraBenchmarks_proDialDrag
+  OcBindCount          [min   0.0](file://CameraBenchmarks_proDialDrag_iter000_2026-11-12-15-50-36.perfetto-trace),   [median   0.0](file://CameraBenchmarks_proDialDrag_iter002_2026-11-12-15-51-19.perfetto-trace),   [max   0.0](file://CameraBenchmarks_proDialDrag_iter000_2026-11-12-15-50-36.perfetto-trace)
+  frameCount           [min 388.0](file://CameraBenchmarks_proDialDrag_iter003_2026-11-12-15-51-40.perfetto-trace),   [median 393.0](file://CameraBenchmarks_proDialDrag_iter002_2026-11-12-15-51-19.perfetto-trace),   [max 655.0](file://CameraBenchmarks_proDialDrag_iter000_2026-11-12-15-50-36.perfetto-trace)
+  mainFrameMaxMs       [min  10.7](file://CameraBenchmarks_proDialDrag_iter004_2026-11-12-15-52-01.perfetto-trace),   [median  14.5](file://CameraBenchmarks_proDialDrag_iter002_2026-11-12-15-51-19.perfetto-trace),   [max  71.7](file://CameraBenchmarks_proDialDrag_iter000_2026-11-12-15-50-36.perfetto-trace)
+  frameDurationCpuMs   P50    7.1,   P90   13.5,   P95   14.2,   P99   16.6
+  frameOverrunMs       P50   -7.2,   P90   -0.5,   P95    1.2,   P99    5.9
+    Traces: Iteration [0](file://CameraBenchmarks_proDialDrag_iter000_2026-11-12-15-50-36.perfetto-trace) [1](file://CameraBenchmarks_proDialDrag_iter001_2026-11-12-15-50-58.perfetto-trace) [2](file://CameraBenchmarks_proDialDrag_iter002_2026-11-12-15-51-19.perfetto-trace) [3](file://CameraBenchmarks_proDialDrag_iter003_2026-11-12-15-51-40.perfetto-trace) [4](file://CameraBenchmarks_proDialDrag_iter004_2026-11-12-15-52-01.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark=CameraBenchmarks_proDialDrag
+  OcBindCount          [min   0.0](file://CameraBenchmarks_proDialDrag_iter000_2026-11-12-15-50-36.perfetto-trace),   [median   0.0](file://CameraBenchmarks_proDialDrag_iter002_2026-11-12-15-51-19.perfetto-trace),   [max   0.0](file://CameraBenchmarks_proDialDrag_iter000_2026-11-12-15-50-36.perfetto-trace)
+  frameCount           [min 388.0](file://CameraBenchmarks_proDialDrag_iter003_2026-11-12-15-51-40.perfetto-trace),   [median 393.0](file://CameraBenchmarks_proDialDrag_iter002_2026-11-12-15-51-19.perfetto-trace),   [max 655.0](file://CameraBenchmarks_proDialDrag_iter000_2026-11-12-15-50-36.perfetto-trace)
+  mainFrameMaxMs       [min  10.7](file://CameraBenchmarks_proDialDrag_iter004_2026-11-12-15-52-01.perfetto-trace),   [median  14.5](file://CameraBenchmarks_proDialDrag_iter002_2026-11-12-15-51-19.perfetto-trace),   [max  71.7](file://CameraBenchmarks_proDialDrag_iter000_2026-11-12-15-50-36.perfetto-trace)
+  frameDurationCpuMs   P50    7.1,   P90   13.5,   P95   14.2,   P99   16.6
+  frameOverrunMs       P50   -7.2,   P90   -0.5,   P95    1.2,   P99    5.9
+    Traces: Iteration [0](file://CameraBenchmarks_proDialDrag_iter000_2026-11-12-15-50-36.perfetto-trace) [1](file://CameraBenchmarks_proDialDrag_iter001_2026-11-12-15-50-58.perfetto-trace) [2](file://CameraBenchmarks_proDialDrag_iter002_2026-11-12-15-51-19.perfetto-trace) [3](file://CameraBenchmarks_proDialDrag_iter003_2026-11-12-15-51-40.perfetto-trace) [4](file://CameraBenchmarks_proDialDrag_iter004_2026-11-12-15-52-01.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: frame_count_max=655.0
+INSTRUMENTATION_STATUS: frame_count_median=393.0
+INSTRUMENTATION_STATUS: frame_count_min=388.0
+INSTRUMENTATION_STATUS: frame_count_stddev=116.20972420585122
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p50=7.057083
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p90=13.5152816
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p95=14.247468499999998
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p99=16.591406499999994
+INSTRUMENTATION_STATUS: frame_overrun_millis_p50=-7.184623
+INSTRUMENTATION_STATUS: frame_overrun_millis_p90=-0.46252319999999975
+INSTRUMENTATION_STATUS: frame_overrun_millis_p95=1.2090366999999993
+INSTRUMENTATION_STATUS: frame_overrun_millis_p99=5.9219043799999636
+INSTRUMENTATION_STATUS: main_frame_max_millis_max=71.666406
+INSTRUMENTATION_STATUS: main_frame_max_millis_median=14.488385
+INSTRUMENTATION_STATUS: main_frame_max_millis_min=10.736303
+INSTRUMENTATION_STATUS: main_frame_max_millis_stddev=26.125042958768304
+INSTRUMENTATION_STATUS: oc_bind_count_max=0.0
+INSTRUMENTATION_STATUS: oc_bind_count_median=0.0
+INSTRUMENTATION_STATUS: oc_bind_count_min=0.0
+INSTRUMENTATION_STATUS: oc_bind_count_stddev=0.0
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=10
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=proDialDrag
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=11
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=strictModeClean
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: android.studio.display.benchmark=CameraBenchmarks_strictModeClean
+  timeToFullDisplayMs      [min 1,665.7](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace),   [median 1,665.7](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace),   [max 1,665.7](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace)
+  timeToInitialDisplayMs   [min   668.7](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace),   [median   668.7](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace),   [max   668.7](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace)
+    Traces: Iteration [0](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark=CameraBenchmarks_strictModeClean
+  timeToFullDisplayMs      [min 1,665.7](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace),   [median 1,665.7](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace),   [max 1,665.7](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace)
+  timeToInitialDisplayMs   [min   668.7](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace),   [median   668.7](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace),   [max   668.7](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace)
+    Traces: Iteration [0](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark=CameraBenchmarks_strictModeClean
+  timeToFullDisplayMs      [min 1,665.7](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace),   [median 1,665.7](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace),   [max 1,665.7](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace)
+  timeToInitialDisplayMs   [min   668.7](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace),   [median   668.7](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace),   [max   668.7](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace)
+    Traces: Iteration [0](file://CameraBenchmarks_strictModeClean_iter000_2026-11-12-15-52-33.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: time_to_full_display_millis_max=1665.703958
+INSTRUMENTATION_STATUS: time_to_full_display_millis_median=1665.703958
+INSTRUMENTATION_STATUS: time_to_full_display_millis_min=1665.703958
+INSTRUMENTATION_STATUS: time_to_full_display_millis_stddev=0.0
+INSTRUMENTATION_STATUS: time_to_initial_display_millis_max=668.650208
+INSTRUMENTATION_STATUS: time_to_initial_display_millis_median=668.650208
+INSTRUMENTATION_STATUS: time_to_initial_display_millis_min=668.650208
+INSTRUMENTATION_STATUS: time_to_initial_display_millis_stddev=0.0
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=11
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: StrictMode violations in app code:
+--------- beginning of main
+11-12 22:52:12.640  6349  6447 E OcStrictMode: VIOLATION DiskReadViolation at dev.opencamera.app.CameraActivity.h0(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:3)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.StrictMode$AndroidBlockGuardPolicy.onReadFromDisk(StrictMode.java:1840)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at libcore.io.BlockGuardOs.access(BlockGuardOs.java:74)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at libcore.io.ForwardingOs.access(ForwardingOs.java:129)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.AndroidForwardingOs.access(AndroidForwardingOs.java:111)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.UnixFileSystem.checkAccess(UnixFileSystem.java:337)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.File.exists(File.java:829)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getDataDir(ContextImpl.java:3544)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getPreferencesDir(ContextImpl.java:807)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferencesPath(ContextImpl.java:1046)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferences(ContextImpl.java:641)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dd.b.<init>(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:2)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at rc.g.<init>(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:26)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at yb.l.a(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:470)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at ae.m.getValue(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:21)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dev.opencamera.app.CameraActivity.h0(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:3)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dev.opencamera.app.CameraActivity.onCreate(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:422)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Activity.performCreate(Activity.java:9340)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Activity.performCreate(Activity.java:9318)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1543)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:4559)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:4781)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:133)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:103)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3032)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessageImpl(Handler.java:142)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessage(Handler.java:125)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Looper.loopOnce(Looper.java:296)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Looper.loop(Looper.java:397)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.main(ActivityThread.java:9523)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.lang.reflect.Method.invoke(Native Method)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:575)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:939)
+11-12 22:52:12.640  6349  6447 E OcStrictMode: VIOLATION DiskReadViolation at dev.opencamera.app.CameraActivity.h0(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:3)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.StrictMode$AndroidBlockGuardPolicy.onReadFromDisk(StrictMode.java:1840)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at libcore.io.BlockGuardOs.access(BlockGuardOs.java:74)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at libcore.io.ForwardingOs.access(ForwardingOs.java:129)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.AndroidForwardingOs.access(AndroidForwardingOs.java:111)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.UnixFileSystem.checkAccess(UnixFileSystem.java:337)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.File.exists(File.java:829)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.ensurePrivateDirExists(ContextImpl.java:868)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.ensurePrivateDirExists(ContextImpl.java:857)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getPreferencesDir(ContextImpl.java:809)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferencesPath(ContextImpl.java:1046)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferences(ContextImpl.java:641)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dd.b.<init>(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:2)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at rc.g.<init>(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:26)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at yb.l.a(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:470)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at ae.m.getValue(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:21)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dev.opencamera.app.CameraActivity.h0(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:3)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dev.opencamera.app.CameraActivity.onCreate(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:422)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Activity.performCreate(Activity.java:9340)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Activity.performCreate(Activity.java:9318)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1543)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:4559)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:4781)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:133)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:103)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3032)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessageImpl(Handler.java:142)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessage(Handler.java:125)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Looper.loopOnce(Looper.java:296)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Looper.loop(Looper.java:397)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.main(ActivityThread.java:9523)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.lang.reflect.Method.invoke(Native Method)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:575)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:939)
+11-12 22:52:12.640  6349  6447 E OcStrictMode: VIOLATION DiskReadViolation at dev.opencamera.app.CameraActivity.x0(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:29)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.StrictMode$AndroidBlockGuardPolicy.onReadFromDisk(StrictMode.java:1840)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.UnixFileSystem.list(UnixFileSystem.java:400)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.File.list(File.java:1145)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.File.listFiles(File.java:1230)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at qd.m.a(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:3)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at sc.i.c(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:21)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dev.opencamera.app.CameraActivity.x0(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:29)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dev.opencamera.app.CameraActivity.onCreate(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:756)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Activity.performCreate(Activity.java:9340)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Activity.performCreate(Activity.java:9318)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1543)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:4559)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:4781)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:133)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:103)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3032)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessageImpl(Handler.java:142)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessage(Handler.java:125)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Looper.loopOnce(Looper.java:296)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Looper.loop(Looper.java:397)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.main(ActivityThread.java:9523)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.lang.reflect.Method.invoke(Native Method)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:575)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:939)
+11-12 22:52:16.699  6349  6447 E OcStrictMode: VIOLATION DiskReadViolation at dev.opencamera.app.SettingsActivity$RootSettingsFragment.P(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.os.StrictMode$AndroidBlockGuardPolicy.onReadFromDisk(StrictMode.java:1840)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at libcore.io.BlockGuardOs.access(BlockGuardOs.java:74)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at libcore.io.ForwardingOs.access(ForwardingOs.java:129)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.AndroidForwardingOs.access(AndroidForwardingOs.java:111)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at java.io.UnixFileSystem.checkAccess(UnixFileSystem.java:337)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at java.io.File.exists(File.java:829)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getDataDir(ContextImpl.java:3544)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getPreferencesDir(ContextImpl.java:807)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferencesPath(ContextImpl.java:1046)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferences(ContextImpl.java:641)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at h3.z.e(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:16)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at androidx.preference.Preference.k(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:33)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at androidx.preference.PreferenceGroup.B(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:186)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at k9.x.d(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:126)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at k9.x.d(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:129)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at k9.x.c(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:42)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at yb.c1.P(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:27)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at dev.opencamera.app.SettingsActivity$RootSettingsFragment.P(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at k9.t.w(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:68)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at t6.i0.e(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:67)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at t6.i0.k(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:151)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at t6.d0.z(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1032)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at t6.d0.R(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:82)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at t6.d0.y(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:78)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at t6.d0.t(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:67)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at k.k.u(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:34)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at k.k.onStart(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.Instrumentation.callActivityOnStart(Instrumentation.java:1718)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.Activity.performStart(Activity.java:9383)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.ActivityThread.handleStartActivity(ActivityThread.java:4601)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.performLifecycleSequence(TransactionExecutor.java:214)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.cycleToPath(TransactionExecutor.java:194)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeLifecycleItem(TransactionExecutor.java:166)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:101)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3032)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessageImpl(Handler.java:142)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessage(Handler.java:125)
+11-12 22:52:16.701  6349  6447 E OcStrictMode: VIOLATION DiskReadViolation at dev.opencamera.app.SettingsActivity$RootSettingsFragment.P(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.os.StrictMode$AndroidBlockGuardPolicy.onReadFromDisk(StrictMode.java:1840)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at libcore.io.BlockGuardOs.access(BlockGuardOs.java:74)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at libcore.io.ForwardingOs.access(ForwardingOs.java:129)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.AndroidForwardingOs.access(AndroidForwardingOs.java:111)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at java.io.UnixFileSystem.checkAccess(UnixFileSystem.java:337)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at java.io.File.exists(File.java:829)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ContextImpl.ensurePrivateDirExists(ContextImpl.java:868)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ContextImpl.ensurePrivateDirExists(ContextImpl.java:857)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getPreferencesDir(ContextImpl.java:809)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferencesPath(ContextImpl.java:1046)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferences(ContextImpl.java:641)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at h3.z.e(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:16)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at androidx.preference.Preference.k(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:33)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at androidx.preference.PreferenceGroup.B(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:186)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at k9.x.d(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:126)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at k9.x.d(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:129)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at k9.x.c(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:42)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at yb.c1.P(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:27)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at dev.opencamera.app.SettingsActivity$RootSettingsFragment.P(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at k9.t.w(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:68)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at t6.i0.e(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:67)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at t6.i0.k(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:151)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at t6.d0.z(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1032)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at t6.d0.R(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:82)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at t6.d0.y(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:78)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at t6.d0.t(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:67)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at k.k.u(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:34)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at k.k.onStart(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.Instrumentation.callActivityOnStart(Instrumentation.java:1718)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.Activity.performStart(Activity.java:9383)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ActivityThread.handleStartActivity(ActivityThread.java:4601)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.performLifecycleSequence(TransactionExecutor.java:214)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.cycleToPath(TransactionExecutor.java:194)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeLifecycleItem(TransactionExecutor.java:166)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:101)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3032)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessageImpl(Handler.java:142)
+
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at dev.opencamera.macrobenchmark.CameraBenchmarks.strictModeClean(CameraBenchmarks.kt:114)
+
+INSTRUMENTATION_STATUS: stream=
+Error in strictModeClean(dev.opencamera.macrobenchmark.CameraBenchmarks):
+java.lang.AssertionError: StrictMode violations in app code:
+--------- beginning of main
+11-12 22:52:12.640  6349  6447 E OcStrictMode: VIOLATION DiskReadViolation at dev.opencamera.app.CameraActivity.h0(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:3)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.StrictMode$AndroidBlockGuardPolicy.onReadFromDisk(StrictMode.java:1840)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at libcore.io.BlockGuardOs.access(BlockGuardOs.java:74)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at libcore.io.ForwardingOs.access(ForwardingOs.java:129)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.AndroidForwardingOs.access(AndroidForwardingOs.java:111)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.UnixFileSystem.checkAccess(UnixFileSystem.java:337)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.File.exists(File.java:829)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getDataDir(ContextImpl.java:3544)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getPreferencesDir(ContextImpl.java:807)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferencesPath(ContextImpl.java:1046)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferences(ContextImpl.java:641)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dd.b.<init>(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:2)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at rc.g.<init>(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:26)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at yb.l.a(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:470)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at ae.m.getValue(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:21)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dev.opencamera.app.CameraActivity.h0(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:3)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dev.opencamera.app.CameraActivity.onCreate(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:422)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Activity.performCreate(Activity.java:9340)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Activity.performCreate(Activity.java:9318)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1543)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:4559)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:4781)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:133)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:103)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3032)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessageImpl(Handler.java:142)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessage(Handler.java:125)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Looper.loopOnce(Looper.java:296)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Looper.loop(Looper.java:397)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.main(ActivityThread.java:9523)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.lang.reflect.Method.invoke(Native Method)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:575)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:939)
+11-12 22:52:12.640  6349  6447 E OcStrictMode: VIOLATION DiskReadViolation at dev.opencamera.app.CameraActivity.h0(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:3)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.StrictMode$AndroidBlockGuardPolicy.onReadFromDisk(StrictMode.java:1840)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at libcore.io.BlockGuardOs.access(BlockGuardOs.java:74)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at libcore.io.ForwardingOs.access(ForwardingOs.java:129)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.AndroidForwardingOs.access(AndroidForwardingOs.java:111)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.UnixFileSystem.checkAccess(UnixFileSystem.java:337)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.File.exists(File.java:829)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.ensurePrivateDirExists(ContextImpl.java:868)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.ensurePrivateDirExists(ContextImpl.java:857)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getPreferencesDir(ContextImpl.java:809)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferencesPath(ContextImpl.java:1046)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferences(ContextImpl.java:641)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dd.b.<init>(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:2)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at rc.g.<init>(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:26)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at yb.l.a(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:470)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at ae.m.getValue(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:21)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dev.opencamera.app.CameraActivity.h0(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:3)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dev.opencamera.app.CameraActivity.onCreate(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:422)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Activity.performCreate(Activity.java:9340)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Activity.performCreate(Activity.java:9318)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1543)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:4559)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:4781)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:133)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:103)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3032)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessageImpl(Handler.java:142)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessage(Handler.java:125)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Looper.loopOnce(Looper.java:296)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Looper.loop(Looper.java:397)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.main(ActivityThread.java:9523)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.lang.reflect.Method.invoke(Native Method)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:575)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:939)
+11-12 22:52:12.640  6349  6447 E OcStrictMode: VIOLATION DiskReadViolation at dev.opencamera.app.CameraActivity.x0(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:29)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.StrictMode$AndroidBlockGuardPolicy.onReadFromDisk(StrictMode.java:1840)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.UnixFileSystem.list(UnixFileSystem.java:400)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.File.list(File.java:1145)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.File.listFiles(File.java:1230)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at qd.m.a(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:3)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at sc.i.c(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:21)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dev.opencamera.app.CameraActivity.x0(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:29)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dev.opencamera.app.CameraActivity.onCreate(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:756)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Activity.performCreate(Activity.java:9340)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Activity.performCreate(Activity.java:9318)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1543)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:4559)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:4781)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:133)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:103)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3032)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessageImpl(Handler.java:142)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessage(Handler.java:125)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Looper.loopOnce(Looper.java:296)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Looper.loop(Looper.java:397)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.main(ActivityThread.java:9523)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.lang.reflect.Method.invoke(Native Method)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:575)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:939)
+11-12 22:52:16.699  6349  6447 E OcStrictMode: VIOLATION DiskReadViolation at dev.opencamera.app.SettingsActivity$RootSettingsFragment.P(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.os.StrictMode$AndroidBlockGuardPolicy.onReadFromDisk(StrictMode.java:1840)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at libcore.io.BlockGuardOs.access(BlockGuardOs.java:74)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at libcore.io.ForwardingOs.access(ForwardingOs.java:129)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.AndroidForwardingOs.access(AndroidForwardingOs.java:111)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at java.io.UnixFileSystem.checkAccess(UnixFileSystem.java:337)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at java.io.File.exists(File.java:829)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getDataDir(ContextImpl.java:3544)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getPreferencesDir(ContextImpl.java:807)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferencesPath(ContextImpl.java:1046)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferences(ContextImpl.java:641)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at h3.z.e(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:16)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at androidx.preference.Preference.k(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:33)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at androidx.preference.PreferenceGroup.B(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:186)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at k9.x.d(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:126)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at k9.x.d(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:129)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at k9.x.c(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:42)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at yb.c1.P(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:27)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at dev.opencamera.app.SettingsActivity$RootSettingsFragment.P(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at k9.t.w(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:68)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at t6.i0.e(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:67)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at t6.i0.k(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:151)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at t6.d0.z(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1032)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at t6.d0.R(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:82)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at t6.d0.y(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:78)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at t6.d0.t(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:67)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at k.k.u(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:34)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at k.k.onStart(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.Instrumentation.callActivityOnStart(Instrumentation.java:1718)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.Activity.performStart(Activity.java:9383)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.ActivityThread.handleStartActivity(ActivityThread.java:4601)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.performLifecycleSequence(TransactionExecutor.java:214)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.cycleToPath(TransactionExecutor.java:194)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeLifecycleItem(TransactionExecutor.java:166)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:101)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3032)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessageImpl(Handler.java:142)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessage(Handler.java:125)
+11-12 22:52:16.701  6349  6447 E OcStrictMode: VIOLATION DiskReadViolation at dev.opencamera.app.SettingsActivity$RootSettingsFragment.P(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.os.StrictMode$AndroidBlockGuardPolicy.onReadFromDisk(StrictMode.java:1840)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at libcore.io.BlockGuardOs.access(BlockGuardOs.java:74)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at libcore.io.ForwardingOs.access(ForwardingOs.java:129)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.AndroidForwardingOs.access(AndroidForwardingOs.java:111)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at java.io.UnixFileSystem.checkAccess(UnixFileSystem.java:337)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at java.io.File.exists(File.java:829)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ContextImpl.ensurePrivateDirExists(ContextImpl.java:868)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ContextImpl.ensurePrivateDirExists(ContextImpl.java:857)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getPreferencesDir(ContextImpl.java:809)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferencesPath(ContextImpl.java:1046)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferences(ContextImpl.java:641)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at h3.z.e(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:16)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at androidx.preference.Preference.k(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:33)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at androidx.preference.PreferenceGroup.B(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:186)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at k9.x.d(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:126)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at k9.x.d(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:129)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at k9.x.c(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:42)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at yb.c1.P(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:27)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at dev.opencamera.app.SettingsActivity$RootSettingsFragment.P(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at k9.t.w(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:68)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at t6.i0.e(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:67)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at t6.i0.k(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:151)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at t6.d0.z(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1032)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at t6.d0.R(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:82)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at t6.d0.y(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:78)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at t6.d0.t(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:67)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at k.k.u(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:34)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at k.k.onStart(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.Instrumentation.callActivityOnStart(Instrumentation.java:1718)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.Activity.performStart(Activity.java:9383)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ActivityThread.handleStartActivity(ActivityThread.java:4601)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.performLifecycleSequence(TransactionExecutor.java:214)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.cycleToPath(TransactionExecutor.java:194)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeLifecycleItem(TransactionExecutor.java:166)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:101)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3032)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessageImpl(Handler.java:142)
+
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at dev.opencamera.macrobenchmark.CameraBenchmarks.strictModeClean(CameraBenchmarks.kt:114)
+
+INSTRUMENTATION_STATUS: test=strictModeClean
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=12
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=openLooks
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openLooks_iter000_2026-11-12-15-53-00.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openLooks_iter000_2026-11-12-15-53-00.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openLooks_iter001_2026-11-12-15-53-13.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openLooks_iter001_2026-11-12-15-53-13.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openLooks_iter003_2026-11-12-15-53-38.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openLooks_iter003_2026-11-12-15-53-38.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_openLooks_iter004_2026-11-12-15-53-51.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_openLooks_iter004_2026-11-12-15-53-51.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: android.studio.display.benchmark=CameraBenchmarks_openLooks
+  OcOpenLooksAverageMs   [min  23.9](file://CameraBenchmarks_openLooks_iter000_2026-11-12-15-53-00.perfetto-trace),   [median  30.9](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace),   [max  34.6](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace)
+  OcOpenLooksMaxMs       [min  26.7](file://CameraBenchmarks_openLooks_iter000_2026-11-12-15-53-00.perfetto-trace),   [median  38.6](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace),   [max  38.8](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace)
+  frameCount             [min 121.0](file://CameraBenchmarks_openLooks_iter001_2026-11-12-15-53-13.perfetto-trace),   [median 123.0](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace),   [max 147.0](file://CameraBenchmarks_openLooks_iter000_2026-11-12-15-53-00.perfetto-trace)
+  mainFrameMaxMs         [min  11.1](file://CameraBenchmarks_openLooks_iter003_2026-11-12-15-53-38.perfetto-trace),   [median  12.0](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace),   [max  33.7](file://CameraBenchmarks_openLooks_iter000_2026-11-12-15-53-00.perfetto-trace)
+  frameDurationCpuMs     P50    4.5,   P90    8.2,   P95   11.7,   P99   16.6
+  frameOverrunMs         P50  -10.1,   P90   -3.3,   P95   -0.8,   P99    4.1
+    Traces: Iteration [0](file://CameraBenchmarks_openLooks_iter000_2026-11-12-15-53-00.perfetto-trace) [1](file://CameraBenchmarks_openLooks_iter001_2026-11-12-15-53-13.perfetto-trace) [2](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace) [3](file://CameraBenchmarks_openLooks_iter003_2026-11-12-15-53-38.perfetto-trace) [4](file://CameraBenchmarks_openLooks_iter004_2026-11-12-15-53-51.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark=CameraBenchmarks_openLooks
+  OcOpenLooksAverageMs   [min  23.9](file://CameraBenchmarks_openLooks_iter000_2026-11-12-15-53-00.perfetto-trace),   [median  30.9](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace),   [max  34.6](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace)
+  OcOpenLooksMaxMs       [min  26.7](file://CameraBenchmarks_openLooks_iter000_2026-11-12-15-53-00.perfetto-trace),   [median  38.6](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace),   [max  38.8](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace)
+  frameCount             [min 121.0](file://CameraBenchmarks_openLooks_iter001_2026-11-12-15-53-13.perfetto-trace),   [median 123.0](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace),   [max 147.0](file://CameraBenchmarks_openLooks_iter000_2026-11-12-15-53-00.perfetto-trace)
+  mainFrameMaxMs         [min  11.1](file://CameraBenchmarks_openLooks_iter003_2026-11-12-15-53-38.perfetto-trace),   [median  12.0](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace),   [max  33.7](file://CameraBenchmarks_openLooks_iter000_2026-11-12-15-53-00.perfetto-trace)
+  frameDurationCpuMs     P50    4.5,   P90    8.2,   P95   11.7,   P99   16.6
+  frameOverrunMs         P50  -10.1,   P90   -3.3,   P95   -0.8,   P99    4.1
+    Traces: Iteration [0](file://CameraBenchmarks_openLooks_iter000_2026-11-12-15-53-00.perfetto-trace) [1](file://CameraBenchmarks_openLooks_iter001_2026-11-12-15-53-13.perfetto-trace) [2](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace) [3](file://CameraBenchmarks_openLooks_iter003_2026-11-12-15-53-38.perfetto-trace) [4](file://CameraBenchmarks_openLooks_iter004_2026-11-12-15-53-51.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark=CameraBenchmarks_openLooks
+  OcOpenLooksAverageMs   [min  23.9](file://CameraBenchmarks_openLooks_iter000_2026-11-12-15-53-00.perfetto-trace),   [median  30.9](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace),   [max  34.6](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace)
+  OcOpenLooksMaxMs       [min  26.7](file://CameraBenchmarks_openLooks_iter000_2026-11-12-15-53-00.perfetto-trace),   [median  38.6](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace),   [max  38.8](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace)
+  frameCount             [min 121.0](file://CameraBenchmarks_openLooks_iter001_2026-11-12-15-53-13.perfetto-trace),   [median 123.0](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace),   [max 147.0](file://CameraBenchmarks_openLooks_iter000_2026-11-12-15-53-00.perfetto-trace)
+  mainFrameMaxMs         [min  11.1](file://CameraBenchmarks_openLooks_iter003_2026-11-12-15-53-38.perfetto-trace),   [median  12.0](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace),   [max  33.7](file://CameraBenchmarks_openLooks_iter000_2026-11-12-15-53-00.perfetto-trace)
+  frameDurationCpuMs     P50    4.5,   P90    8.2,   P95   11.7,   P99   16.6
+  frameOverrunMs         P50  -10.1,   P90   -3.3,   P95   -0.8,   P99    4.1
+    Traces: Iteration [0](file://CameraBenchmarks_openLooks_iter000_2026-11-12-15-53-00.perfetto-trace) [1](file://CameraBenchmarks_openLooks_iter001_2026-11-12-15-53-13.perfetto-trace) [2](file://CameraBenchmarks_openLooks_iter002_2026-11-12-15-53-26.perfetto-trace) [3](file://CameraBenchmarks_openLooks_iter003_2026-11-12-15-53-38.perfetto-trace) [4](file://CameraBenchmarks_openLooks_iter004_2026-11-12-15-53-51.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: frame_count_max=147.0
+INSTRUMENTATION_STATUS: frame_count_median=123.0
+INSTRUMENTATION_STATUS: frame_count_min=121.0
+INSTRUMENTATION_STATUS: frame_count_stddev=11.144505372604026
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p50=4.5244015
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p90=8.2497395
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p95=11.6797005
+INSTRUMENTATION_STATUS: frame_duration_cpu_millis_p99=16.59503909999995
+INSTRUMENTATION_STATUS: frame_overrun_millis_p50=-10.090707
+INSTRUMENTATION_STATUS: frame_overrun_millis_p90=-3.315071
+INSTRUMENTATION_STATUS: frame_overrun_millis_p95=-0.76075775
+INSTRUMENTATION_STATUS: frame_overrun_millis_p99=4.057262399999989
+INSTRUMENTATION_STATUS: main_frame_max_millis_max=33.699844
+INSTRUMENTATION_STATUS: main_frame_max_millis_median=12.00724
+INSTRUMENTATION_STATUS: main_frame_max_millis_min=11.090885
+INSTRUMENTATION_STATUS: main_frame_max_millis_stddev=9.785063712193226
+INSTRUMENTATION_STATUS: oc_open_looks_average_millis_max=34.638767333333334
+INSTRUMENTATION_STATUS: oc_open_looks_average_millis_median=30.944097
+INSTRUMENTATION_STATUS: oc_open_looks_average_millis_min=23.870486333333332
+INSTRUMENTATION_STATUS: oc_open_looks_average_millis_stddev=3.9112235731691976
+INSTRUMENTATION_STATUS: oc_open_looks_max_millis_max=38.842032
+INSTRUMENTATION_STATUS: oc_open_looks_max_millis_median=38.564896
+INSTRUMENTATION_STATUS: oc_open_looks_max_millis_min=26.726719
+INSTRUMENTATION_STATUS: oc_open_looks_max_millis_stddev=5.18266746349612
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=12
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=openLooks
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=13
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=coldStart
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_coldStart_iter000_2026-11-12-15-54-02.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_coldStart_iter000_2026-11-12-15-54-02.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_coldStart_iter001_2026-11-12-15-54-11.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_coldStart_iter001_2026-11-12-15-54-11.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_coldStart_iter002_2026-11-12-15-54-20.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_coldStart_iter002_2026-11-12-15-54-20.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_coldStart_iter003_2026-11-12-15-54-29.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_coldStart_iter003_2026-11-12-15-54-29.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: additionalTestOutputFile_CameraBenchmarks_coldStart_iter004_2026-11-12-15-54-38.perfetto-trace=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark/CameraBenchmarks_coldStart_iter004_2026-11-12-15-54-38.perfetto-trace
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: android.studio.display.benchmark=CameraBenchmarks_coldStart
+  OcBindCount              [min     1.0](file://CameraBenchmarks_coldStart_iter000_2026-11-12-15-54-02.perfetto-trace),   [median     1.0](file://CameraBenchmarks_coldStart_iter002_2026-11-12-15-54-20.perfetto-trace),   [max     1.0](file://CameraBenchmarks_coldStart_iter000_2026-11-12-15-54-02.perfetto-trace)
+  timeToFullDisplayMs      [min 1,508.5](file://CameraBenchmarks_coldStart_iter003_2026-11-12-15-54-29.perfetto-trace),   [median 1,631.1](file://CameraBenchmarks_coldStart_iter002_2026-11-12-15-54-20.perfetto-trace),   [max 1,681.5](file://CameraBenchmarks_coldStart_iter000_2026-11-12-15-54-02.perfetto-trace)
+  timeToInitialDisplayMs   [min   659.4](file://CameraBenchmarks_coldStart_iter001_2026-11-12-15-54-11.perfetto-trace),   [median   680.9](file://CameraBenchmarks_coldStart_iter002_2026-11-12-15-54-20.perfetto-trace),   [max   699.0](file://CameraBenchmarks_coldStart_iter004_2026-11-12-15-54-38.perfetto-trace)
+    Traces: Iteration [0](file://CameraBenchmarks_coldStart_iter000_2026-11-12-15-54-02.perfetto-trace) [1](file://CameraBenchmarks_coldStart_iter001_2026-11-12-15-54-11.perfetto-trace) [2](file://CameraBenchmarks_coldStart_iter002_2026-11-12-15-54-20.perfetto-trace) [3](file://CameraBenchmarks_coldStart_iter003_2026-11-12-15-54-29.perfetto-trace) [4](file://CameraBenchmarks_coldStart_iter004_2026-11-12-15-54-38.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark=CameraBenchmarks_coldStart
+  OcBindCount              [min     1.0](file://CameraBenchmarks_coldStart_iter000_2026-11-12-15-54-02.perfetto-trace),   [median     1.0](file://CameraBenchmarks_coldStart_iter002_2026-11-12-15-54-20.perfetto-trace),   [max     1.0](file://CameraBenchmarks_coldStart_iter000_2026-11-12-15-54-02.perfetto-trace)
+  timeToFullDisplayMs      [min 1,508.5](file://CameraBenchmarks_coldStart_iter003_2026-11-12-15-54-29.perfetto-trace),   [median 1,631.1](file://CameraBenchmarks_coldStart_iter002_2026-11-12-15-54-20.perfetto-trace),   [max 1,681.5](file://CameraBenchmarks_coldStart_iter000_2026-11-12-15-54-02.perfetto-trace)
+  timeToInitialDisplayMs   [min   659.4](file://CameraBenchmarks_coldStart_iter001_2026-11-12-15-54-11.perfetto-trace),   [median   680.9](file://CameraBenchmarks_coldStart_iter002_2026-11-12-15-54-20.perfetto-trace),   [max   699.0](file://CameraBenchmarks_coldStart_iter004_2026-11-12-15-54-38.perfetto-trace)
+    Traces: Iteration [0](file://CameraBenchmarks_coldStart_iter000_2026-11-12-15-54-02.perfetto-trace) [1](file://CameraBenchmarks_coldStart_iter001_2026-11-12-15-54-11.perfetto-trace) [2](file://CameraBenchmarks_coldStart_iter002_2026-11-12-15-54-20.perfetto-trace) [3](file://CameraBenchmarks_coldStart_iter003_2026-11-12-15-54-29.perfetto-trace) [4](file://CameraBenchmarks_coldStart_iter004_2026-11-12-15-54-38.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v2display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark=CameraBenchmarks_coldStart
+  OcBindCount              [min     1.0](file://CameraBenchmarks_coldStart_iter000_2026-11-12-15-54-02.perfetto-trace),   [median     1.0](file://CameraBenchmarks_coldStart_iter002_2026-11-12-15-54-20.perfetto-trace),   [max     1.0](file://CameraBenchmarks_coldStart_iter000_2026-11-12-15-54-02.perfetto-trace)
+  timeToFullDisplayMs      [min 1,508.5](file://CameraBenchmarks_coldStart_iter003_2026-11-12-15-54-29.perfetto-trace),   [median 1,631.1](file://CameraBenchmarks_coldStart_iter002_2026-11-12-15-54-20.perfetto-trace),   [max 1,681.5](file://CameraBenchmarks_coldStart_iter000_2026-11-12-15-54-02.perfetto-trace)
+  timeToInitialDisplayMs   [min   659.4](file://CameraBenchmarks_coldStart_iter001_2026-11-12-15-54-11.perfetto-trace),   [median   680.9](file://CameraBenchmarks_coldStart_iter002_2026-11-12-15-54-20.perfetto-trace),   [max   699.0](file://CameraBenchmarks_coldStart_iter004_2026-11-12-15-54-38.perfetto-trace)
+    Traces: Iteration [0](file://CameraBenchmarks_coldStart_iter000_2026-11-12-15-54-02.perfetto-trace) [1](file://CameraBenchmarks_coldStart_iter001_2026-11-12-15-54-11.perfetto-trace) [2](file://CameraBenchmarks_coldStart_iter002_2026-11-12-15-54-20.perfetto-trace) [3](file://CameraBenchmarks_coldStart_iter003_2026-11-12-15-54-29.perfetto-trace) [4](file://CameraBenchmarks_coldStart_iter004_2026-11-12-15-54-38.perfetto-trace)
+
+INSTRUMENTATION_STATUS: android.studio.v3display.benchmark.outputDirPath=/storage/emulated/0/Android/media/dev.opencamera.macrobenchmark
+INSTRUMENTATION_STATUS: oc_bind_count_max=1.0
+INSTRUMENTATION_STATUS: oc_bind_count_median=1.0
+INSTRUMENTATION_STATUS: oc_bind_count_min=1.0
+INSTRUMENTATION_STATUS: oc_bind_count_stddev=0.0
+INSTRUMENTATION_STATUS: time_to_full_display_millis_max=1681.470208
+INSTRUMENTATION_STATUS: time_to_full_display_millis_median=1631.091771
+INSTRUMENTATION_STATUS: time_to_full_display_millis_min=1508.525208
+INSTRUMENTATION_STATUS: time_to_full_display_millis_stddev=69.43801367970164
+INSTRUMENTATION_STATUS: time_to_initial_display_millis_max=699.024427
+INSTRUMENTATION_STATUS: time_to_initial_display_millis_median=680.911667
+INSTRUMENTATION_STATUS: time_to_initial_display_millis_min=659.381615
+INSTRUMENTATION_STATUS: time_to_initial_display_millis_stddev=17.46097556360556
+INSTRUMENTATION_STATUS_CODE: 2
+INSTRUMENTATION_STATUS: class=dev.opencamera.macrobenchmark.CameraBenchmarks
+INSTRUMENTATION_STATUS: current=13
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=13
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=coldStart
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 1.006,477
+There was 1 failure:
+1) strictModeClean(dev.opencamera.macrobenchmark.CameraBenchmarks)
+java.lang.AssertionError: StrictMode violations in app code:
+--------- beginning of main
+11-12 22:52:12.640  6349  6447 E OcStrictMode: VIOLATION DiskReadViolation at dev.opencamera.app.CameraActivity.h0(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:3)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.StrictMode$AndroidBlockGuardPolicy.onReadFromDisk(StrictMode.java:1840)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at libcore.io.BlockGuardOs.access(BlockGuardOs.java:74)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at libcore.io.ForwardingOs.access(ForwardingOs.java:129)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.AndroidForwardingOs.access(AndroidForwardingOs.java:111)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.UnixFileSystem.checkAccess(UnixFileSystem.java:337)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.File.exists(File.java:829)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getDataDir(ContextImpl.java:3544)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getPreferencesDir(ContextImpl.java:807)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferencesPath(ContextImpl.java:1046)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferences(ContextImpl.java:641)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dd.b.<init>(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:2)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at rc.g.<init>(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:26)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at yb.l.a(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:470)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at ae.m.getValue(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:21)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dev.opencamera.app.CameraActivity.h0(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:3)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dev.opencamera.app.CameraActivity.onCreate(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:422)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Activity.performCreate(Activity.java:9340)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Activity.performCreate(Activity.java:9318)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1543)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:4559)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:4781)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:133)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:103)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3032)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessageImpl(Handler.java:142)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessage(Handler.java:125)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Looper.loopOnce(Looper.java:296)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Looper.loop(Looper.java:397)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.main(ActivityThread.java:9523)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.lang.reflect.Method.invoke(Native Method)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:575)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:939)
+11-12 22:52:12.640  6349  6447 E OcStrictMode: VIOLATION DiskReadViolation at dev.opencamera.app.CameraActivity.h0(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:3)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.StrictMode$AndroidBlockGuardPolicy.onReadFromDisk(StrictMode.java:1840)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at libcore.io.BlockGuardOs.access(BlockGuardOs.java:74)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at libcore.io.ForwardingOs.access(ForwardingOs.java:129)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.AndroidForwardingOs.access(AndroidForwardingOs.java:111)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.UnixFileSystem.checkAccess(UnixFileSystem.java:337)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.File.exists(File.java:829)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.ensurePrivateDirExists(ContextImpl.java:868)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.ensurePrivateDirExists(ContextImpl.java:857)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getPreferencesDir(ContextImpl.java:809)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferencesPath(ContextImpl.java:1046)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferences(ContextImpl.java:641)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dd.b.<init>(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:2)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at rc.g.<init>(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:26)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at yb.l.a(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:470)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at ae.m.getValue(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:21)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dev.opencamera.app.CameraActivity.h0(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:3)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dev.opencamera.app.CameraActivity.onCreate(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:422)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Activity.performCreate(Activity.java:9340)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Activity.performCreate(Activity.java:9318)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1543)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:4559)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:4781)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:133)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:103)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3032)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessageImpl(Handler.java:142)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessage(Handler.java:125)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Looper.loopOnce(Looper.java:296)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Looper.loop(Looper.java:397)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.main(ActivityThread.java:9523)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.lang.reflect.Method.invoke(Native Method)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:575)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:939)
+11-12 22:52:12.640  6349  6447 E OcStrictMode: VIOLATION DiskReadViolation at dev.opencamera.app.CameraActivity.x0(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:29)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.StrictMode$AndroidBlockGuardPolicy.onReadFromDisk(StrictMode.java:1840)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.UnixFileSystem.list(UnixFileSystem.java:400)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.File.list(File.java:1145)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.io.File.listFiles(File.java:1230)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at qd.m.a(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:3)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at sc.i.c(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:21)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dev.opencamera.app.CameraActivity.x0(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:29)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at dev.opencamera.app.CameraActivity.onCreate(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:756)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Activity.performCreate(Activity.java:9340)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Activity.performCreate(Activity.java:9318)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1543)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:4559)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:4781)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:224)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:133)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:103)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3032)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessageImpl(Handler.java:142)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessage(Handler.java:125)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Looper.loopOnce(Looper.java:296)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.os.Looper.loop(Looper.java:397)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at android.app.ActivityThread.main(ActivityThread.java:9523)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at java.lang.reflect.Method.invoke(Native Method)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:575)
+11-12 22:52:12.640  6349  6447 E OcStrictMode:   at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:939)
+11-12 22:52:16.699  6349  6447 E OcStrictMode: VIOLATION DiskReadViolation at dev.opencamera.app.SettingsActivity$RootSettingsFragment.P(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.os.StrictMode$AndroidBlockGuardPolicy.onReadFromDisk(StrictMode.java:1840)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at libcore.io.BlockGuardOs.access(BlockGuardOs.java:74)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at libcore.io.ForwardingOs.access(ForwardingOs.java:129)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.AndroidForwardingOs.access(AndroidForwardingOs.java:111)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at java.io.UnixFileSystem.checkAccess(UnixFileSystem.java:337)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at java.io.File.exists(File.java:829)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getDataDir(ContextImpl.java:3544)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getPreferencesDir(ContextImpl.java:807)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferencesPath(ContextImpl.java:1046)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferences(ContextImpl.java:641)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at h3.z.e(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:16)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at androidx.preference.Preference.k(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:33)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at androidx.preference.PreferenceGroup.B(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:186)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at k9.x.d(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:126)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at k9.x.d(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:129)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at k9.x.c(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:42)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at yb.c1.P(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:27)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at dev.opencamera.app.SettingsActivity$RootSettingsFragment.P(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at k9.t.w(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:68)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at t6.i0.e(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:67)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at t6.i0.k(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:151)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at t6.d0.z(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1032)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at t6.d0.R(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:82)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at t6.d0.y(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:78)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at t6.d0.t(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:67)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at k.k.u(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:34)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at k.k.onStart(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.Instrumentation.callActivityOnStart(Instrumentation.java:1718)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.Activity.performStart(Activity.java:9383)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.ActivityThread.handleStartActivity(ActivityThread.java:4601)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.performLifecycleSequence(TransactionExecutor.java:214)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.cycleToPath(TransactionExecutor.java:194)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeLifecycleItem(TransactionExecutor.java:166)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:101)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3032)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessageImpl(Handler.java:142)
+11-12 22:52:16.699  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessage(Handler.java:125)
+11-12 22:52:16.701  6349  6447 E OcStrictMode: VIOLATION DiskReadViolation at dev.opencamera.app.SettingsActivity$RootSettingsFragment.P(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.os.StrictMode$AndroidBlockGuardPolicy.onReadFromDisk(StrictMode.java:1840)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at libcore.io.BlockGuardOs.access(BlockGuardOs.java:74)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at libcore.io.ForwardingOs.access(ForwardingOs.java:129)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.AndroidForwardingOs.access(AndroidForwardingOs.java:111)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at java.io.UnixFileSystem.checkAccess(UnixFileSystem.java:337)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at java.io.File.exists(File.java:829)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ContextImpl.ensurePrivateDirExists(ContextImpl.java:868)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ContextImpl.ensurePrivateDirExists(ContextImpl.java:857)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getPreferencesDir(ContextImpl.java:809)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferencesPath(ContextImpl.java:1046)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ContextImpl.getSharedPreferences(ContextImpl.java:641)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.content.ContextWrapper.getSharedPreferences(ContextWrapper.java:223)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at h3.z.e(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:16)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at androidx.preference.Preference.k(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:33)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at androidx.preference.PreferenceGroup.B(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:186)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at k9.x.d(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:126)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at k9.x.d(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:129)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at k9.x.c(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:42)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at yb.c1.P(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:27)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at dev.opencamera.app.SettingsActivity$RootSettingsFragment.P(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at k9.t.w(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:68)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at t6.i0.e(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:67)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at t6.i0.k(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:151)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at t6.d0.z(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1032)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at t6.d0.R(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:82)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at t6.d0.y(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:78)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at t6.d0.t(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:67)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at k.k.u(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:34)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at k.k.onStart(r8-map-id-ab798067dc24b718ef41ba696f3bd8cc88efa85fd4bc08d031c7c7fadc2bf727:1)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.Instrumentation.callActivityOnStart(Instrumentation.java:1718)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.Activity.performStart(Activity.java:9383)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ActivityThread.handleStartActivity(ActivityThread.java:4601)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.performLifecycleSequence(TransactionExecutor.java:214)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.cycleToPath(TransactionExecutor.java:194)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeLifecycleItem(TransactionExecutor.java:166)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:101)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3032)
+11-12 22:52:16.701  6349  6447 E OcStrictMode:   at android.os.Handler.dispatchMessageImpl(Handler.java:142)
+
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at dev.opencamera.macrobenchmark.CameraBenchmarks.strictModeClean(CameraBenchmarks.kt:114)
+
+FAILURES!!!
+Tests run: 13,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1

@@ -31,3 +31,10 @@
 
 # Our look renderer swaps the preview view's surface provider by name (CameraActivity.installLookPreview).
 -keepclassmembers class androidx.camera.view.PreviewView { *** mSurfaceProvider; }
+
+# Native code looks up the progress callback by name (pipeline_jni.cpp, GetMethodID "onProgress").
+# Renamed, HDR/Night merges fail with NoSuchMethodError and fall back to a single frame.
+-keepclassmembers class * implements dev.opencamera.pipeline.NativePipeline$ProgressListener {
+    void onProgress(float);
+}
+-keep interface dev.opencamera.pipeline.NativePipeline$ProgressListener { *; }

@@ -10,8 +10,10 @@ import sys
 
 
 def main(generated: str, target: str) -> None:
-    with open(target, encoding="utf-8") as f:
-        lines = f.read().splitlines()
+    with open(target, encoding="utf-8", newline="") as f:
+        text = f.read()
+    eol = "\r\n" if "\r\n" in text else "\n"  # keep the committed file's line endings
+    lines = text.splitlines()
     header = []
     for line in lines:
         if not line.startswith("#"):
@@ -22,8 +24,8 @@ def main(generated: str, target: str) -> None:
     with open(generated, encoding="utf-8") as f:
         new = {l.strip() for l in f if l.strip() and not l.startswith("#")}
     added = sorted({l for l in new if "Landroidx/compose/" not in l} - set(rules))
-    with open(target, "w", encoding="utf-8") as f:
-        f.write("\n".join(header + rules + added) + "\n")
+    with open(target, "w", encoding="utf-8", newline="") as f:
+        f.write(eol.join(header + rules + added) + eol)
     print(f"baseline-prof.txt: {before} -> {before + len(added)} rules ({len(new)} generated, {len(added)} new)")
 
 

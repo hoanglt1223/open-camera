@@ -37,8 +37,11 @@ class BaselineProfileGenerator {
         selectMode("VIDEO", Camera.PREVIEW_SETTLE_MS); selectMode("PHOTO", Camera.PREVIEW_SETTLE_MS)
         tap("lens_0.6"); Thread.sleep(Camera.PREVIEW_SETTLE_MS); tap("lens_1"); Thread.sleep(Camera.PREVIEW_SETTLE_MS)
         tap("looks"); find("looks_strip"); Thread.sleep(500); tap("looks")
-        tap("shutter"); Thread.sleep(2500)
-        tap("settings"); device.wait(Until.gone(By.res("shutter")), 3000); Thread.sleep(800); device.pressBack()
+        // A dark-room HDR burst keeps the shutter busy for several seconds; a settings tap during
+        // it is ignored, and the back press would then leave the app.
+        tap("shutter"); Thread.sleep(6000)
+        tap("settings")
+        if (device.wait(Until.gone(By.res("shutter")), 3000) == true) { Thread.sleep(800); device.pressBack() }
         find("shutter")
         startActivityAndWait(editorIntent())
         find("editor_slider", 10_000)
