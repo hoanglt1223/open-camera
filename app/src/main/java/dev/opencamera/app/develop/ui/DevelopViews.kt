@@ -66,7 +66,7 @@ class ParamSlider(
         val row = LinearLayout(context).apply { orientation = HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         name.text = label
         name.setTextColor(theme.onSurface)
-        name.minHeight = context.dp(32f).toInt()
+        name.minHeight = context.dp(48f).toInt()
         name.gravity = Gravity.CENTER_VERTICAL
         value.setTextColor(theme.onSurfaceMuted)
         value.gravity = Gravity.END or Gravity.CENTER_VERTICAL
@@ -80,6 +80,11 @@ class ParamSlider(
         })
         row.setOnTouchListener { v, e -> detector.onTouchEvent(e).also { if (e.action == MotionEvent.ACTION_UP) v.performClick() } }
         row.contentDescription = context.getString(R.string.develop_reset_value, label)
+        // Double tap is a touch gesture; TalkBack users get the same reset as an explicit action.
+        androidx.core.view.ViewCompat.addAccessibilityAction(row, context.getString(R.string.develop_reset_value, label)) { _, _ ->
+            reset()
+            true
+        }
         addView(row)
         slider.valueFrom = param.min
         slider.valueTo = param.max
