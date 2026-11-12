@@ -138,7 +138,7 @@ class PreferencesRepository(
      */
     val enableZsl = primitivePreference(
         key = "enable_zsl",
-        defaultValue = false,
+        defaultValue = true,
     ).asPreferenceHolder()
 
     /**
