@@ -258,4 +258,9 @@
     <string name="video_mirror_mode_off">Off</string>
     <string name="video_mirror_mode_on">On</string>
     <string name="video_mirror_mode_on_ffc_only">Front facing camera only</string>
+    <string name="crash_reports_title">Save crash reports</string>
+    <string name="crash_reports_summary">Keep a report on this device when the app crashes. Nothing is sent unless you share it.</string>
+    <string name="share_crash_report_title">Share crash report</string>
+    <string name="share_crash_report_summary">Send the latest report with an app you choose</string>
+    <string name="share_crash_report_none">No crash report saved</string>
 </resources>

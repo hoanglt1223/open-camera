@@ -245,6 +245,20 @@
             app:summary="@string/export_device_profile_summary"
             app:title="@string/export_device_profile_title" />
 
+        <SwitchPreference
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:key="crash_reports"
+            app:summary="@string/crash_reports_summary"
+            app:title="@string/crash_reports_title" />
+
+        <Preference
+            app:dependency="crash_reports"
+            app:iconSpaceReserved="false"
+            app:key="share_crash_report"
+            app:summary="@string/share_crash_report_summary"
+            app:title="@string/share_crash_report_title" />
+
     </PreferenceCategory>
 
 </PreferenceScreen>
