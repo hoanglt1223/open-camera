@@ -75,7 +75,12 @@ data class BurstPlan(
 }
 
 object ExposurePlanner {
-    const val NIGHT_LUX = 10f
+    /**
+     * Auto switches to Night below this estimate. Dim rooms (a lamp-lit living room, a restaurant)
+     * meter around 5..50 lux on phone sensors and look better with HDR's shorter frames; Night only
+     * pays off once AE runs out of room, which on gauguin starts near 1/15 s ISO 3200 (~3 lux).
+     */
+    const val NIGHT_LUX = 3f
     const val ASTRO_LUX = 0.5f
     const val HIGH_MOTION_RAD_S = 0.2f
 
@@ -86,9 +91,13 @@ object ExposurePlanner {
     private const val ASTRO_TOTAL_NS = 64_000_000_000L
     private const val ASTRO_MAX_ISO = 1600
     private const val MIN_NIGHT_EXPOSURE_NS = 33_000_000L
-    private const val NIGHT_AE_EXPOSURE_NS = 50_000_000L
-    private const val NIGHT_AE_ISO = 1600
+    private const val NIGHT_AE_EXPOSURE_NS = 66_000_000L
+    private const val NIGHT_AE_ISO = 3200
+    /** With AE at its limits the frame must still be clearly under mid-grey (118) to count as dark. */
+    private const val NIGHT_AE_MAX_LUMA = 80f
     private const val UNMEASURED_DARK_LUMA = 40f
+    /** Assumed exposure makes the estimate rough; there the dark frame is the main signal. */
+    private const val UNMEASURED_NIGHT_LUX = 10f
 
     /** Blur budget for handheld frames, in pixels of motion during one exposure. */
     private const val BLUR_BUDGET_PX = 4f
@@ -123,14 +132,16 @@ object ExposurePlanner {
         scene.measured && motion.onTripod && scene.luxEstimate < ASTRO_LUX
 
     /**
-     * Night in HDR auto. With real exposure data: a dark scene, or AE already at a long exposure
-     * and high ISO. With assumed exposure only a frame that is still dark after AE counts.
+     * Night in HDR auto. With real exposure data: a really dark scene, or AE at its limits
+     * (long exposure, high ISO) and the frame still dark. With assumed exposure only a frame
+     * that is still dark after AE counts.
      */
     fun wantsNight(scene: SceneMeter): Boolean = if (scene.measured) {
         scene.luxEstimate < NIGHT_LUX ||
-            (scene.exposureTimeNs >= NIGHT_AE_EXPOSURE_NS && scene.iso >= NIGHT_AE_ISO)
+            (scene.exposureTimeNs >= NIGHT_AE_EXPOSURE_NS && scene.iso >= NIGHT_AE_ISO &&
+                scene.meanLuma < NIGHT_AE_MAX_LUMA)
     } else {
-        scene.meanLuma < UNMEASURED_DARK_LUMA && scene.luxEstimate < NIGHT_LUX
+        scene.meanLuma < UNMEASURED_DARK_LUMA && scene.luxEstimate < UNMEASURED_NIGHT_LUX
     }
 
     fun hdr(scene: SceneMeter, motion: MotionState, lux: Float = scene.luxEstimate): BurstPlan {

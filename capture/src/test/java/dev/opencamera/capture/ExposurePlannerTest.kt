@@ -56,6 +56,20 @@ class ExposurePlannerTest {
     }
 
     @Test
+    fun autoKeepsHdrInDimRooms() {
+        // Lamp-lit room: AE at 1/20 s ISO 1600 reaches near mid-grey (estimate ~7 lux).
+        val dimRoom = SceneMeter(50_000_000L, 1600, 105f, 0f)
+        assertEquals(BurstKind.HDR, ExposurePlanner.plan(MultiFrameSetting.HDR_AUTO, dimRoom, handheld, caps).kind)
+        // Restaurant: 1/30 s ISO 2500, a bit under mid-grey.
+        val restaurant = SceneMeter(33_000_000L, 2500, 90f, 0.001f)
+        assertEquals(BurstKind.HDR, ExposurePlanner.plan(MultiFrameSetting.HDR_AUTO, restaurant, handheld, caps).kind)
+        // AE at its limits but the frame still bright enough: not night.
+        assertFalse(ExposurePlanner.wantsNight(SceneMeter(66_000_000L, 3200, 118f, 0f).copy(aperture = 2.8f)))
+        // AE at its limits and the frame stays dark: night.
+        assertTrue(ExposurePlanner.wantsNight(SceneMeter(66_000_000L, 3200, 60f, 0f).copy(aperture = 2.8f)))
+    }
+
+    @Test
     fun nightHandheldIsBlurLimitedAndTripodGoesLonger() {
         val hand = ExposurePlanner.plan(MultiFrameSetting.NIGHT, darkRoom, handheld, caps)
         val still = ExposurePlanner.plan(MultiFrameSetting.NIGHT, darkRoom, tripod, caps)
