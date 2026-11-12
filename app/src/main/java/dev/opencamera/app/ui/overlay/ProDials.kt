@@ -5,6 +5,9 @@
 
 package dev.opencamera.app.ui.overlay
 
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.withFrameNanos
+import kotlinx.coroutines.channels.Channel
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -29,7 +32,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -260,7 +262,19 @@ private fun Dial(model: DialModel, index: Int, enabled: Boolean, description: St
     val indexNow by rememberUpdatedState(index)
     val onChangeNow by rememberUpdatedState(onChange)
     val modelNow by rememberUpdatedState(model)
-    var accumulated by remember { mutableFloatStateOf(0f) }
+    val accumulated = remember { floatArrayOf(0f) }
+    // Each stop sends a capture request and updates the overlay state; a drag crosses several
+    // stops per frame, so only the last stop of a frame is applied.
+    val pending = remember { intArrayOf(-1) }
+    val frameTick = remember { Channel<Unit>(Channel.CONFLATED) }
+    LaunchedEffect(frameTick) {
+        for (u in frameTick) {
+            withFrameNanos { }
+            val i = pending[0]
+            pending[0] = -1
+            if (i >= 0 && i != indexNow) onChangeNow(i)
+        }
+    }
 
     val position by animateFloatAsState(index.toFloat(), s.fast(), label = "dial")
     val label = model.label(index)
@@ -289,16 +303,18 @@ private fun Dial(model: DialModel, index: Int, enabled: Boolean, description: St
             }
             .then(
                 if (!enabled) Modifier else Modifier.pointerInput(model.dial) {
-                    detectHorizontalDragGestures(onDragStart = { accumulated = 0f }) { change, amount ->
+                    detectHorizontalDragGestures(onDragStart = { accumulated[0] = 0f }) { change, amount ->
                         change.consume()
-                        accumulated += if (rtl) amount else -amount
-                        val steps = (accumulated / stepPx).toInt()
+                        accumulated[0] += if (rtl) amount else -amount
+                        val steps = (accumulated[0] / stepPx).toInt()
                         if (steps != 0) {
-                            accumulated -= steps * stepPx
-                            val next = (indexNow + steps).coerceIn(0, modelNow.count - 1)
-                            if (next != indexNow) {
+                            accumulated[0] -= steps * stepPx
+                            val base = if (pending[0] >= 0) pending[0] else indexNow
+                            val next = (base + steps).coerceIn(0, modelNow.count - 1)
+                            if (next != base) {
                                 Haptics.tick(view)
-                                onChangeNow(next)
+                                pending[0] = next
+                                frameTick.trySend(Unit)
                             }
                         }
                     }

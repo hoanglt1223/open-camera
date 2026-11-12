@@ -5,6 +5,8 @@
 
 package dev.opencamera.app.develop.ui.compose
 
+import androidx.compose.runtime.withFrameNanos
+import kotlinx.coroutines.channels.Channel
 import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -201,6 +203,22 @@ fun RulerDial(
     LaunchedEffect(value) { if (!dragging) live = value }
     val change by rememberUpdatedState(onChange)
     val commit by rememberUpdatedState(onCommit)
+    // A drag delivers several pointer events per frame; the photo re-renders on each change, so
+    // only the newest value of a frame is passed on. Commits flush it first.
+    val pending = remember { floatArrayOf(Float.NaN) }
+    val frameTick = remember { Channel<Unit>(Channel.CONFLATED) }
+    fun deliver() {
+        val v = pending[0]
+        if (v.isNaN()) return
+        pending[0] = Float.NaN
+        change(v)
+    }
+    LaunchedEffect(frameTick) {
+        for (u in frameTick) {
+            withFrameNanos { }
+            deliver()
+        }
+    }
     val dirty = abs(live - default) > step / 2
     Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         BasicText(
@@ -218,11 +236,13 @@ fun RulerDial(
                     progressBarRangeInfo = ProgressBarRangeInfo(live, min..max, ((max - min) / step).roundToInt().coerceAtMost(1000))
                     setProgress { target ->
                         val v = target.coerceIn(min, max)
+                        pending[0] = Float.NaN
                         live = v; change(v); commit(); true
                     }
                 }
                 .pointerInput(min, max, step) {
                     detectTapGestures(onDoubleTap = {
+                        pending[0] = Float.NaN
                         live = default
                         change(default); commit()
                         Haptics.shutter(view)
@@ -233,8 +253,8 @@ fun RulerDial(
                     var acc = 0f
                     detectHorizontalDragGestures(
                         onDragStart = { dragging = true; acc = 0f },
-                        onDragEnd = { dragging = false; commit() },
-                        onDragCancel = { dragging = false; commit() },
+                        onDragEnd = { dragging = false; deliver(); commit() },
+                        onDragCancel = { dragging = false; deliver(); commit() },
                     ) { ch, dx ->
                         ch.consume()
                         acc -= dx
@@ -250,7 +270,8 @@ fun RulerDial(
                         val tickAfter = floor((next - min) / (step * 10))
                         if (next == default) Haptics.shutter(view) else if (tickBefore != tickAfter) Haptics.tick(view)
                         live = next
-                        change(next)
+                        pending[0] = next
+                        frameTick.trySend(Unit)
                     }
                 },
         ) {

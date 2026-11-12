@@ -149,12 +149,19 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
     internal var onLocationResult: () -> Unit = {}
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        dev.opencamera.app.DebugDiagnostics.enableStrictCheck(this, intent)
         super.onCreate(savedInstanceState)
-        if (!PreferenceManager.getDefaultSharedPreferences(this).getBoolean(PREF_EDITOR_V2, true)) {
-            // Rollback switch: hand the photo to the previous editor.
-            startActivity(Intent(intent).setClass(this, AiEditActivity::class.java))
-            finish()
-            return
+        // The prefs file may not be loaded yet on a cold start; read it off main. The rollback
+        // switch is rare, so the new editor starts building meanwhile.
+        lifecycleScope.launch {
+            val v2 = withContext(Dispatchers.IO) {
+                runCatching { PreferenceManager.getDefaultSharedPreferences(this@DevelopActivity).getBoolean(PREF_EDITOR_V2, true) }.getOrDefault(true)
+            }
+            if (!v2 && !isFinishing) {
+                // Rollback switch: hand the photo to the previous editor.
+                startActivity(Intent(intent).setClass(this@DevelopActivity, AiEditActivity::class.java))
+                finish()
+            }
         }
         engine = DevelopEngine(this)
         engine.prewarm()
@@ -167,6 +174,7 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
             }
         })
         lifecycleScope.launch(Dispatchers.Default) {
+            ai.warm()
             val ok = dev.opencamera.app.develop.tools.RetouchTools.install(this@DevelopActivity)
             withContext(Dispatchers.Main) { ui.retouchAvailable.value = ok }
             runCatching { dev.opencamera.app.develop.export.ExportFormat.prewarm() }

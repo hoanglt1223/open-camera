@@ -75,6 +75,45 @@ class CameraBenchmarks {
         Thread.sleep(Camera.PREVIEW_SETTLE_MS)
     }
 
+    /**
+     * Not a timing test: cold start, Settings, editor and both sliders with StrictMode recording
+     * (the app's DebugDiagnostics, enabled by the launch extra). Fails on any main-thread disk,
+     * network or slow-call violation that passes through app code.
+     */
+    @Test
+    fun strictModeClean() {
+        val device = androidx.test.uiautomator.UiDevice.getInstance(
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+        )
+        device.executeShellCommand("logcat -c")
+        rule.measureRepeated(
+            packageName = Camera.PACKAGE,
+            metrics = listOf(StartupTimingMetric()),
+            compilationMode = CompilationMode.Ignore(),
+            startupMode = StartupMode.COLD,
+            iterations = 1,
+            setupBlock = { pressHome() },
+        ) {
+            startActivityAndWait(Camera.launchIntent().putExtra(STRICT_EXTRA, true))
+            find("shutter", 10_000)
+            Thread.sleep(Camera.PREVIEW_SETTLE_MS)
+            tap("settings")
+            device.wait(Until.gone(By.res("shutter")), 3000)
+            Thread.sleep(800)
+            device.pressBack()
+            find("shutter")
+            selectMode("PRO")
+            dragDial("pro_dial", 4)
+            selectMode("PHOTO")
+            startActivityAndWait(editorIntent().putExtra(STRICT_EXTRA, true))
+            dragDial("editor_slider", 4)
+            Thread.sleep(800)
+        }
+        val log = device.executeShellCommand("logcat -d -s OcStrictMode:E")
+        val violations = log.lines().filter { "VIOLATION" in it }
+        org.junit.Assert.assertTrue("StrictMode violations in app code:\n" + log, violations.isEmpty())
+    }
+
     /** Photo -> Portrait -> Night -> Photo -> Pro -> Photo, twice: should keep the session (0 binds). */
     @Test
     fun modeSwitchSameSession() = run(listOf(frames, longestMainFrame, binds) + section("OcOpenPro")) {
@@ -183,5 +222,10 @@ class CameraBenchmarks {
             tap("shutter")
             Thread.sleep(2500)
         }
+    }
+
+    private companion object {
+        /** dev.opencamera.app.DebugDiagnostics.EXTRA_STRICT_CHECK */
+        const val STRICT_EXTRA = "dev.opencamera.extra.STRICT_CHECK"
     }
 }

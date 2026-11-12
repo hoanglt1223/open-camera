@@ -63,11 +63,21 @@ object RetouchTools {
             val box = RetouchToolbox(context)
             box.tools.sortedBy { ORDER.indexOf(it.id).let { i -> if (i < 0) 99 else i } }
                 .forEach { ToolRegistry.register(RetouchDevelopTool(it)) }
+            // Loads the native libraries and checks the models here, off main, for the panels.
+            box.tools.forEach { t -> reasons[t.id] = java.util.Optional.ofNullable(runCatching { t.unavailableReason() }.getOrDefault("unavailable")) }
             toolbox = box
         }.onFailure { Log.w("RetouchTools", "Retouch tools unavailable", it) }.isSuccess
     }
 
     fun toolbox(): RetouchToolbox? = toolbox
+
+    private val reasons = java.util.concurrent.ConcurrentHashMap<String, java.util.Optional<String>>()
+
+    /** [RetouchTool.unavailableReason], resolved at [install] time. */
+    fun unavailableReason(tool: dev.opencamera.pipeline.retouch.RetouchTool): String? {
+        val cached = reasons[tool.id] ?: return tool.unavailableReason()
+        return cached.orElse(null)
+    }
 
     fun step(tool: String, params: RetouchParams) = ToolStep(tool, params.toJson().toString())
 

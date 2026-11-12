@@ -29,8 +29,16 @@ class AiMaskProvider(context: Context) {
     private val runtime by lazy { MlRuntime.get(context) }
     private val cache = HashMap<String, Triple<FloatArray, Int, Int>>()
 
-    /** Null when [kind] can run, else a short reason. */
-    fun unavailableReason(kind: String): Reason? = runCatching {
+    private val reasons = java.util.concurrent.ConcurrentHashMap<String, java.util.Optional<Reason>>()
+
+    /** Resolves every kind (model catalog, files, prefs) so the panels never do it on main. */
+    fun warm() = KINDS.forEach { unavailableReason(it) }
+
+    /** Null when [kind] can run, else a short reason. Cached for the editor session. */
+    fun unavailableReason(kind: String): Reason? =
+        reasons.getOrPut(kind) { java.util.Optional.ofNullable(resolve(kind)) }.orElse(null)
+
+    private fun resolve(kind: String): Reason? = runCatching {
         when (kind) {
             KIND_SKY -> Reason.NO_SKY_MODEL
             KIND_SUBJECT -> if (runtime.isAvailable(SaliencyDetector.MODEL)) null else Reason.NO_MODEL
@@ -103,5 +111,6 @@ class AiMaskProvider(context: Context) {
         const val KIND_FACE_SKIN = "faceSkin"
         const val KIND_BODY_SKIN = "bodySkin"
         const val KIND_SKY = "sky"
+        private val KINDS = listOf(KIND_SUBJECT, KIND_PERSON, KIND_HAIR, KIND_FACE_SKIN, KIND_BODY_SKIN, KIND_SKY)
     }
 }
