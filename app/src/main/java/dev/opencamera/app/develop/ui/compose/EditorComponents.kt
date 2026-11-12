@@ -5,6 +5,7 @@
 
 package dev.opencamera.app.develop.ui.compose
 
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -210,6 +211,7 @@ fun RulerDial(
             Modifier
                 .fillMaxWidth()
                 .height(48.dp)
+                .testTag("editor_slider")
                 .semantics {
                     contentDescription = label
                     stateDescription = format(live)

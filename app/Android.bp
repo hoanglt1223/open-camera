@@ -95,6 +95,7 @@ android_app {
         "androidx.profileinstaller_profileinstaller",
         "androidx.recyclerview_recyclerview",
         "androidx.tracing_tracing",
+        "androidx.tracing_tracing-ktx",
         "OpenCamera_com.google.ai.edge.litert_litert",
         "OpenCamera_com.google.ai.edge.litert_litert-gpu",
         "OpenCamera_com.google.ai.edge.litert_litert-gpu-api",

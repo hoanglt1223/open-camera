@@ -61,6 +61,7 @@ class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
 
         // Enable edge-to-edge
         enableEdgeToEdge()
+        PerfTrace.endAfterNextFrame(window.decorView, PerfTrace.OPEN_SETTINGS)
 
         if (savedInstanceState == null) {
             supportFragmentManager

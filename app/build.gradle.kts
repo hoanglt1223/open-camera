@@ -66,6 +66,21 @@ android {
             )
         }
 
+        // Macrobenchmark target: release code (R8, non-debuggable) but profileable, debug-signed and
+        // installed next to the signed release package.
+        create("benchmark") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            applicationIdSuffix = ".bench"
+            isProfileable = true
+            matchingFallbacks += listOf("release")
+            // scripts/bench/run.sh --profile: baseline profile rules need unobfuscated names.
+            if (providers.gradleProperty("openCamera.benchNoMinify").isPresent) {
+                isMinifyEnabled = false
+                isShrinkResources = false
+            }
+        }
+
         debug {
             // Append .dev to package name so we won't conflict with AOSP build. Test builds of
             // parallel branches can pick their own suffix (-PopenCamera.debugSuffix=.p11).
@@ -151,6 +166,7 @@ dependencies {
     // Installs the baseline profile (src/main/baseline-prof.txt) on sideloaded installs too.
     implementation(libs.androidx.profileinstaller)
     implementation(libs.androidx.recyclerview)
+    implementation(libs.androidx.tracing.ktx)
     implementation(libs.material)
     implementation(libs.coil)
     implementation(libs.coil.video)

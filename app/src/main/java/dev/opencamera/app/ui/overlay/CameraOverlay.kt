@@ -107,6 +107,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.testTagsAsResourceId
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -222,7 +224,9 @@ fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiS
     val recording = state.cameraState.isRecordingVideo
 
     androidx.compose.runtime.CompositionLocalProvider(LocalGlyphRotation provides rotation) {
-        Box(Modifier.fillMaxSize()) {
+        // Test tags double as resource ids so UiAutomator (macrobenchmark) finds them in any locale.
+        @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+        Box(Modifier.fillMaxSize().semantics { testTagsAsResourceId = true }) {
             GlassBackdrop(state.previewRect, actions)
             PreviewChrome(state.previewRect, state.uiMode)
 
@@ -389,8 +393,11 @@ private fun TopBar(state: CameraUiState, actions: CameraUiActions, ui: OverlayUi
                 TimerIcon(state, actions, idle)
                 TopIcon(
                     Glyphs.looks, stringResource(R.string.look_button), state.controls[Control.LOOK]?.label ?: "",
-                    active = ui.looksOpen || state.lookId.isNotEmpty() && state.lookId != "none",
-                    onClick = { ui.looksOpen = !ui.looksOpen },
+                    active = ui.looksOpen || state.lookId.isNotEmpty() && state.lookId != "none", tag = "looks",
+                    onClick = {
+                        if (!ui.looksOpen) dev.opencamera.app.PerfTrace.begin(dev.opencamera.app.PerfTrace.OPEN_LOOKS)
+                        ui.looksOpen = !ui.looksOpen
+                    },
                 )
             }
 
@@ -409,7 +416,7 @@ private fun TopBar(state: CameraUiState, actions: CameraUiActions, ui: OverlayUi
             CameraMode.QR -> Unit
         }
         TopIcon(
-            Glyphs.settings, stringResource(R.string.ui_settings), null, enabled = idle,
+            Glyphs.settings, stringResource(R.string.ui_settings), null, enabled = idle, tag = "settings",
             // Tap: the full settings screen; long press: the quick sheet (skin, blur, mode options).
             onLongClick = { ui.sheet = Sheet.SETTINGS },
             onClick = { actions.allSettings() },
@@ -446,6 +453,7 @@ private fun TopIcon(
     badge: String? = null,
     struck: Boolean = false,
     enabled: Boolean = true,
+    tag: String? = null,
     onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit,
 ) {
@@ -455,6 +463,7 @@ private fun TopIcon(
     Box(
         Modifier
             .size(48.dp)
+            .then(if (tag != null) Modifier.testTag(tag) else Modifier)
             .semantics {
                 contentDescription = description
                 if (stateText != null) stateDescription = stateText
@@ -667,20 +676,22 @@ private fun LensRow(state: CameraUiState, actions: CameraUiActions) {
                     .selectableGroup(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                state.lensChips.forEachIndexed { i, chip -> LensChip(chip) { Haptics.segment(view); actions.lensChip(i) } }
+                state.lensChips.forEachIndexed { i, chip ->
+                    LensChip(chip, Modifier.testTag("lens_${chip.label}")) { Haptics.segment(view); actions.lensChip(i) }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun LensChip(chip: LensChipUi, onClick: () -> Unit) {
+private fun LensChip(chip: LensChipUi, modifier: Modifier, onClick: () -> Unit) {
     val s = skin
     val scale by animateFloatAsState(if (chip.selected) 1.12f else 1f, s.bouncy(), label = "chip")
     val label = if (chip.selected) "${chip.label}×" else chip.label
     val description = stringResource(R.string.ui_zoom_chip, chip.label)
     Box(
-        Modifier
+        modifier
             .size(48.dp)
             .selectable(
                 selected = chip.selected, role = Role.RadioButton, onClick = onClick,
@@ -858,6 +869,7 @@ private fun ModeCarousel(state: CameraUiState, actions: CameraUiActions, ui: Ove
                     BasicText(
                         modeLabel(mode),
                         Modifier
+                            .testTag("mode_${mode.name}")
                             .heightIn(min = 48.dp)
                             .widthIn(max = 140.dp)
                             .selectable(
@@ -1002,6 +1014,11 @@ private fun Shutter(state: CameraUiState, onClick: () -> Unit) {
     )
     // Runs only while busy and is read in the draw phase: an idle camera screen draws no frames.
     val sweep = remember { Animatable(0f) }
+    val view = LocalView.current
+    val ready = state.shutterEnabled && !busy
+    LaunchedEffect(ready) {
+        if (ready) dev.opencamera.app.PerfTrace.endAfterNextFrame(view, dev.opencamera.app.PerfTrace.SHUTTER_TO_READY)
+    }
     LaunchedEffect(busy) {
         if (!busy) return@LaunchedEffect sweep.snapTo(0f)
         while (true) {
@@ -1015,6 +1032,7 @@ private fun Shutter(state: CameraUiState, onClick: () -> Unit) {
     Box(
         Modifier
             .size(size)
+            .testTag("shutter")
             .semantics { contentDescription = description }
             .pressable(state.shutterEnabled || recording, onClick = onClick)
             .graphicsLayer { alpha = if (state.shutterEnabled || recording) 1f else .5f }
@@ -1068,6 +1086,7 @@ private fun Thumb(state: CameraUiState, enabled: Boolean, onClick: () -> Unit) {
     Box(
         Modifier
             .size(if (s.glass) 52.dp else 48.dp)
+            .testTag("gallery")
             .semantics { contentDescription = context.getString(R.string.gallery_button_description) }
             .pressable(enabled, onClick = onClick)
             .uprightGlyph(LocalGlyphRotation.current)
@@ -1094,8 +1113,9 @@ private fun LooksStrip(state: CameraUiState, actions: CameraUiActions) {
     CountRecompositions("LooksStrip")
     val s = skin
     val view = LocalView.current
+    LaunchedEffect(Unit) { dev.opencamera.app.PerfTrace.endAfterNextFrame(view, dev.opencamera.app.PerfTrace.OPEN_LOOKS) }
     LazyRow(
-        Modifier.fillMaxWidth().height(96.dp).selectableGroup(),
+        Modifier.fillMaxWidth().height(96.dp).testTag("looks_strip").selectableGroup(),
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {

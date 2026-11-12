@@ -617,8 +617,12 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         viewFinder.previewStreamState.observe(this) {
             when (it) {
                 PreviewView.StreamState.STREAMING -> {
+                    PerfTrace.end(PerfTrace.MODE_TO_PREVIEW)
+                    PerfTrace.end(PerfTrace.LENS_TO_PREVIEW)
                     if (!firstPreviewLogged) {
                         firstPreviewLogged = true
+                        // Startup benchmarks read time-to-full-display as time to the first live frame.
+                        reportFullyDrawn()
                         Log.i(PERF_TAG, "first preview ${SystemClock.uptimeMillis() - android.os.Process.getStartUptimeMillis()} ms after process start")
                     }
                     if (lastBindStartMs > 0) {
@@ -1998,7 +2002,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         val start = SystemClock.elapsedRealtimeNanos()
         lastBindStartMs = SystemClock.uptimeMillis()
         try {
-            bindCameraUseCasesWithFallback(cameraConfiguration)
+            androidx.tracing.trace(PerfTrace.BIND) { bindCameraUseCasesWithFallback(cameraConfiguration) }
         } finally {
             // Video binds too, so a pending stream check after a mode switch does not bind again.
             boundStreams = boundStreamsKey(cameraConfiguration)
@@ -2595,6 +2599,12 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         finish()
     }
 
+    override fun onPause() {
+        super.onPause()
+        // The gallery (another app) has taken the screen.
+        PerfTrace.end(PerfTrace.OPEN_GALLERY)
+    }
+
     override fun onResume() {
         super.onResume()
         // Picks up strength changes made in settings.
@@ -3128,6 +3138,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     /** Night, Portrait and Pro are Photo with one feature on; leaving them turns it off. */
     private fun selectUiMode(mode: UiMode) {
         lastModeTapMs = SystemClock.uptimeMillis()
+        PerfTrace.begin(PerfTrace.MODE_TO_PREVIEW)
+        if (mode == UiMode.PRO) PerfTrace.begin(PerfTrace.OPEN_PRO)
         FeatureGuard.attempt(LOG_TAG, "Mode $mode") {
             val mf = viewModel.multiFrame
             val photo = mode == UiMode.PHOTO || mode == UiMode.NIGHT || mode == UiMode.PORTRAIT || mode == UiMode.PRO
@@ -3276,6 +3288,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         }
 
         override fun shutter() = act("shutter") {
+            if (viewModel.cameraMode.value == CameraMode.PHOTO) PerfTrace.begin(PerfTrace.SHUTTER_TO_READY)
             if (shutterButton.isEnabled || viewModel.cameraState.value.isRecordingVideo) shutterButton.performClick()
         }
 
@@ -3307,13 +3320,22 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         override fun flash() = act("flash") { flashButton.performClick() }
         override fun flashLong() = act("flash long") { flashButton.performLongClick() }
         override fun control(control: Control) = act("control $control") { controlButton(control).performClick() }
-        override fun lensChip(index: Int) = act("lens") { lensSelectorLayout.clickAt(index) }
+        override fun lensChip(index: Int) = act("lens") {
+            PerfTrace.begin(PerfTrace.LENS_TO_PREVIEW)
+            lensSelectorLayout.clickAt(index)
+        }
         override fun zoomTo(ratio: Float) = act("zoom") { viewModel.cameraController.setZoomRatio(ratio) }
         override fun flip() = act("flip") { flipCameraButton.performClick() }
-        override fun gallery() = act("gallery") { galleryButtonCardView.performClick() }
+        override fun gallery() = act("gallery") {
+            PerfTrace.begin(PerfTrace.OPEN_GALLERY)
+            galleryButtonCardView.performClick()
+        }
         override fun pauseResume() = act("pause") { videoRecordingStateButton.performClick() }
         override fun selectLook(id: String) = act("look") { lookPickerView.onLookSelected?.invoke(id) }
-        override fun allSettings() = act("settings") { openSettings() }
+        override fun allSettings() = act("settings") {
+            PerfTrace.begin(PerfTrace.OPEN_SETTINGS)
+            openSettings()
+        }
         override fun googleLens() = act("lens app") { googleLensButton.performClick() }
         override fun proSettings(settings: ProSettings) = act("pro") { proModeUi.onSettingsChanged(settings) }
         override fun proAfLock(locked: Boolean) = act("af lock") { proModeUi.onAfLockChanged(locked) }

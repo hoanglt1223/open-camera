@@ -56,6 +56,7 @@ import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -188,6 +189,10 @@ fun ProPanel(pro: ProUiState, actions: CameraUiActions) {
     var selected by rememberSaveable { mutableStateOf(ProDial.ISO) }
     val current = dials.firstOrNull { it.dial == selected } ?: dials.firstOrNull() ?: return
     val settings = pro.settings
+    val view = androidx.compose.ui.platform.LocalView.current
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        dev.opencamera.app.PerfTrace.endAfterNextFrame(view, dev.opencamera.app.PerfTrace.OPEN_PRO)
+    }
 
     Column(
         Modifier
@@ -271,6 +276,7 @@ private fun Dial(model: DialModel, index: Int, enabled: Boolean, description: St
         Modifier
             .fillMaxWidth()
             .height(60.dp)
+            .testTag("pro_dial")
             .semantics {
                 contentDescription = description
                 stateDescription = label
