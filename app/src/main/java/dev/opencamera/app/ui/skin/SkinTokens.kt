@@ -130,7 +130,7 @@ object Skins {
         type = SkinTokens.Typography(modeSize = 14f, modeWeight = 600, labelSize = 12f, titleSize = 17f),
         motion = SkinTokens.Motion(120, 280, 380, floatArrayOf(.25f, .9f, .3f, 1.05f), springy = false),
         shape = SkinTokens.Shape(
-            shutter = 78f, shutterRing = 3f, previewTop = 64f, previewSide = 0f, previewRadius = 0f,
+            shutter = 78f, shutterRing = 3f, previewTop = 0f, previewSide = 0f, previewRadius = 0f,
             topBarCapsule = true, glass = true,
         ),
     )

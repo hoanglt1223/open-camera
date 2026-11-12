@@ -167,4 +167,7 @@ interface CameraUiActions {
 
     /** A downscaled preview frame for a sheet backdrop, or null. */
     suspend fun previewSnapshot(): Bitmap?
+
+    /** Copies the current preview frame, scaled, into [target]; false when there is none. */
+    suspend fun previewSample(target: Bitmap): Boolean = false
 }

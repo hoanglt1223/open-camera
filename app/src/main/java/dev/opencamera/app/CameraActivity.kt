@@ -47,6 +47,7 @@ import androidx.camera.camera2.interop.CaptureRequestOptions
 import androidx.camera.view.CameraControllerInterop
 import dev.opencamera.capture.StreamConfig
 import kotlinx.coroutines.withTimeoutOrNull
+import androidx.core.view.doOnNextLayout
 import dev.opencamera.vendorbridge.VendorTagRegistry
 import dev.opencamera.vendorbridge.SourcePolicy
 import dev.opencamera.vendorbridge.ProcessingSource
@@ -620,6 +621,11 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                         firstPreviewLogged = true
                         Log.i(PERF_TAG, "first preview ${SystemClock.uptimeMillis() - android.os.Process.getStartUptimeMillis()} ms after process start")
                     }
+                    if (lastBindStartMs > 0) {
+                        val now = SystemClock.uptimeMillis()
+                        Log.i(PERF_TAG, "preview streaming ${now - lastBindStartMs} ms after bind start, ${now - lastModeTapMs} ms after mode tap")
+                        lastBindStartMs = 0
+                    }
                     // Show grid
                     gridView.alpha = 1f
                     gridView.previewView = viewFinder
@@ -886,6 +892,16 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                 // Let the mode change draw its frame first; the bind (CameraX must be configured on
                 // the main thread) then runs in a frame of its own.
                 viewModel.cameraState.first { it == CameraState.IDLE }
+                // A new preview box (photo 3:4 <-> video 9:16) changes PreviewView's viewport, and a
+                // bound controller rebinds on that layout by itself: a second full bind per switch.
+                // Unbind first so the relayout lands on an idle controller, then bind once.
+                if (layoutPreviewForSkin(skinRepository.skin.value, unbindFirst = true) && viewFinder.isLayoutRequested) {
+                    withTimeoutOrNull(RELAYOUT_WAIT_MS) {
+                        kotlinx.coroutines.suspendCancellableCoroutine { cont ->
+                            viewFinder.doOnNextLayout { if (cont.isActive) cont.resumeWith(Result.success(Unit)) }
+                        }
+                    }
+                }
                 kotlinx.coroutines.android.awaitFrame()
                 bindCameraUseCases(cameraConfiguration)
             }
@@ -1962,6 +1978,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     private var lastBridgedOemFeature: OemFeature? = null
     private var lastBoundCamera: dev.opencamera.app.models.Camera? = null
     private var firstPreviewLogged = false
+    private var lastBindStartMs = 0L
+    private var lastModeTapMs = 0L
     private var previewLayoutKey: Any? = null
 
     private fun bindCameraUseCases(cameraConfiguration: CameraConfiguration, reason: String = "config") {
@@ -1972,6 +1990,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             return
         }
         val start = SystemClock.elapsedRealtimeNanos()
+        lastBindStartMs = SystemClock.uptimeMillis()
         try {
             bindCameraUseCasesWithFallback(cameraConfiguration)
         } finally {
@@ -2831,7 +2850,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     }
 
     private fun updateAiPortraitButton() {
-        uiState.update { it.copy(portrait = aiController.settings.portrait) }
+        // The selected mode is derived from this flag: without it, Portrait -> Photo never took effect.
+        uiState.update { it.copy(portrait = aiController.settings.portrait).derived() }
         aiPortraitButton.setText(
             if (aiController.settings.portrait) R.string.ai_portrait_on else R.string.ai_portrait_off
         )
@@ -3016,19 +3036,30 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     }
 
     /** Preview box of the skin: below the top bar, preview-shaped, optionally inset and rounded. */
-    private fun layoutPreviewForSkin(tokens: SkinTokens) {
-        if (!overlayActive) return
+    private fun layoutPreviewForSkin(tokens: SkinTokens, unbindFirst: Boolean = false): Boolean {
+        if (!overlayActive) return false
         val density = resources.displayMetrics.density
         val shape = tokens.shape
-        val ratio = when (viewModel.cameraMode.value) {
+        val config = viewModel.cameraConfiguration.replayCache.lastOrNull()
+        val ratio = when (config?.cameraMode ?: viewModel.cameraMode.value) {
             CameraMode.VIDEO -> "9:16"
             CameraMode.QR -> "3:4"
-            CameraMode.PHOTO -> if (viewModel.photoAspectRatio.value == AspectRatio.RATIO_16_9) "9:16" else "3:4"
+            CameraMode.PHOTO -> {
+                val aspect = (config as? CameraConfiguration.Photo)?.photoAspectRatio ?: viewModel.photoAspectRatio.value
+                if (aspect == AspectRatio.RATIO_16_9) "9:16" else "3:4"
+            }
         }
         // Mode switches call this with the same box most of the time; a relayout costs a frame.
         val key = Triple(tokens, ratio, uiState.value.insetTop)
-        if (key == previewLayoutKey) return
+        if (key == previewLayoutKey) return false
         previewLayoutKey = key
+        if (unbindFirst && boundStreams != null && viewModel.cameraState.value == CameraState.IDLE) {
+            FeatureGuard.attempt(LOG_TAG, "Unbind before preview relayout") {
+                previewBlurView.freeze()
+                previewBlurView.isVisible = true
+                viewModel.cameraController.unbind()
+            }
+        }
         viewFinder.updateLayoutParams<ConstraintLayout.LayoutParams> {
             topToTop = ConstraintLayout.LayoutParams.PARENT_ID
             topToBottom = ConstraintLayout.LayoutParams.UNSET
@@ -3060,6 +3091,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             }
         }
         viewFinder.clipToOutline = radius > 0f
+        return true
     }
 
     private fun overlaySwipe(forward: Boolean) {
@@ -3077,7 +3109,9 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         return copy(
             uiMode = UiModes.derive(cameraMode, pro, portrait, multiFrame),
             modes = UiModes.available(
-                proAvailable = this.pro?.available == true,
+                // Pro reports unavailable while Video is bound; keeping it listed stops the
+                // carousel from reshuffling (and swipes from skipping Pro) on Photo <-> Video.
+                proAvailable = this.pro?.available == true || UiMode.PRO in modes,
                 videoAvailable = videoRecordingAvailable,
                 moreAvailable = !singleCapture,
             ),
@@ -3086,6 +3120,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
     /** Night, Portrait and Pro are Photo with one feature on; leaving them turns it off. */
     private fun selectUiMode(mode: UiMode) {
+        lastModeTapMs = SystemClock.uptimeMillis()
         FeatureGuard.attempt(LOG_TAG, "Mode $mode") {
             val mf = viewModel.multiFrame
             val photo = mode == UiMode.PHOTO || mode == UiMode.NIGHT || mode == UiMode.PORTRAIT || mode == UiMode.PRO
@@ -3164,12 +3199,11 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         val sync = { mainLayout.post { if (overlayActive) syncLegacyControls() } }
         launch {
             viewModel.cameraMode.collect { mode ->
+                // The preview box follows in the camera configuration collector, next to the bind.
                 uiState.update { it.copy(cameraMode = mode).derived() }
-                layoutPreviewForSkin(skinRepository.skin.value)
                 sync()
             }
         }
-        launch { viewModel.photoAspectRatio.collect { layoutPreviewForSkin(skinRepository.skin.value) } }
         launch {
             viewModel.cameraState.collect { cs ->
                 uiState.update { it.copy(cameraState = cs) }
@@ -3284,6 +3318,12 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             viewModel.multiFrame.source = ImageQuality.next(viewModel.multiFrame.source, imageQualityMp)
         }
 
+        override suspend fun previewSample(target: Bitmap): Boolean = try {
+            PreviewFrames.copyInto(viewFinder, target)
+        } catch (e: RuntimeException) {
+            false
+        }
+
         override suspend fun previewSnapshot(): Bitmap? = try {
             PreviewFrames.copy(viewFinder, maxOf(viewFinder.width, viewFinder.height) / 4)
         } catch (e: RuntimeException) {
@@ -3300,6 +3340,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         const val EXTRA_DEBUG_GLYPH_ROTATION = "debug_glyph_rotation"
         private const val LOOK_PRELOAD_WAIT_MS = 300L
         private const val REBIND_DEBOUNCE_MS = 150L
+        private const val RELAYOUT_WAIT_MS = 250L
         const val PERF_TAG = "OcPerf"
         private const val FULL_RES_STREAM_TIMEOUT_MS = 4000L
         private const val CAPTURE_RESULT_WAIT_MS = 800L

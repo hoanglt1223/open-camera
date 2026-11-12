@@ -220,7 +220,8 @@ fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiS
 
     androidx.compose.runtime.CompositionLocalProvider(LocalGlyphRotation provides rotation) {
         Box(Modifier.fillMaxSize()) {
-            PreviewChrome(state.previewRect)
+            GlassBackdrop(state.previewRect, actions)
+            PreviewChrome(state.previewRect, state.uiMode)
 
             Column(
                 Modifier
@@ -262,7 +263,11 @@ fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiS
                     LensRow(state.forLens(), actions)
                 }
                 Spacer(Modifier.height(4.dp))
-                Box(Modifier.height(48.dp), contentAlignment = Alignment.Center) {
+                Box(
+                    if (s.glass) Modifier.padding(horizontal = 20.dp).height(48.dp).glassCapsule().padding(horizontal = 6.dp)
+                    else Modifier.height(48.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
                     androidx.compose.animation.AnimatedVisibility(
                         !recording && !state.singleCapture,
                         enter = fadeIn(s.medium()), exit = fadeOut(s.medium()),
@@ -281,11 +286,27 @@ fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiS
 
 /** Rounded preview corners (masks over the SurfaceView) and the Glass bottom scrim. */
 @Composable
-private fun BoxScope.PreviewChrome(rect: RectF?) {
+private fun BoxScope.PreviewChrome(rect: RectF?, mode: UiMode) {
     CountRecompositions("PreviewChrome")
     val s = skin
     val radiusPx = with(LocalDensity.current) { s.tokens.shape.previewRadius.dp.toPx() }
+    // Every mode change dims the preview briefly, so switches that keep the session (Night,
+    // Portrait, Pro) read as a transition too; rebinding switches add the frozen blurred frame.
+    val dip = remember { Animatable(0f) }
+    var lastMode by remember { mutableStateOf(mode) }
+    LaunchedEffect(mode) {
+        if (mode == lastMode || !s.glass) return@LaunchedEffect
+        lastMode = mode
+        dip.animateTo(MODE_DIP, tween(s.motion.mediumMs * 2 / 5))
+        dip.animateTo(0f, tween(s.motion.slowMs))
+    }
     Canvas(Modifier.matchParentSize()) {
+        val d = dip.value
+        if (d > 0f && rect != null) {
+            drawRect(
+                Color.Black.copy(alpha = d), Offset(rect.left, rect.top), Size(rect.width(), rect.height()),
+            )
+        }
         if (s.glass) {
             val top = size.height * 0.55f
             drawRect(
@@ -317,11 +338,7 @@ private fun TopBar(state: CameraUiState, actions: CameraUiActions, ui: OverlayUi
     val recording = state.cameraState.isRecordingVideo
     val idle = state.cameraState == CameraState.IDLE
     val container = if (s.tokens.shape.topBarCapsule) {
-        Modifier
-            .clip(RoundedCornerShape(50))
-            .background(s.surface)
-            .border(1.dp, s.stroke, RoundedCornerShape(50))
-            .padding(horizontal = 6.dp)
+        Modifier.glassCapsule().padding(horizontal = 8.dp)
     } else {
         Modifier.fillMaxWidth().padding(horizontal = 12.dp)
     }
@@ -495,6 +512,26 @@ private fun TopText(label: String, description: String, enabled: Boolean, onClic
     }
 }
 
+/**
+ * Glass material: a light veil with a bright rim that fades from the top edge (the specular
+ * highlight). The faint dark base keeps white glyphs readable over bright scenes.
+ */
+fun Modifier.glassCapsule(circle: Boolean = false) = this
+    .clip(if (circle) CircleShape else RoundedCornerShape(50))
+    .background(Color.Black.copy(alpha = .14f))
+    .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = .20f), Color.White.copy(alpha = .08f))))
+    .drawWithContent {
+        drawContent()
+        val r = size.minDimension / 2
+        drawRoundRect(
+            Brush.verticalGradient(
+                0f to Color.White.copy(alpha = .55f), .45f to Color.White.copy(alpha = .06f),
+                1f to Color.White.copy(alpha = .18f),
+            ),
+            cornerRadius = CornerRadius(r, r), style = Stroke(1.dp.toPx()),
+        )
+    }
+
 /** Click (and optional long click) without ripple; a slight scale-down while pressed. */
 @Composable
 fun Modifier.pressable(enabled: Boolean = true, onLongClick: (() -> Unit)? = null, onClick: () -> Unit): Modifier {
@@ -618,8 +655,10 @@ private fun LensRow(state: CameraUiState, actions: CameraUiActions) {
             Row(
                 Modifier
                     .graphicsLayer { alpha = 1f - ringAlpha }
-                    .clip(RoundedCornerShape(50))
-                    .background(if (s.glass) s.chip else Color.Black.copy(alpha = .4f))
+                    .then(
+                        if (s.glass) Modifier.glassCapsule()
+                        else Modifier.clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = .4f))
+                    )
                     .padding(horizontal = 2.dp)
                     .selectableGroup(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -802,7 +841,7 @@ private fun ModeCarousel(state: CameraUiState, actions: CameraUiActions, ui: Ove
                 }
                 .clip(RoundedCornerShape(50))
                 .then(
-                    if (s.glass) Modifier.background(Color.White.copy(alpha = .12f))
+                    if (s.glass) Modifier.background(Color.White.copy(alpha = .20f))
                     else Modifier.background(s.accentBrush)
                 )
         )
@@ -923,7 +962,7 @@ private fun RoundButton(
             .semantics { contentDescription = description }
             .pressable(enabled, onClick = onClick)
             .graphicsLayer { alpha = if (enabled) 1f else .4f }
-            .background(if (s.glass) Color.White.copy(alpha = .16f) else s.chip, CircleShape),
+            .then(if (s.glass) Modifier.glassCapsule(circle = true) else Modifier.background(s.chip, CircleShape)),
         contentAlignment = Alignment.Center,
     ) {
         Glyph(
@@ -1021,17 +1060,18 @@ private fun Thumb(state: CameraUiState, enabled: Boolean, onClick: () -> Unit) {
         pop.snapTo(0.4f)
         pop.animateTo(1f, s.bouncy())
     }
-    val shape = if (s.glass) RoundedCornerShape(12.dp) else CircleShape
+    val shape = CircleShape
     Box(
         Modifier
-            .size(48.dp)
+            .size(if (s.glass) 52.dp else 48.dp)
             .semantics { contentDescription = context.getString(R.string.gallery_button_description) }
             .pressable(enabled, onClick = onClick)
             .uprightGlyph(LocalGlyphRotation.current)
             .graphicsLayer { scaleX = pop.value; scaleY = pop.value }
-            .clip(shape)
-            .background(s.chip)
-            .then(if (s.glass) Modifier.border(2.dp, s.stroke, shape) else Modifier.border(2.dp, s.accentBrush, shape)),
+            .then(
+                if (s.glass) Modifier.glassCapsule(circle = true).padding(3.dp).clip(shape)
+                else Modifier.clip(shape).background(s.chip).border(2.dp, s.accentBrush, shape)
+            ),
         contentAlignment = Alignment.Center,
     ) {
         val b = bitmap
@@ -1089,6 +1129,8 @@ private fun LooksStrip(state: CameraUiState, actions: CameraUiActions) {
 }
 
 const val LOOK_COLOR_MATCH = "__color_match__"
+
+private const val MODE_DIP = 0.32f
 
 /** Keeps labels readable over a bright preview (contrast against white frames). */
 val LabelShadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = .75f), Offset(0f, 1f), 6f)
