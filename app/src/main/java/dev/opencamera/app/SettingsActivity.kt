@@ -253,6 +253,21 @@ class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
                 }
                 true
             }
+
+            findPreference<Preference>("share_crash_report")?.setOnPreferenceClickListener {
+                val text = CrashLog.latest(CrashLog.dir(requireContext()))
+                if (text == null) {
+                    Toast.makeText(requireContext(), R.string.share_crash_report_none, Toast.LENGTH_SHORT).show()
+                } else {
+                    val send = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_SUBJECT, getString(R.string.share_crash_report_title))
+                        putExtra(Intent.EXTRA_TEXT, text)
+                    }
+                    runCatching { startActivity(Intent.createChooser(send, null)) }
+                }
+                true
+            }
         }
     }
 

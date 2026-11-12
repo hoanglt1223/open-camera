@@ -189,4 +189,9 @@
     <string name="device_profile_off">Tắt: danh sách camera thường</string>
     <string name="export_device_profile_title">Xuất hồ sơ thiết bị</string>
     <string name="export_device_profile_summary">Chia sẻ hồ sơ ống kính của thiết bị này dưới dạng JSON (không có số sê-ri hay vị trí)</string>
+    <string name="crash_reports_title">Lưu báo cáo lỗi</string>
+    <string name="crash_reports_summary">Lưu báo cáo trên máy khi ứng dụng bị dừng đột ngột. Không gửi đi đâu trừ khi bạn chia sẻ.</string>
+    <string name="share_crash_report_title">Chia sẻ báo cáo lỗi</string>
+    <string name="share_crash_report_summary">Gửi báo cáo mới nhất bằng ứng dụng bạn chọn</string>
+    <string name="share_crash_report_none">Chưa có báo cáo lỗi nào</string>
 </resources>
