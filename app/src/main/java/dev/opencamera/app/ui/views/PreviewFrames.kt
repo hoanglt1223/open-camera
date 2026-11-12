@@ -12,8 +12,10 @@ import android.view.PixelCopy
 import android.view.SurfaceView
 import android.view.TextureView
 import androidx.camera.view.PreviewView
-import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -45,11 +47,16 @@ object PreviewFrames {
         val surface = children.filterIsInstance<SurfaceView>().firstOrNull()
         if (surface != null) {
             if (surface.holder.surface?.isValid != true) return false
-            return suspendCancellableCoroutine { cont ->
-                try {
-                    PixelCopy.request(surface, target, { result -> cont.resume(result == PixelCopy.SUCCESS) }, handler)
-                } catch (e: IllegalArgumentException) {
-                    cont.resume(false)
+            // Not cancellable: callers recycle [target] once this returns (e.g. in a finally on
+            // cancellation), and RenderThread aborts the process if it writes a recycled bitmap.
+            // PixelCopy always calls back, at worst after its own timeout.
+            return withContext(NonCancellable) {
+                suspendCoroutine { cont ->
+                    try {
+                        PixelCopy.request(surface, target, { result -> cont.resume(result == PixelCopy.SUCCESS) }, handler)
+                    } catch (e: IllegalArgumentException) {
+                        cont.resume(false)
+                    }
                 }
             }
         }
