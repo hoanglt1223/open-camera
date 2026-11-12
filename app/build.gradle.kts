@@ -19,8 +19,8 @@ android {
         applicationId = "dev.opencamera.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0-beta1"
+        versionCode = 2
+        versionName = "0.1.0-beta2"
     }
 
     // Release signing comes from ~/.gradle/gradle.properties (openCamera.release.*); the keystore

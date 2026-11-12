@@ -70,3 +70,9 @@ path = "pipeline/third_party/LibRaw/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2008-2025 LibRaw LLC"
 SPDX-License-Identifier = "LGPL-2.1-only OR CDDL-1.0"
+
+[[annotations]]
+path = "fastlane/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Open Camera contributors"
+SPDX-License-Identifier = "Apache-2.0"
