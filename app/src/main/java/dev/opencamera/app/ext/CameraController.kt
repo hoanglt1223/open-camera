@@ -5,6 +5,7 @@
 
 package dev.opencamera.app.ext
 
+import android.util.Log
 import androidx.camera.camera2.interop.Camera2CameraControl
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.TorchState
@@ -25,12 +26,20 @@ var CameraController.flashMode: FlashMode
     set(value) {
         enableTorch(value == FlashMode.TORCH)
 
-        imageCaptureFlashMode = when (value) {
+        val mode = when (value) {
             FlashMode.OFF -> ImageCapture.FLASH_MODE_OFF
             FlashMode.AUTO -> ImageCapture.FLASH_MODE_AUTO
             FlashMode.ON -> ImageCapture.FLASH_MODE_ON
             FlashMode.TORCH -> ImageCapture.FLASH_MODE_OFF
             FlashMode.SCREEN -> ImageCapture.FLASH_MODE_SCREEN
+        }
+        try {
+            imageCaptureFlashMode = mode
+        } catch (e: IllegalArgumentException) {
+            // Screen flash is rejected once the controller already points at a back camera (a
+            // flip racing the flash flow); the flash flow re-emits for the new camera.
+            Log.w("CameraControllerExt", "Flash mode $value rejected, using off", e)
+            imageCaptureFlashMode = ImageCapture.FLASH_MODE_OFF
         }
     }
 

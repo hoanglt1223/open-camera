@@ -5,4 +5,13 @@
 -->
 <lint>
     <issue id="MissingTranslation" severity="ignore" />
+    <issue id="ContentDescription" severity="warning" />
+    <issue id="ClickableViewAccessibility" severity="warning" />
+    <issue id="KeyboardInaccessibleWidget" severity="warning" />
+    <issue id="LabelFor" severity="warning" />
+    <issue id="RtlHardcoded" severity="warning" />
+    <issue id="TouchTargetSizeCheck" severity="warning" />
+    <issue id="SmallSp" severity="warning" />
+    <issue id="HardcodedText" severity="warning" />
+    <issue id="SetTextI18n" severity="warning" />
 </lint>

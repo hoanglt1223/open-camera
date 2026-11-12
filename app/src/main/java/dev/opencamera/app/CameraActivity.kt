@@ -161,6 +161,7 @@ import dev.opencamera.app.models.VideoStabilizationMode
 import dev.opencamera.app.pro.ProModeUi
 import dev.opencamera.app.multiframe.MultiFrameCaptureController
 import dev.opencamera.app.robustness.FeatureGuard
+import dev.opencamera.app.robustness.SaveGuardedLifecycle
 import dev.opencamera.app.ui.dialogs.LocationPermissionsDialog
 import dev.opencamera.app.ui.dialogs.QrBottomSheetDialog
 import dev.opencamera.app.ui.views.CameraModeSelectorLayout
@@ -225,6 +226,11 @@ import androidx.camera.core.CameraState as CameraXCameraState
 open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     // View models
     private val viewModel by viewModels<CameraViewModel>()
+
+    // Leaving the app must not abort photos still saving; see SaveGuardedLifecycle.
+    private val cameraLifecycle by lazy {
+        SaveGuardedLifecycle(lifecycle, viewModel.pendingSaves, CameraViewModel.SAVE_WAIT_MS)
+    }
 
     // Views
     private val aspectRatioButton by lazy { findViewById<Button>(R.id.aspectRatioButton) }
@@ -489,6 +495,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     override fun onCreate(savedInstanceState: Bundle?) {
         DebugDiagnostics.enableStrictCheck(this, intent)
         super.onCreate(savedInstanceState)
+        cameraLifecycle
 
         // Enable edge-to-edge
         enableEdgeToEdge()
@@ -757,13 +764,12 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             override fun resume() {
                 if (lifecycle.currentState == Lifecycle.State.DESTROYED) return
                 FeatureGuard.attempt(LOG_TAG, "Binding after a burst") {
-                    viewModel.cameraController.bindToLifecycle(this@CameraActivity)
+                    viewModel.cameraController.bindToLifecycle(cameraLifecycle)
                 }
             }
         }
-        lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onStop(owner: LifecycleOwner) = viewModel.cancelBurst()
-        })
+        // A burst in progress is not cancelled on stop: it runs its own Camera2 session bounded by
+        // its timeout, and its frames are merged by ProcessingService, so leaving keeps the shot.
         onBackPressedDispatcher.addCallback(this, creativeBack)
 
         lifecycleScope.launch {
@@ -821,6 +827,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
     override fun onDestroy() {
         overlay?.destroy()
+        // The callback spec holds the view model's analyzer; it must not outlive it.
+        if (isFinishing) CameraControllerInterop.detach()
         viewModel.multiFrame.previewZoomCompensation = null
         viewModel.multiFrame.burstHost = null
 
@@ -986,7 +994,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                     } else {
                         lensSelectorLayout.setCamera(
                             it,
-                            availableCameras,
+                            viewModel.selectableCameras(it, availableCameras),
                         )
                     }
                 }
@@ -1858,7 +1866,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             if (step.dropEffect) viewModel.lookController.disablePreviewEffect()
             val bound = FeatureGuard.attempt(LOG_TAG, "Binding use cases ") {
                 controller.setEnabledUseCases(step.useCases)
-                controller.bindToLifecycle(this)
+                controller.bindToLifecycle(cameraLifecycle)
             } != null
             if (!bound) continue
             if (step.useCases and CameraController.IMAGE_ANALYSIS == 0) {
@@ -2213,7 +2221,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                     .build()
                 sharedBound = null
                 viewModel.cameraController.setEnabledUseCases(CameraController.IMAGE_CAPTURE)
-                viewModel.cameraController.bindToLifecycle(this)
+                viewModel.cameraController.bindToLifecycle(cameraLifecycle)
             }
             Toast.makeText(this, R.string.stream_fallback_baseline, Toast.LENGTH_LONG).show()
         }
@@ -2436,7 +2444,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             viewModel.lookController.attachIfReady()
             val bound = FeatureGuard.attempt(LOG_TAG, "Binding $fullRes") {
                 viewModel.cameraController.setEnabledUseCases(cameraUseCases)
-                viewModel.cameraController.bindToLifecycle(this)
+                viewModel.cameraController.bindToLifecycle(cameraLifecycle)
             } != null
             if (!bound) {
                 // Next layout of the chain: RAW -> full-res YUV -> regular JPEG session.
@@ -2450,7 +2458,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             viewModel.lookController.attachIfReady()
             val sharedOk = sharedReady && FeatureGuard.attempt(LOG_TAG, "Binding the shared Photo + Video session") {
                 viewModel.cameraController.setEnabledUseCases(cameraUseCases or CameraController.VIDEO_CAPTURE)
-                viewModel.cameraController.bindToLifecycle(this)
+                viewModel.cameraController.bindToLifecycle(cameraLifecycle)
             } != null
             if (sharedOk) {
                 sharedBound = shared

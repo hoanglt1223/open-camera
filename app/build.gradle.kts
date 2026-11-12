@@ -174,6 +174,8 @@ dependencies {
     implementation(libs.zxing.core)
     implementation(libs.zxing.cpp.android)
 
+    // Heap leak detection in debug builds only (Apache-2.0); never shipped in release.
+    debugImplementation(libs.leakcanary.android)
     testImplementation(libs.junit)
     testImplementation(libs.json)
 }

@@ -162,6 +162,16 @@ class OverlayUiState {
 /** Animated glyph rotation, read in the draw phase so rotating never recomposes. */
 val LocalGlyphRotation = staticCompositionLocalOf<State<Float>> { mutableFloatStateOf(0f) }
 
+/**
+ * On-preview chrome (lens chips, mode carousel, top bar) has fixed round geometry sized for touch
+ * targets; past this scale labels overflow it. Sheets and settings keep the full system scale.
+ */
+internal const val PREVIEW_CHROME_MAX_FONT_SCALE = 1.3f
+
+internal fun androidx.compose.ui.unit.Density.cappedFontScale(): androidx.compose.ui.unit.Density =
+    if (fontScale <= PREVIEW_CHROME_MAX_FONT_SCALE) this
+    else androidx.compose.ui.unit.Density(density, PREVIEW_CHROME_MAX_FONT_SCALE)
+
 fun Modifier.uprightGlyph(rotation: State<Float>) = graphicsLayer { rotationZ = rotation.value }
 
 /**
@@ -229,7 +239,11 @@ fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiS
     val rotation = animateFloatAsState(rotationTarget, s.medium(), label = "glyphs")
     val recording = state.cameraState.isRecordingVideo
 
-    androidx.compose.runtime.CompositionLocalProvider(LocalGlyphRotation provides rotation) {
+    val density = LocalDensity.current
+    androidx.compose.runtime.CompositionLocalProvider(
+        LocalGlyphRotation provides rotation,
+        LocalDensity provides density.cappedFontScale(),
+    ) {
         // Test tags double as resource ids so UiAutomator (macrobenchmark) finds them in any locale.
         @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
         Box(Modifier.fillMaxSize().semantics { testTagsAsResourceId = true }) {
@@ -307,7 +321,9 @@ fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiS
                 BottomRow(state.forBottom(), actions)
             }
 
-            Sheets(state.forSheets(), actions, ui)
+            androidx.compose.runtime.CompositionLocalProvider(LocalDensity provides density) {
+                Sheets(state.forSheets(), actions, ui)
+            }
         }
     }
 }
@@ -909,7 +925,7 @@ private fun ModeCarousel(state: CameraUiState, actions: CameraUiActions, ui: Ove
                                 selected = on, enabled = enabled, role = Role.Tab,
                                 interactionSource = remember { MutableInteractionSource() }, indication = null,
                             ) { select(mode) }
-                            .padding(horizontal = 14.dp, vertical = 14.dp),
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
                         style = TextStyle(
                             fontSize = s.tokens.type.modeSize.sp, fontWeight = s.modeWeight,
                             textAlign = TextAlign.Center, shadow = if (on && !s.glass) null else LabelShadow,

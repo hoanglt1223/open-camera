@@ -425,8 +425,10 @@
 
         <ImageButton
             android:id="@+id/videoRecordingStateButton"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
             android:background="@null"
             android:contentDescription="@string/video_recording_state_button_description"
             android:src="@drawable/avd_video_recording_pause"

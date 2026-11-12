@@ -36,7 +36,9 @@ object CameraControllerInterop {
     )
 
     private var spec: Spec? = null
-    private var attached: ImageAnalysis? = null
+    // Identity check only. A strong static reference kept the last bound use case, and through
+    // its camera binding the destroyed activity, alive.
+    private var attached: java.lang.ref.WeakReference<ImageAnalysis>? = null
 
     /** Call after the analysis resolution and analyzer are set and before binding. */
     fun attachAnalysisCaptureCallback(
@@ -63,7 +65,7 @@ object CameraControllerInterop {
      */
     fun ensureAttached(controller: CameraController): Boolean = try {
         val current = controller.mImageAnalysis
-        if (spec == null || current == null || current === attached) {
+        if (spec == null || current == null || current === attached?.get()) {
             false
         } else {
             Log.i(TAG, "Analysis use case was rebuilt by the controller, re-attaching the capture callback")
@@ -96,7 +98,7 @@ object CameraControllerInterop {
         analysis.setAnalyzer(s.executor, s.analyzer)
         controller.mImageAnalysis?.clearAnalyzer()
         controller.mImageAnalysis = analysis
-        attached = analysis
+        attached = java.lang.ref.WeakReference(analysis)
         true
     } catch (e: Throwable) {
         Log.w(TAG, "Cannot attach a capture callback to the analysis stream", e)
