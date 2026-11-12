@@ -43,6 +43,9 @@ class ApertureApplication : Application() {
             overlaysRepository.backwardCompatibleCameraIds.asList()
         )
 
+        // Camera enumeration is the longest step before the first bind; start it with the process.
+        coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) { cameraRepository.prewarm() }
+
         // Generate and cache the device profile off the main thread on first launch
         coroutineScope.launch { deviceProfileRepository.profile() }
 

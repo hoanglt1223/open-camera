@@ -221,7 +221,7 @@ internal fun RetouchPanel(a: DevelopActivity) {
         onDispose { ui.onRetouchTap = null; ui.clearRetouchInput(); if (a.mode == Mode.RETOUCH_BRUSH || a.mode == Mode.RETOUCH_TAP) a.switchMode(Mode.NONE) }
     }
 
-    val reason = remember(tool.id) { tool.unavailableReason() }
+    val reason = remember(tool.id) { dev.opencamera.app.develop.tools.RetouchTools.unavailableReason(tool) }
     if (reason != null) {
         PanelLabel(a.getString(R.string.retouch_unavailable, reason))
     } else when (tool.id) {

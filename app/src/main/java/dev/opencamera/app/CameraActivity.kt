@@ -486,6 +486,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
     @Suppress("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
+        DebugDiagnostics.enableStrictCheck(this, intent)
         super.onCreate(savedInstanceState)
 
         // Enable edge-to-edge
@@ -625,6 +626,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                         // Startup benchmarks read time-to-full-display as time to the first live frame.
                         reportFullyDrawn()
                         Log.i(PERF_TAG, "first preview ${SystemClock.uptimeMillis() - android.os.Process.getStartUptimeMillis()} ms after process start")
+                        flushAfterFirstPreview()
                     }
                     if (lastBindStartMs > 0) {
                         val now = SystemClock.uptimeMillis()
@@ -811,6 +813,9 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         lifecycleScope.launch {
             queueSetupWithCameraPermissions()
         }
+
+        runAfterFirstPreview("Settings prewarm") { prewarmSettings() }
+        mainLayout.postDelayed({ flushAfterFirstPreview() }, AFTER_FIRST_PREVIEW_FALLBACK_MS)
     }
 
     override fun onDestroy() {
@@ -1995,6 +2000,53 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     private var lastBridgedOemFeature: OemFeature? = null
     private var lastBoundCamera: dev.opencamera.app.models.Camera? = null
     private var firstPreviewLogged = false
+
+    /** Startup work that the first live frame does not need; see [runAfterFirstPreview]. */
+    private var afterFirstPreview: ArrayList<() -> Unit>? = ArrayList()
+
+    /**
+     * Runs [block] on main once the first preview frame streams, one task per idle pass so none
+     * delays a frame. Without a preview (no camera, bind failure) the queue drains after
+     * [AFTER_FIRST_PREVIEW_FALLBACK_MS] instead.
+     */
+    private fun runAfterFirstPreview(name: String, block: () -> Unit) {
+        val queue = afterFirstPreview
+        if (queue == null) FeatureGuard.attempt(LOG_TAG, name, block) else queue += { FeatureGuard.attempt(LOG_TAG, name, block) }
+    }
+
+    private fun flushAfterFirstPreview() {
+        val tasks = afterFirstPreview ?: return
+        afterFirstPreview = null
+        drainWhenIdle(ArrayDeque(tasks))
+    }
+
+    private fun drainWhenIdle(pending: ArrayDeque<() -> Unit>) {
+        Looper.myQueue().addIdleHandler {
+            if (!isDestroyed) {
+                pending.removeFirstOrNull()?.invoke()
+                // Re-arm through a message: an idle handler kept alive only runs on the next idle.
+                if (pending.isNotEmpty()) mainLayout.post { drainWhenIdle(pending) }
+            }
+            false
+        }
+    }
+
+    /** Class loading and resource parsing for Settings, so its first open does not pay for them. */
+    private fun prewarmSettings() {
+        val parser = resources.getXml(R.xml.root_preferences)
+        try {
+            while (parser.next() != org.xmlpull.v1.XmlPullParser.END_DOCUMENT) Unit
+        } finally {
+            parser.close()
+        }
+        listOf(
+            "dev.opencamera.app.SettingsActivity",
+            "androidx.preference.PreferenceFragmentCompat",
+            "androidx.preference.SwitchPreference",
+            "androidx.preference.ListPreference",
+            "com.google.android.material.appbar.CollapsingToolbarLayout",
+        ).forEach { runCatching { Class.forName(it) } }
+    }
     private var lastBindStartMs = 0L
     private var lastModeTapMs = 0L
     private var previewLayoutKey: Any? = null
@@ -3009,7 +3061,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                 assistController.onComposition(s?.subjectX, s?.subjectY, s?.targetX, s?.targetY, top)
             },
         )
-        aiController.start()
+        // The AI loop grabs preview bitmaps and loads models: nothing the first frame needs.
+        runAfterFirstPreview("AI start") { aiController.start() }
         viewModel.lookController.captureOps = { aiController.captureOps() }
         updateAiPortraitButton()
         aiPortraitButton.setOnClickListener {
@@ -3165,6 +3218,10 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                 viewModel.isVideoRecordingAvailable()
             } ?: true
             uiState.update { it.derived() }
+            // Enumerates encoder profiles for every camera; keep it off the path to the first frame.
+            kotlinx.coroutines.suspendCancellableCoroutine<Unit> { cont ->
+                runAfterFirstPreview("More modes probe") { if (cont.isActive) cont.resumeWith(Result.success(Unit)) }
+            }
             // Same probe as the More activity, so the sheet lists only modes it will open.
             withContext(Dispatchers.Default) {
                 FeatureGuard.attempt(LOG_TAG, "More modes probe") {
@@ -3527,6 +3584,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         private const val LOOK_PRELOAD_WAIT_MS = 300L
         private const val REBIND_DEBOUNCE_MS = 150L
         private const val RELAYOUT_WAIT_MS = 250L
+        private const val AFTER_FIRST_PREVIEW_FALLBACK_MS = 4000L
         const val PERF_TAG = "OcPerf"
         private const val FULL_RES_STREAM_TIMEOUT_MS = 4000L
         private const val SHARED_SIZE_TIMEOUT_MS = 2000L

@@ -140,6 +140,16 @@ class CameraRepository(
         overlaysRepository,
     )
 
+    /**
+     * Starts CameraX, the extensions manager and the internal camera list ahead of the camera
+     * screen asking for them (blocking, call off main). The lazies are synchronized, so the screen
+     * waits on this work instead of repeating it. No-op without the camera permission.
+     */
+    fun prewarm() {
+        if (!context.permissionGranted(Manifest.permission.CAMERA)) return
+        runCatching { internalCameras }
+    }
+
     private fun requireCameraPermission() = require(
         context.permissionGranted(Manifest.permission.CAMERA)
     ) { "Camera permission not granted" }
