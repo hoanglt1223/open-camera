@@ -16,6 +16,11 @@ import androidx.tracing.Trace
 object PerfTrace {
     const val MODE_TO_PREVIEW = "OcModeTapToPreview"
     const val LENS_TO_PREVIEW = "OcLensTapToPreview"
+    /**
+     * Photo mode shutter tap until the shutter takes the next shot: the sensor part is done
+     * (CameraX capture started for a single frame, every frame in for a burst). Encoding, saving
+     * and merging run after it in the background and are not part of this section.
+     */
     const val SHUTTER_TO_READY = "OcShutterToReady"
     const val OPEN_SETTINGS = "OcOpenSettings"
     const val OPEN_LOOKS = "OcOpenLooks"

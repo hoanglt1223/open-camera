@@ -59,6 +59,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -126,6 +127,7 @@ import dev.opencamera.app.repositories.CameraRepository
 import dev.opencamera.app.utils.CameraSoundsUtils
 import dev.opencamera.app.utils.StorageUtils
 import dev.opencamera.capture.BurstKind
+import dev.opencamera.capture.CaptureReadiness
 import dev.opencamera.capture.BurstPlan
 import dev.opencamera.capture.StreamConfig
 import dev.opencamera.capture.StreamPolicy
@@ -1275,6 +1277,36 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
 
     private var burstJob: Job? = null
 
+    private val readiness = CaptureReadiness()
+    private val _pendingSaves = MutableStateFlow(0)
+
+    /** Single-frame shots still encoding or writing after the shutter was freed. */
+    val pendingSaves = _pendingSaves.asStateFlow()
+
+    private fun syncReadiness() {
+        _pendingSaves.value = readiness.pendingSaves
+        cameraState.value = if (readiness.ready) CameraState.IDLE else CameraState.TAKING_PHOTO
+    }
+
+    /** No capture running and no background save that a rebind (unbind) could abort. */
+    fun bindable() = cameraState.value == CameraState.IDLE && _pendingSaves.value == 0
+
+    /**
+     * Waits until [bindable]. A save that never reports back stops blocking after
+     * [SAVE_WAIT_MS], so the camera can never be stuck unbound.
+     */
+    suspend fun awaitBindable() {
+        val saved = withTimeoutOrNull(SAVE_WAIT_MS) {
+            combine(cameraState, _pendingSaves) { cs, n -> cs == CameraState.IDLE && n == 0 }.first { it }
+        }
+        if (saved == null && _pendingSaves.value > 0) {
+            Log.w(LOG_TAG, "Background save did not report back, rebinding anyway")
+            readiness.reset()
+            syncReadiness()
+        }
+        cameraState.first { it == CameraState.IDLE }
+    }
+
     fun takePhoto(allowMultiFrame: Boolean = true) {
         val tapMs = SystemClock.uptimeMillis()
         if (multiFrame.cancellable.value) {
@@ -1284,6 +1316,19 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         // Bail out if a photo is already being taken
         if (cameraState.value == CameraState.TAKING_PHOTO) {
             Log.i(LOG_TAG, "Shutter ignored: a photo is still being taken")
+            return
+        }
+
+        // Bursts and creative shots own the camera; let the single-frame saves finish first.
+        if (readiness.saving && allowMultiFrame &&
+            (creative.mode.value != CreativeMode.OFF || multiFrame.fullRes || multiFrame.enabled)
+        ) {
+            cameraState.value = CameraState.TAKING_PHOTO
+            viewModelScope.launch {
+                withTimeoutOrNull(SAVE_WAIT_MS) { _pendingSaves.first { it == 0 } }
+                syncReadiness()
+                takePhoto(allowMultiFrame)
+            }
             return
         }
 
@@ -1301,7 +1346,11 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
             return
         }
 
-        cameraState.value = CameraState.TAKING_PHOTO
+        if (!readiness.tryStart()) {
+            Log.i(LOG_TAG, "Shutter ignored: ${readiness.pendingSaves} photos still saving")
+            return
+        }
+        syncReadiness()
 
         // Motion photo / pre-shot: the frames up to now are the "before" part.
         val motionShutterTs = motionPhoto.shutterTimestamp()
@@ -1363,6 +1412,12 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
                 emitEvent(Event.PhotoCaptureStatus.CaptureStarted)
 
                 cameraSoundsUtils.playShutterClick()
+                // CameraX queues a new request behind this one until its image arrives, so the
+                // shutter can take the next shot now; the intent flow waits for the saved photo.
+                if (!inSingleCaptureMode.value) {
+                    readiness.exposureDone()
+                    syncReadiness()
+                }
             }
 
             override fun onImageSaved(output: ImageCapture.OutputFileResults) {
@@ -1391,7 +1446,8 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
                 }
 
                 if (imageCount.decrementAndGet() == 0) {
-                    cameraState.value = CameraState.IDLE
+                    readiness.finished()
+                    syncReadiness()
                 }
 
                 // We only care about JPEG-like formats
@@ -1413,7 +1469,9 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
                 emitEvent(Event.PhotoCaptureStatus.Error(exc))
 
                 Log.e(LOG_TAG, "Photo capture failed", exc)
-                cameraState.value = CameraState.IDLE
+                // RAW + JPEG reports each failed image; the shot is over at the first one.
+                if (imageCount.getAndSet(0) > 0) readiness.finished()
+                syncReadiness()
             }
         }
 
@@ -2453,6 +2511,7 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         private val LOG_TAG = CameraViewModel::class.simpleName!!
 
         private const val SINGLE_CAPTURE_PHOTO_BUFFER_INITIAL_SIZE_BYTES = 8 * 1024 * 1024 // 8 MiB
+        private const val SAVE_WAIT_MS = 10_000L
 
         private const val LENS_CHIP_ZOOM_TIMEOUT_MS = 3000L
 
