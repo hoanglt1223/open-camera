@@ -148,14 +148,17 @@ class PresetRepository(private val dir: File, private val looks: () -> List<Look
     }
 
     fun user(): List<Preset> = (dir.listFiles { f -> f.name.endsWith(".${PresetCodec.EXTENSION}") } ?: emptyArray())
-        .sortedBy { order(it) }
+        .sortedWith(compareBy({ order(it) }, { it.name }))
         .mapNotNull { f -> runCatching { PresetCodec.decode(f.readText(), f.nameWithoutExtension).first }.getOrNull() }
 
     fun all() = builtIn() + user()
 
     fun save(name: String, groups: Set<Group>, from: EditStack): Preset {
         dir.mkdirs()
-        val id = "p" + System.currentTimeMillis().toString(36)
+        var stamp = System.currentTimeMillis()
+        // Ids sort by creation time (fixed-width base 36) and must not collide within one millisecond.
+        while (File(dir, "p${stamp.toString(36)}.${PresetCodec.EXTENSION}").exists()) stamp++
+        val id = "p" + stamp.toString(36)
         val p = Preset(id, name.trim().ifEmpty { "Preset" }.take(60), groups, from.subset(groups))
         File(dir, "$id.${PresetCodec.EXTENSION}").writeText(PresetCodec.encode(p))
         return p
