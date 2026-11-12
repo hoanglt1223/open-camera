@@ -89,6 +89,9 @@ data class ProUiState(
 class LiveUiValues {
     var zoomRatio by androidx.compose.runtime.mutableFloatStateOf(1f)
     var recordingNanos by androidx.compose.runtime.mutableLongStateOf(0L)
+
+    /** Merge progress (0..1) of the background save, or null when it reports none. */
+    var saveProgress by androidx.compose.runtime.mutableStateOf<Float?>(null)
 }
 
 val LocalLiveUi = androidx.compose.runtime.staticCompositionLocalOf { LiveUiValues() }
@@ -121,6 +124,9 @@ data class CameraUiState(
     val galleryUri: Uri? = null,
     val galleryLocked: Boolean = false,
     val captures: Int = 0,
+
+    /** Photos still encoding, merging or writing in the background. */
+    val saving: Boolean = false,
     val canFlip: Boolean = true,
     val googleLens: Boolean = false,
     /** Image quality label with megapixels for the bound camera; empty hides the tile. */

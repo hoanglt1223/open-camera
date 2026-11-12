@@ -27,6 +27,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -34,6 +35,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -204,6 +209,7 @@ private fun CameraUiState.forBottom() = CameraUiState(
     cameraState = cameraState, cameraMode = cameraMode, googleLens = googleLens, singleCapture = singleCapture,
     recordingPaused = recordingPaused, canFlip = canFlip, shutterPresses = shutterPresses,
     shutterEnabled = shutterEnabled, galleryUri = galleryUri, captures = captures, galleryLocked = galleryLocked,
+    saving = saving,
 )
 
 private fun CameraUiState.forSheets() = CameraUiState(
@@ -258,17 +264,31 @@ fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiS
             ) {
                 AnimatedVisibility(
                     ui.looksOpen && state.cameraMode == CameraMode.PHOTO,
-                    enter = fadeIn(s.medium()) + slideInVertically(s.medium()) { it / 3 },
-                    exit = fadeOut(s.medium()) + slideOutVertically(s.medium()) { it / 3 },
+                    enter = s.enter(), exit = s.exit(),
                 ) {
                     LooksStrip(state.forLooks(), actions)
                 }
                 val pro = state.pro
-                if (state.uiMode == UiMode.PRO && pro != null && pro.available) {
-                    ProPanel(pro, actions)
-                } else {
-                    if (!ui.looksOpen || state.cameraMode != CameraMode.PHOTO) LensRow(state.forLens(), actions)
-                    if (pro != null && pro.available) ProPanelWarmUp(pro, actions)
+                val showPro = state.uiMode == UiMode.PRO && pro != null && pro.available
+                androidx.compose.animation.AnimatedContent(
+                    showPro,
+                    transitionSpec = { s.enter() togetherWith s.exit() },
+                    contentAlignment = Alignment.BottomCenter,
+                    label = "proPanel",
+                ) { proShown ->
+                    if (proShown && pro != null) {
+                        ProPanel(pro, actions)
+                    } else {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            AnimatedVisibility(
+                                !ui.looksOpen || state.cameraMode != CameraMode.PHOTO,
+                                enter = s.enter(), exit = s.exit(),
+                            ) {
+                                LensRow(state.forLens(), actions)
+                            }
+                            if (pro != null && pro.available) ProPanelWarmUp(pro, actions)
+                        }
+                    }
                 }
                 Spacer(Modifier.height(4.dp))
                 Box(
@@ -665,19 +685,35 @@ private fun LensRow(state: CameraUiState, actions: CameraUiActions) {
         val ringAlpha by animateFloatAsState(if (ring) 1f else 0f, s.medium(), label = "ring")
         if (ringAlpha > 0f) ZoomRing(state, Modifier.matchParentSize().graphicsLayer { alpha = ringAlpha })
         if (state.lensChips.isNotEmpty()) {
-            Row(
+            val selected = state.lensChips.indexOfFirst { it.selected }
+            // The selected-lens pill slides between chips like the mode pill; read in draw only.
+            val pillAt = animateFloatAsState(selected.coerceAtLeast(0).toFloat(), s.bouncy(), label = "lensPill")
+            val pillColor = if (s.glass) Color.White.copy(alpha = .18f) else Color.White
+            Box(
                 Modifier
                     .graphicsLayer { alpha = 1f - ringAlpha }
                     .then(
                         if (s.glass) Modifier.glassCapsule()
                         else Modifier.clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = .4f))
                     )
-                    .padding(horizontal = 2.dp)
-                    .selectableGroup(),
-                verticalAlignment = Alignment.CenterVertically,
+                    .padding(horizontal = 2.dp),
             ) {
-                state.lensChips.forEachIndexed { i, chip ->
-                    LensChip(chip, Modifier.testTag("lens_${chip.label}")) { Haptics.segment(view); actions.lensChip(i) }
+                if (selected >= 0) {
+                    Box(
+                        Modifier
+                            .padding(4.dp)
+                            .size(40.dp)
+                            .graphicsLayer {
+                                val step = 48.dp.toPx()
+                                translationX = if (rtl) -pillAt.value * step else pillAt.value * step
+                            }
+                            .background(pillColor, CircleShape)
+                    )
+                }
+                Row(Modifier.selectableGroup(), verticalAlignment = Alignment.CenterVertically) {
+                    state.lensChips.forEachIndexed { i, chip ->
+                        LensChip(chip, Modifier.testTag("lens_${chip.label}")) { Haptics.segment(view); actions.lensChip(i) }
+                    }
                 }
             }
         }
@@ -700,11 +736,8 @@ private fun LensChip(chip: LensChipUi, modifier: Modifier, onClick: () -> Unit) 
             .semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
     ) {
-        val bg = when {
-            !chip.selected -> if (s.glass) Color.Transparent else Color.Black.copy(alpha = .3f)
-            s.glass -> Color.White.copy(alpha = .18f)
-            else -> Color.White
-        }
+        // The selected background is the sliding pill drawn by LensRow.
+        val bg = if (chip.selected || s.glass) Color.Transparent else Color.Black.copy(alpha = .3f)
         Box(
             Modifier
                 .size(40.dp)
@@ -997,6 +1030,11 @@ private fun Shutter(state: CameraUiState, onClick: () -> Unit) {
     val busy = state.cameraState == CameraState.TAKING_PHOTO
     val size = s.tokens.shape.shutter.dp
     val pulse = remember { Animatable(1f) }
+    // Shrinks on touch-down, before the click is recognised; driven from the pointer handler and
+    // read in the draw phase, so a press never recomposes the shutter.
+    val press = remember { Animatable(1f) }
+    val scope = rememberCoroutineScope()
+    val pressEnabled by androidx.compose.runtime.rememberUpdatedState(state.shutterEnabled || recording)
     LaunchedEffect(state.shutterPresses) {
         if (state.shutterPresses == 0 || video) return@LaunchedEffect
         pulse.animateTo(0.86f, tween(s.motion.fastMs))
@@ -1034,8 +1072,23 @@ private fun Shutter(state: CameraUiState, onClick: () -> Unit) {
             .size(size)
             .testTag("shutter")
             .semantics { contentDescription = description }
-            .pressable(state.shutterEnabled || recording, onClick = onClick)
-            .graphicsLayer { alpha = if (state.shutterEnabled || recording) 1f else .5f }
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    if (!pressEnabled) return@awaitEachGesture
+                    scope.launch { press.animateTo(0.9f, tween(s.motion.fastMs)) }
+                    waitForUpOrCancellation(PointerEventPass.Initial)
+                    scope.launch { press.animateTo(1f, s.medium()) }
+                }
+            }
+            .clickable(
+                remember { MutableInteractionSource() }, indication = null,
+                enabled = state.shutterEnabled || recording, role = Role.Button, onClick = onClick,
+            )
+            .graphicsLayer {
+                alpha = if (state.shutterEnabled || recording) 1f else .5f
+                scaleX = press.value; scaleY = press.value
+            }
             .drawBehind {
                 val w = ring.toPx()
                 drawCircle(ringBrush, radius = this.size.minDimension / 2 - w / 2, style = Stroke(w))
@@ -1082,12 +1135,37 @@ private fun Thumb(state: CameraUiState, enabled: Boolean, onClick: () -> Unit) {
         pop.snapTo(0.4f)
         pop.animateTo(1f, s.bouncy())
     }
+    // Background save / merge ring: determinate when the merge reports progress, else a spinner.
+    val live = LocalLiveUi.current
+    val spin = remember { Animatable(0f) }
+    LaunchedEffect(state.saving) {
+        if (!state.saving) return@LaunchedEffect spin.snapTo(0f)
+        while (true) {
+            spin.animateTo(360f, tween(900, easing = LinearEasing))
+            spin.snapTo(0f)
+        }
+    }
     val shape = CircleShape
     Box(
         Modifier
             .size(if (s.glass) 52.dp else 48.dp)
+            .drawWithContent {
+                drawContent()
+                if (!state.saving) return@drawWithContent
+                val w = 3.dp.toPx()
+                val progress = live.saveProgress
+                drawArc(
+                    s.accent, if (progress == null) spin.value - 90f else -90f,
+                    if (progress == null) 90f else 360f * progress.coerceIn(0.02f, 1f), false,
+                    topLeft = Offset(w / 2, w / 2), size = Size(size.width - w, size.height - w),
+                    style = Stroke(w),
+                )
+            }
             .testTag("gallery")
-            .semantics { contentDescription = context.getString(R.string.gallery_button_description) }
+            .semantics {
+                contentDescription = context.getString(R.string.gallery_button_description)
+                if (state.saving) stateDescription = context.getString(R.string.ui_saving)
+            }
             .pressable(enabled, onClick = onClick)
             .uprightGlyph(LocalGlyphRotation.current)
             .graphicsLayer { scaleX = pop.value; scaleY = pop.value }

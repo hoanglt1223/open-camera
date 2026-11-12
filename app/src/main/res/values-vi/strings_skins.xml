@@ -25,6 +25,7 @@
     <string name="ui_more_title">Thêm chế độ</string>
     <string name="ui_close">Đóng</string>
     <string name="ui_take_photo">Chụp ảnh</string>
+    <string name="ui_saving">Đang lưu ảnh</string>
     <string name="ui_start_recording">Bắt đầu quay</string>
     <string name="ui_stop_recording">Dừng quay</string>
     <string name="ui_pause_recording">Tạm dừng quay</string>

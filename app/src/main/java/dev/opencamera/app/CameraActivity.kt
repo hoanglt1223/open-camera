@@ -169,6 +169,7 @@ import dev.opencamera.app.ui.views.CountDownView
 import dev.opencamera.app.ui.views.GridView
 import dev.opencamera.app.ui.views.HorizontalSlider
 import dev.opencamera.app.ui.views.IslandView
+import dev.opencamera.app.processing.BurstJobQueue
 import dev.opencamera.app.processing.LookPreferences
 import dev.opencamera.app.processing.ProcessingService
 import dev.opencamera.app.ui.looks.LookPickerView
@@ -901,8 +902,9 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                 // Let the first bind carry the preview look instead of rebinding when it loads.
                 viewModel.lookController.awaitPreload(LOOK_PRELOAD_WAIT_MS)
                 // Let the mode change draw its frame first; the bind (CameraX must be configured on
-                // the main thread) then runs in a frame of its own.
-                viewModel.cameraState.first { it == CameraState.IDLE }
+                // the main thread) then runs in a frame of its own. Background saves finish first:
+                // unbinding ImageCapture would abort them.
+                viewModel.awaitBindable()
                 val shared = sharedBound
                 if (shared != null && sharedPair(cameraConfiguration) == shared) {
                     switchInSharedSession(cameraConfiguration)
@@ -1324,6 +1326,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         launch {
             viewModel.multiFrame.progress.collectLatest { progress ->
                 multiFrameProgress.isVisible = progress != null
+                liveUi.saveProgress = progress
                 progress?.let { multiFrameProgress.setProgressCompat((it * 100).toInt(), true) }
             }
         }
@@ -1908,9 +1911,11 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             if (boundStreams == null) return@collectLatest
             val first = viewModel.cameraConfiguration.replayCache.lastOrNull() ?: return@collectLatest
             if (boundStreamsKey(first) == boundStreams) return@collectLatest
-            if (viewModel.cameraState.value != CameraState.IDLE) {
-                Toast.makeText(this, R.string.camera_change_pending, Toast.LENGTH_SHORT).show()
-                viewModel.cameraState.first { it == CameraState.IDLE }
+            if (!viewModel.bindable()) {
+                if (viewModel.cameraState.value != CameraState.IDLE) {
+                    Toast.makeText(this, R.string.camera_change_pending, Toast.LENGTH_SHORT).show()
+                }
+                viewModel.awaitBindable()
             }
             kotlinx.coroutines.android.awaitFrame()
             val config = viewModel.cameraConfiguration.replayCache.lastOrNull() ?: return@collectLatest
@@ -1989,7 +1994,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             if (ok || viewModel.multiFrame.streamConfig != config) return@launch
             viewModel.multiFrame.demote(config)
             Toast.makeText(this@CameraActivity, R.string.full_res_fallback, Toast.LENGTH_SHORT).show()
-            if (viewModel.cameraState.value == CameraState.IDLE) bindCameraUseCases(cfg)
+            if (viewModel.bindable()) bindCameraUseCases(cfg)
         }
     }
 
@@ -2132,7 +2137,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             } ?: true
             if (!degraded || sharedBound != pair) return@launch
             markSharedUnsupported(photo.camera.cameraId, "still size lowered")
-            viewModel.cameraState.first { it == CameraState.IDLE }
+            viewModel.awaitBindable()
             val current = viewModel.cameraConfiguration.replayCache.lastOrNull() ?: return@launch
             if (sharedBound == pair) bindCameraUseCases(current, "shared-fallback")
         }
@@ -2160,7 +2165,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     }
 
     private fun bindCameraUseCases(cameraConfiguration: CameraConfiguration, reason: String = "config") {
-        if (viewModel.cameraState.value != CameraState.IDLE) {
+        if (!viewModel.bindable()) {
             // Not a bind failure: the change is retried once the capture is done.
             Log.i(LOG_TAG, "Bind deferred until idle ($reason)")
             rebindIfAnalysisChanged()
@@ -2260,7 +2265,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     }
 
     private fun bindCameraUseCasesOrThrow(cameraConfiguration: CameraConfiguration) {
-        require(viewModel.cameraState.value == CameraState.IDLE) {
+        require(viewModel.bindable()) {
             "Trying to rebind camera while camera is not in IDLE state"
         }
 
@@ -3282,7 +3287,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         val key = Triple(tokens, ratio, uiState.value.insetTop)
         if (key == previewLayoutKey) return false
         previewLayoutKey = key
-        if (unbindFirst && boundStreams != null && viewModel.cameraState.value == CameraState.IDLE) {
+        if (unbindFirst && boundStreams != null && viewModel.bindable()) {
             FeatureGuard.attempt(LOG_TAG, "Unbind before preview relayout") {
                 previewBlurView.freeze()
                 previewBlurView.isVisible = true
@@ -3328,7 +3333,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
         if (s.cameraState != CameraState.IDLE || s.singleCapture) return
         UiModes.swipe(s.uiMode, forward, s.modes)?.let {
-            mainLayout.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+            dev.opencamera.app.ui.overlay.Haptics.segment(mainLayout)
             selectUiMode(it)
         }
     }
@@ -3442,6 +3447,11 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             }
         }
         launch { viewModel.isShutterButtonEnabled.collect { sync() } }
+        launch {
+            combine(viewModel.pendingSaves, BurstJobQueue.get(applicationContext).pending) { saves, merges ->
+                saves > 0 || merges > 0
+            }.distinctUntilChanged().collect { saving -> uiState.update { it.copy(saving = saving) } }
+        }
         launch { viewModel.isFlashButtonEnabled.collect { sync() } }
         launch { viewModel.isVideoQualityButtonEnabled.collect { sync() } }
         launch { viewModel.isVideoFrameRateButtonEnabled.collect { sync() } }

@@ -8,10 +8,6 @@ package dev.opencamera.app.ui.overlay
 import android.graphics.Bitmap
 import android.os.SystemClock
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -103,7 +99,7 @@ fun BoxScope.Sheets(state: CameraUiState, actions: CameraUiActions, ui: OverlayU
     CountRecompositions("Sheets")
     val s = skin
     val open = ui.sheet != Sheet.NONE
-    val dim = animateFloatAsState(if (open) .35f else 0f, s.slow(), label = "dim")
+    val dim = animateFloatAsState(if (open) .35f else 0f, s.medium(), label = "dim")
     // The fade is read in the draw phase; composition only sees the scrim appear and disappear.
     val dimmed by remember { derivedStateOf { dim.value > 0f } }
     if (dimmed) {
@@ -123,8 +119,8 @@ fun BoxScope.Sheets(state: CameraUiState, actions: CameraUiActions, ui: OverlayU
     AnimatedVisibility(
         open,
         Modifier.align(Alignment.BottomCenter),
-        enter = slideInVertically(s.slow()) { it } + fadeIn(s.medium()),
-        exit = slideOutVertically(s.slow()) { it } + fadeOut(s.medium()),
+        enter = s.enter { it },
+        exit = s.exit { it },
     ) {
         val bottomPad = with(LocalDensity.current) { state.insetBottom.toDp() }
         SheetSurface(actions) {

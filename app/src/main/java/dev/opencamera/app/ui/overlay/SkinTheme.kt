@@ -8,7 +8,13 @@ package dev.opencamera.app.ui.overlay
 import android.os.Build
 import android.view.HapticFeedbackConstants
 import android.view.View
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -47,12 +53,26 @@ class Skin(val tokens: SkinTokens, val blur: BlurPolicy, animatorScale: Float) {
     val radiusM = tokens.radii.medium.dp
     val radiusL = tokens.radii.large.dp
     val modeWeight = FontWeight(tokens.type.modeWeight)
-    val motion = tokens.scaledMotion(animatorScale)
+    // Compose already stretches every animation by the system animator duration scale; scaling
+    // the tokens as well would apply it twice. Only "animations off" (0) is folded in here, so
+    // springs and the zero-duration checks below see it too.
+    val motion = tokens.scaledMotion(if (animatorScale <= 0f) 0f else 1f)
     private val easing = motion.easing.let { CubicBezierEasing(it[0], it[1], it[2], it[3]) }
 
     fun <T> fast(): FiniteAnimationSpec<T> = tween(motion.fastMs, easing = easing)
     fun <T> medium(): FiniteAnimationSpec<T> = tween(motion.mediumMs, easing = easing)
     fun <T> slow(): FiniteAnimationSpec<T> = tween(motion.slowMs, easing = easing)
+
+    /**
+     * The one transition of the camera screen: a fade plus a short upward slide. Used for the
+     * panels (looks, Pro, sheets) and the lens row / Pro panel swap on a mode change; the mode
+     * and lens pills slide with [bouncy]. [offset] maps the content height to the slide distance.
+     */
+    fun enter(offset: (Int) -> Int = { it / 3 }): EnterTransition =
+        fadeIn(medium()) + slideInVertically(medium(), offset)
+
+    fun exit(offset: (Int) -> Int = { it / 3 }): ExitTransition =
+        fadeOut(medium()) + slideOutVertically(medium(), offset)
 
     /** Lens chips, mode pill and thumbnail: a spring on Origin, the standard curve on Glass. */
     fun <T> bouncy(): FiniteAnimationSpec<T> = if (tokens.motion.springy && motion.mediumMs > 0) {

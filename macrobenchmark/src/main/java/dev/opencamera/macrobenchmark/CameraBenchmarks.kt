@@ -215,7 +215,7 @@ class CameraBenchmarks {
         }
     }
 
-    /** Photo mode: shutter tap until the shutter accepts the next tap. */
+    /** Photo mode: shutter tap until the shutter accepts the next tap (sensor done; saving runs on). */
     @Test
     fun shutterToReady() = run(listOf(frames, longestMainFrame) + section("OcShutterToReady")) {
         repeat(3) {

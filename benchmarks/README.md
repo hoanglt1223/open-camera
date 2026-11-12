@@ -35,7 +35,14 @@ taken by `shutterToReady` stay in the gallery.
 | `openEditor` | open the editor | `timeToInitialDisplayMs` (EDIT intent on the newest photo, warm process) |
 | `proDialDrag`, `editorSliderDrag` | slider drag | `frameDurationCpuMs` P95 |
 | `lensSwitch` | lens 0.6× ↔ 1× | `OcLensTapToPreviewAverageMs` (information only) |
-| `shutterToReady` | shutter → ready | `OcShutterToReadyMaxMs` |
+| `shutterToReady` | shutter → ready | `OcShutterToReadyMaxMs` (see below) |
+
+"Ready" means the shutter takes the next shot: for a single frame, once CameraX reports the capture
+started (CameraX queues a second request behind the first until its image arrives); for HDR/Night
+bursts, once every frame is captured. JPEG encoding, writing and multi-frame merging continue in the
+background (thumbnail ring) and are not counted. At most two single-frame saves wait in the
+background (`CaptureReadiness`); merges stay bounded by the burst queue. Runs before this change
+(baseline-261112) counted the save too, and in a dark room the auto-HDR burst itself (about 3 s).
 
 `Oc...` metrics are async trace sections from `dev.opencamera.app.PerfTrace`; `OcBind` wraps every
 camera bind. The gallery is another app, so `OcOpenGallery` ends when the camera activity pauses.
