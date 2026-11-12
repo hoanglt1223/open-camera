@@ -1,0 +1,38 @@
+/*
+ * SPDX-FileCopyrightText: The LineageOS Project
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+buildscript {
+    repositories {
+        maven { url "https://raw.githubusercontent.com/lineage-next/gradle-generatebp/v1.33/.m2" }
+    }
+    dependencies {
+        classpath "org.lineageos:gradle-generatebp:1.33"
+    }
+}
+
+apply plugin: org.lineageos.generatebp.GenerateBpPlugin
+
+generateBp {
+    targetSdk.set(android.defaultConfig.targetSdk)
+    minSdk.set(android.defaultConfig.minSdk)
+    versionCode.set(android.defaultConfig.versionCode)
+    versionName.set(android.defaultConfig.versionName)
+    availableInAOSP.set({ module ->
+        def group = module.group
+        def name = module.name
+        // A BOM only pins versions; it has no library to link against.
+        if (name.endsWith("-bom")) return false
+        // We provide our own core-backported-fixes
+        if (group == "androidx.core") return name != "core-backported-fixes"
+        // We provide our own androidx.{camera,media3}
+        if (group.startsWith("androidx")) {
+            return !group.startsWith("androidx.camera") && !group.startsWith("androidx.media3")
+        }
+        // We provide our own atomicfu
+        if (group.startsWith("org.jetbrains")) return !name.startsWith("atomicfu")
+        return group in ["com.google.android.material", "com.google.auto.value",
+                         "com.google.guava", "javax.inject"]
+    } as kotlin.jvm.functions.Function1)
+}
