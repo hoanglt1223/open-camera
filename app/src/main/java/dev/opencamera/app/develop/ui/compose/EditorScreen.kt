@@ -5,6 +5,7 @@
 
 package dev.opencamera.app.develop.ui.compose
 
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import android.graphics.Bitmap
 import android.view.ViewGroup
 import androidx.compose.animation.AnimatedContent
@@ -110,7 +111,9 @@ fun EditorScreen(a: DevelopActivity) {
     val s = skin
     val ui = a.ui
     var sheet by remember { mutableStateOf(Sheet.NONE) }
-    BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black)) {
+    // Test tags double as resource ids for UiAutomator (macrobenchmark).
+    @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+    BoxWithConstraints(Modifier.fillMaxSize().semantics { testTagsAsResourceId = true }.background(Color.Black)) {
         val wide = maxWidth > maxHeight || minOf(maxWidth, maxHeight) >= 600.dp
         val top: @Composable () -> Unit = { TopBar(a, vertical = wide, onSheet = { sheet = it }) }
         val dock: @Composable () -> Unit = { Dock(a, onExport = { sheet = Sheet.EXPORT }) }
