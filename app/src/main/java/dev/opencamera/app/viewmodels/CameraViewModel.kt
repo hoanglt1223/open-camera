@@ -418,6 +418,17 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
             initialValue = listOf<Pair<LensChip, Camera>>(),
         )
 
+    /**
+     * Cameras the plain lens list (no profile stops, e.g. front) may offer. Ids the device profile
+     * marks hidden are left out: they are vendor-internal modes, and on some HALs (gauguin's second
+     * front id) configuring them crashes the camera provider.
+     */
+    fun selectableCameras(active: Camera, available: Collection<Camera>): List<Camera> {
+        val hidden = deviceProfileRepository.resolved.value?.cameras
+            ?.filter { it.hidden }?.mapTo(HashSet()) { it.id }.orEmpty()
+        return available.filter { it == active || it.cameraId !in hidden }
+    }
+
     private var lensChipZoomJob: Job? = null
 
     /** Longest physical telephoto chip (a different lens than 1x, at 2x or more), if any. */
@@ -2511,7 +2522,7 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         private val LOG_TAG = CameraViewModel::class.simpleName!!
 
         private const val SINGLE_CAPTURE_PHOTO_BUFFER_INITIAL_SIZE_BYTES = 8 * 1024 * 1024 // 8 MiB
-        private const val SAVE_WAIT_MS = 10_000L
+        const val SAVE_WAIT_MS = 10_000L
 
         private const val LENS_CHIP_ZOOM_TIMEOUT_MS = 3000L
 
