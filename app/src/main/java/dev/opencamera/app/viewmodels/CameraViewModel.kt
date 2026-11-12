@@ -2215,6 +2215,7 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
 
                 else -> PhotoOutputFormat.JPEG
             }
+            Log.i(LOG_TAG, "Camera ${camera.cameraId}: photo formats ${camera.supportedPhotoOutputFormats}, using $photoOutputFormat")
 
             CameraConfiguration.Photo(
                 camera = camera,
