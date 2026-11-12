@@ -1,0 +1,5 @@
+* Sửa lỗi ghép HDR và Đêm trong bản phát hành
+* Mở app và đổi chế độ nhanh hơn, bảng điều khiển và đổi ống kính mượt hơn
+* Dùng chung phiên chụp ảnh và quay video trên máy hỗ trợ
+* Trợ năng: vùng chạm lớn hơn, thao tác TalkBack
+* Sửa lỗi bộ nhớ và độ ổn định

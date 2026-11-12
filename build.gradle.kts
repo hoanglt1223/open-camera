@@ -11,7 +11,6 @@ plugins {
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.kotlin.jvm) apply false
-    alias(libs.plugins.lineageos.generatebp) apply false
 }
 
 // Reproducible builds: archives without file timestamps, entries in a stable order.

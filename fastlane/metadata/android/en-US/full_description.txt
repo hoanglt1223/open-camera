@@ -1,0 +1,24 @@
+Open Camera is a camera app built on CameraX and Camera2. Photos are processed on the device.
+
+<b>Photo</b>
+<ul>
+<li>Multi-frame HDR and Night: several frames are aligned and merged on the device</li>
+<li>Astro mode for long exposures on a tripod</li>
+<li>Ultra HDR (JPEG_R) output on devices that support it</li>
+<li>Looks, frames and a photo editor with object removal</li>
+<li>Pro mode with manual ISO, shutter, focus and white balance, and RAW (DNG) capture</li>
+</ul>
+
+<b>Video and more</b>
+<ul>
+<li>Video modes, QR and barcode scanning</li>
+<li>Device profiles that pick the right lenses on each phone</li>
+</ul>
+
+<b>Privacy</b>
+<ul>
+<li>No network access by default. Optional models (for example object removal or denoise) are downloaded from the project's GitHub releases only after you confirm, and are checked against a SHA-256 hash.</li>
+<li>Crash reports stay on the device unless you share them yourself.</li>
+</ul>
+
+RAW decoding for camera-maker files uses LibRaw (LGPL-2.1) as a separate shared library.

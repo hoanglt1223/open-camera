@@ -1,0 +1,7 @@
+Bản ký chính thức đầu tiên.
+
+* HDR, Đêm và Thiên văn nhiều khung
+* Bộ màu, khung ảnh và trình sửa ảnh
+* Chế độ Pro có chụp RAW
+* Xuất Ultra HDR và chụp không trễ trên máy hỗ trợ
+* Báo cáo lỗi tùy chọn, chỉ lưu trên máy

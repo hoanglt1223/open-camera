@@ -11,6 +11,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # depend on where the tree was cloned.
 get_filename_component(OPENCAMERA_MODULE_DIR "${CMAKE_SOURCE_DIR}/../../.." ABSOLUTE)
 add_compile_options("-ffile-prefix-map=${OPENCAMERA_MODULE_DIR}=pipeline" "-ffile-prefix-map=${CMAKE_BINARY_DIR}=build")
+# The NDK location differs between machines (SDK manager, F-Droid build server) and its header
+# paths would otherwise change the debug info and with it the build-id.
+add_compile_options("-ffile-prefix-map=${ANDROID_NDK}=ndk")
 
 option(OPENCAMERA_PIPELINE_TESTS "Build the native pipeline test executable" OFF)
 

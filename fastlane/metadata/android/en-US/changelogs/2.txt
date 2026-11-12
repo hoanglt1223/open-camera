@@ -1,0 +1,5 @@
+* Fix HDR and Night merge in release builds
+* Faster start-up and mode switching, smoother panels and lens switching
+* Shared photo and video session where supported
+* Accessibility: larger touch targets, TalkBack actions
+* Memory and stability fixes

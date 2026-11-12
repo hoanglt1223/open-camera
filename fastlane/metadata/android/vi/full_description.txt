@@ -1,0 +1,24 @@
+Open Camera là ứng dụng máy ảnh dựng trên CameraX và Camera2. Ảnh được xử lý ngay trên máy.
+
+<b>Ảnh</b>
+<ul>
+<li>HDR và Đêm nhiều khung: nhiều khung hình được căn và ghép ngay trên máy</li>
+<li>Chế độ Thiên văn cho phơi sáng dài khi đặt máy trên chân máy</li>
+<li>Xuất Ultra HDR (JPEG_R) trên máy hỗ trợ</li>
+<li>Bộ màu, khung ảnh và trình sửa ảnh có xóa vật thể</li>
+<li>Chế độ Pro chỉnh tay ISO, tốc độ, lấy nét, cân bằng trắng và chụp RAW (DNG)</li>
+</ul>
+
+<b>Video và hơn nữa</b>
+<ul>
+<li>Các chế độ quay video, quét mã QR và mã vạch</li>
+<li>Hồ sơ thiết bị chọn đúng ống kính trên từng điện thoại</li>
+</ul>
+
+<b>Quyền riêng tư</b>
+<ul>
+<li>Mặc định không dùng mạng. Các model tùy chọn (ví dụ xóa vật thể, khử nhiễu) chỉ được tải từ trang phát hành GitHub của dự án sau khi bạn đồng ý, và được kiểm tra bằng mã băm SHA-256.</li>
+<li>Báo cáo lỗi chỉ nằm trên máy, trừ khi bạn tự chia sẻ.</li>
+</ul>
+
+Phần giải mã RAW của các hãng máy ảnh dùng LibRaw (LGPL-2.1) dưới dạng một thư viện chia sẻ riêng.

@@ -1,0 +1,7 @@
+First signed release.
+
+* Multi-frame HDR, Night and Astro
+* Looks, frames and a photo editor
+* Pro mode with RAW capture
+* Ultra HDR output and zero shutter lag where supported
+* Opt-in, local-only crash reports
