@@ -8,6 +8,7 @@ package dev.opencamera.pipeline
 import android.content.ContentResolver
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.os.Build
 import android.net.Uri
 import android.os.SystemClock
 import androidx.exifinterface.media.ExifInterface
@@ -62,6 +63,10 @@ class StillProcessor(private val resolver: ContentResolver) {
         preStage: ((Bitmap, Int) -> Bitmap)? = null,
     ): Timings {
         val t1 = SystemClock.elapsedRealtime()
+        val sourceWidth = bitmap.width
+        val sourceHeight = bitmap.height
+        // Ultra HDR sources decode with a gain map (API 34+); keep it so the rewrite stays HDR.
+        val gainmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) bitmap.gainmap else null
         // ML steps (portrait, beauty, denoise, upscale) see the photo before the look.
         val bitmap = preStage?.invoke(bitmap, exif?.rotationDegrees ?: 0) ?: bitmap
         if (look != null) NativeLookRenderer.apply(bitmap, look)
@@ -73,6 +78,11 @@ class StillProcessor(private val resolver: ContentResolver) {
         val t3 = SystemClock.elapsedRealtime()
         val width = framed.width
         val height = framed.height
+        if (gainmap != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE &&
+            keepsGainmap(sourceWidth, sourceHeight, width, height, framed.gainmap != null)
+        ) {
+            runCatching { framed.gainmap = gainmap }
+        }
         try {
             FileOutputStream(output).use { framed.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, it) }
         } finally {
@@ -84,6 +94,13 @@ class StillProcessor(private val resolver: ContentResolver) {
     }
 
     companion object {
+        /**
+         * A source gain map is reattached only to an output with the same geometry that lost it: a
+         * frame border or an upscale would misalign it, so those outputs stay SDR.
+         */
+        internal fun keepsGainmap(srcW: Int, srcH: Int, outW: Int, outH: Int, outHasGainmap: Boolean) =
+            !outHasGainmap && srcW == outW && srcH == outH
+
         const val JPEG_QUALITY = 95
 
         private val SKIPPED_TAGS = setOf(
