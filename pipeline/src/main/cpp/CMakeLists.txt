@@ -7,6 +7,10 @@ project(opencamera_pipeline CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Reproducible builds: no absolute checkout paths in debug info, so the build id does not
+# depend on where the tree was cloned.
+add_compile_options("-ffile-prefix-map=${CMAKE_SOURCE_DIR}=." "-ffile-prefix-map=${CMAKE_BINARY_DIR}=build")
+
 option(OPENCAMERA_PIPELINE_TESTS "Build the native pipeline test executable" OFF)
 
 add_library(opencamera_mf STATIC

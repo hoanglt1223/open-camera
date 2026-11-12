@@ -12,3 +12,11 @@ plugins {
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.lineageos.generatebp) apply false
 }
+
+// Reproducible builds: archives without file timestamps, entries in a stable order.
+subprojects {
+    tasks.withType<AbstractArchiveTask>().configureEach {
+        isPreserveFileTimestamps = false
+        isReproducibleFileOrder = true
+    }
+}
