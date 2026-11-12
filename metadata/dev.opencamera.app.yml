@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: Open Camera contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Draft F-Droid metadata. Not submitted yet.
+Categories:
+  - Multimedia
+License: Apache-2.0
+AuthorName: Open Camera contributors
+SourceCode: https://github.com/hoanglt1223/open-camera
+IssueTracker: https://github.com/hoanglt1223/open-camera/issues
+Changelog: https://github.com/hoanglt1223/open-camera/releases
+
+AutoName: Open Camera
+Summary: Camera with multi-frame HDR, night mode, looks and manual controls
+Description: |-
+  Open Camera is a camera app built on CameraX and Camera2.
+
+  * Multi-frame HDR, Night and Astro processed on the device
+  * Looks, frames and a photo editor
+  * Pro mode with manual ISO, shutter, focus and white balance, RAW capture
+  * Video modes and QR scanning
+  * No network access by default; crash reports stay on the device unless you share them
+
+  Part of the native code (RAW decoding) uses LibRaw under LGPL-2.1 as a separate shared library.
+
+RepoType: git
+Repo: https://github.com/hoanglt1223/open-camera.git
+
+Builds:
+  - versionName: 0.1.0-beta1
+    versionCode: 1
+    commit: v0.1.0-beta1
+    subdir: app
+    sudo:
+      - apt-get update
+      - apt-get install -y openjdk-21-jdk-headless
+      - update-alternatives --auto java
+    gradle:
+      - yes
+    ndk: 27.0.12077973
+    prebuild: echo "openCamera.profiles.dir=$$open-camera-profiles$$" >> ../local.properties
+    srclibs:
+      - open-camera-profiles@v2026.11.11
+
+AllowedAPKSigningKeys: 999623e2de4a85557102624929916dcd80126aaf2354697dc0406efd0a345902
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags ^v[0-9.]+(-beta[0-9]+)?$
+CurrentVersion: 0.1.0-beta1
+CurrentVersionCode: 1

@@ -23,7 +23,21 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "0.1.0-beta1"
+    }
+
+    // Release signing comes from ~/.gradle/gradle.properties (openCamera.release.*); the keystore
+    // never lives in the repository. Without those properties the release APK is unsigned.
+    val releaseStore = providers.gradleProperty("openCamera.release.storeFile")
+    signingConfigs {
+        if (releaseStore.isPresent) {
+            create("release") {
+                storeFile = file(releaseStore.get())
+                storePassword = providers.gradleProperty("openCamera.release.storePassword").get()
+                keyAlias = providers.gradleProperty("openCamera.release.keyAlias").get()
+                keyPassword = providers.gradleProperty("openCamera.release.keyPassword").get()
+            }
+        }
     }
 
     buildTypes {
@@ -37,6 +51,8 @@ android {
 
             // Enables resource shrinking.
             isShrinkResources = true
+
+            signingConfig = signingConfigs.findByName("release")
 
             // Includes the default ProGuard rules files.
             setProguardFiles(
@@ -72,6 +88,13 @@ android {
 
     buildFeatures {
         compose = true
+    }
+
+    // Reproducible builds (F-Droid): the dependency metadata block is encrypted with a random key,
+    // so two builds of the same commit would differ.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
     }
 
     lint {
