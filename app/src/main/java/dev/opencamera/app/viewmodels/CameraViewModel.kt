@@ -5,12 +5,14 @@
 
 package dev.opencamera.app.viewmodels
 
+import android.os.SystemClock
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.ImageFormat
+import dev.opencamera.app.CameraActivity
 import dev.opencamera.app.R
 import androidx.camera.core.ImageProxy
 import android.location.LocationManager
@@ -1262,6 +1264,7 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
     private var burstJob: Job? = null
 
     fun takePhoto(allowMultiFrame: Boolean = true) {
+        val tapMs = SystemClock.uptimeMillis()
         if (multiFrame.cancellable.value) {
             cancelBurst()
             return
@@ -1344,12 +1347,14 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         // been taken
         val onImageSavedCallback = object : ImageCapture.OnImageSavedCallback {
             override fun onCaptureStarted() {
+                Log.i(CameraActivity.PERF_TAG, "capture started ${SystemClock.uptimeMillis() - tapMs} ms after shutter, mode ${cameraController.imageCaptureMode}")
                 emitEvent(Event.PhotoCaptureStatus.CaptureStarted)
 
                 cameraSoundsUtils.playShutterClick()
             }
 
             override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                Log.i(CameraActivity.PERF_TAG, "image saved ${SystemClock.uptimeMillis() - tapMs} ms after shutter, mode ${cameraController.imageCaptureMode}")
                 Log.d(
                     LOG_TAG,
                     "Photo capture succeeded: ${output.savedUri} format = ${output.imageFormat}"
@@ -2152,6 +2157,19 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         } ?: compatibleCameras.firstOrNull()
     }
 
+    /**
+     * Set when a ZSL session could not be bound; later configurations use the regular capture
+     * mode for the rest of the process.
+     */
+    @Volatile
+    var zslFailed = false
+
+    /** ZSL turns the phone's extension processing off, so a usable extension takes precedence. */
+    private fun oemExtensionAvailable(camera: Camera): Boolean = runCatching {
+        val mode = multiFrame.setting.value.oemFeature()?.toExtensionMode() ?: return false
+        camera.supportsExtensionMode(mode)
+    }.getOrDefault(false)
+
     @androidx.annotation.OptIn(ExperimentalZeroShutterLag::class)
     private fun createInitialCameraConfiguration(
         camera: Camera,
@@ -2163,7 +2181,10 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
                 val photoCaptureMode = preferencesRepository.photoCaptureMode.value
             ) {
                 ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY -> when (
-                    preferencesRepository.enableZsl.value && camera.supportsZsl
+                    useZsl(
+                        preferencesRepository.enableZsl.value, camera.supportsZsl, zslFailed,
+                        oemExtensionAvailable(camera),
+                    )
                 ) {
                     true -> ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG
                     false -> ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY
@@ -2412,6 +2433,10 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
     val pendingChangeNotice = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST)
 
     companion object {
+        /** ZSL only when wanted, supported, not failed before and not hiding the phone's processing. */
+        internal fun useZsl(enabled: Boolean, supported: Boolean, failed: Boolean, extension: Boolean) =
+            enabled && supported && !failed && !extension
+
         private val LOG_TAG = CameraViewModel::class.simpleName!!
 
         private const val SINGLE_CAPTURE_PHOTO_BUFFER_INITIAL_SIZE_BYTES = 8 * 1024 * 1024 // 8 MiB

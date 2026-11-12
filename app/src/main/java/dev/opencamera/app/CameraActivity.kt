@@ -1857,6 +1857,12 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             }
             return true
         }
+        if (controller.imageCaptureMode == ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG) {
+            Log.w(LOG_TAG, "No ZSL session could be bound, retrying with the regular capture mode")
+            viewModel.zslFailed = true
+            controller.imageCaptureMode = ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY
+            return bindWithFallback(useCases, quiet)
+        }
         Log.e(LOG_TAG, "No use case combination could be bound")
         if (!quiet) Toast.makeText(this, R.string.stream_fallback_failed, Toast.LENGTH_LONG).show()
         return false
@@ -2020,6 +2026,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             viewModel.multiFrame.streamConfig = StreamConfig.STANDARD
             FeatureGuard.attempt(LOG_TAG, "Baseline bind") {
                 viewModel.cameraController.imageOutputFormat = ImageCapture.OUTPUT_FORMAT_JPEG
+                viewModel.cameraController.imageCaptureMode = ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY
                 viewModel.cameraController.cameraSelector = CameraSelector.Builder()
                     .requireLensFacing(
                         when (cameraConfiguration.camera.cameraFacing) {
