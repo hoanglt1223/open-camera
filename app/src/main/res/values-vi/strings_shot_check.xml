@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="shot_check_title">Cảnh báo ảnh mờ và nhắm mắt</string>
+    <string name="shot_check_summary">Sau mỗi ảnh, báo khi ảnh có vẻ mờ hoặc có người nhắm mắt</string>
+    <string name="shot_check_blurry">Ảnh có vẻ bị mờ. Giữ chắc máy và chụp lại?</string>
+    <string name="shot_check_eyes_closed">Có người nhắm mắt. Chụp lại?</string>
+    <string name="shot_check_retake">Chụp lại</string>
+</resources>

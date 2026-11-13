@@ -40,6 +40,13 @@
             app:title="@string/bright_screen_title" />
 
         <SwitchPreference
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="shot_check"
+            app:summary="@string/shot_check_summary"
+            app:title="@string/shot_check_title" />
+
+        <SwitchPreference
             app:defaultValue="false"
             app:iconSpaceReserved="false"
             app:key="save_location"

@@ -150,6 +150,9 @@ data class CameraUiState(
     val previewRect: RectF? = null,
     val insetTop: Int = 0,
     val insetBottom: Int = 0,
+    /** Post-capture warning (string resource), 0 when none. [shotWarningId] changes per photo. */
+    val shotWarning: Int = 0,
+    val shotWarningId: Long = 0,
 )
 
 /** Everything the overlay can ask the camera to do; implemented by CameraActivity. */
@@ -172,6 +175,9 @@ interface CameraUiActions {
     fun gallery()
     fun pauseResume()
     fun selectLook(id: String)
+
+    /** Hides the post-capture warning. */
+    fun dismissShotWarning() {}
 
     /** Live style change (preview re-renders); also used by the style presets. */
     fun setStyle(style: dev.opencamera.app.processing.PhotoStyle) {}

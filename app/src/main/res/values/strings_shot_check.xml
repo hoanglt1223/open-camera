@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="shot_check_title">Blur and closed-eye warning</string>
+    <string name="shot_check_summary">After each photo, warn when it looks blurred or someone blinked</string>
+    <string name="shot_check_blurry">Photo looks blurred. Hold steady and retake?</string>
+    <string name="shot_check_eyes_closed">Someone\'s eyes look closed. Retake?</string>
+    <string name="shot_check_retake">Retake</string>
+</resources>

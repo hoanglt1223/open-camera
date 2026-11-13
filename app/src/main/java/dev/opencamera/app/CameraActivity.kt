@@ -5,6 +5,8 @@
 
 package dev.opencamera.app
 
+import dev.opencamera.app.ai.ShotCheck
+import dev.opencamera.app.ai.ShotChecker
 import dev.opencamera.app.ai.SmartShutter
 import dev.opencamera.app.ai.SmartTimer
 import dev.opencamera.app.develop.preset.PresetRepository
@@ -28,6 +30,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Message
 import android.os.SystemClock
+import androidx.preference.PreferenceManager
 import android.provider.MediaStore
 import android.util.Log
 import android.view.GestureDetector
@@ -917,6 +920,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                         is Event.PhotoCaptureStatus.ImageSaved -> {
                             if (!viewModel.inSingleCaptureMode.value) {
                                 onCapturedMedia(event.output.savedUri)
+                                event.output.savedUri?.let { checkShot(it) }
                             } else {
                                 event.output.savedUri?.let {
                                     openCapturePreview(it, MediaType.PHOTO)
@@ -3001,6 +3005,25 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         }
     }
 
+    private val shotChecker by lazy { ShotChecker(this) }
+
+    /**
+     * Post-capture check (blur, closed eyes) of a saved photo; a warning with a retake button
+     * appears for a few seconds. Off with the "shot_check" setting; failures mean no warning.
+     */
+    private fun checkShot(uri: Uri) {
+        if (!PreferenceManager.getDefaultSharedPreferences(this).getBoolean(KEY_SHOT_CHECK, true)) return
+        lifecycleScope.launch {
+            val verdict = withContext(Dispatchers.Default) { shotChecker.check(uri) }
+            val message = when (verdict) {
+                ShotCheck.Verdict.BLURRY -> R.string.shot_check_blurry
+                ShotCheck.Verdict.EYES_CLOSED -> R.string.shot_check_eyes_closed
+                ShotCheck.Verdict.OK -> return@launch
+            }
+            uiState.update { it.copy(shotWarning = message, shotWarningId = SystemClock.elapsedRealtimeNanos()) }
+        }
+    }
+
     /**
      * Show a toast warning the user that no camera is available and close the activity.
      */
@@ -3676,6 +3699,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         }
         override fun pauseResume() = act("pause") { videoRecordingStateButton.performClick() }
         override fun selectLook(id: String) = act("look") { lookPickerView.onLookSelected?.invoke(id) }
+        override fun dismissShotWarning() = act("shot warning") { uiState.update { it.copy(shotWarning = 0) } }
         override fun setStyle(style: PhotoStyle) = act("style") {
             val s = style.clamped()
             uiState.update { it.copy(style = s) }
@@ -3726,6 +3750,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     companion object {
         private val LOG_TAG = CameraActivity::class.simpleName!!
         private const val COLOR_MATCH_ITEM = "__color_match__"
+        const val KEY_SHOT_CHECK = "shot_check"
         private const val SMART_FALLBACK_SECONDS = 3
         private const val SMART_PALM_SECONDS = 2
 
