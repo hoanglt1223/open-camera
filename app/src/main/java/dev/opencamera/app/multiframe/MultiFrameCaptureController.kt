@@ -538,11 +538,12 @@ class MultiFrameCaptureController(
      * Queues merging and saving; [onSaved] runs on the main thread. The burst is archived to
      * the cache while it merges, so a merge cut short by process death resumes on next launch.
      */
-    fun process(captured: CapturedBurst, location: Location?, onSaved: (Uri?) -> Unit) {
+    fun process(captured: CapturedBurst, location: Location?, ultraHdr: Boolean, onSaved: (Uri?) -> Unit) {
         val timestamp = System.currentTimeMillis()
         val job = MergeJob.of(
             captured.plan.kind, captured.plan.toneEvStep, captured.crop, captured.collected.rotationDegrees,
             timestamp, captured.collected.captureResult?.let(ExposureExif::from), location, captured.source,
+            ultraHdr,
         )
         Log.i(
             LOG_TAG,
