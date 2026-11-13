@@ -1,0 +1,13 @@
+{
+  "id": "palm_detector",
+  "file": "palm_detector.tflite",
+  "format": "tflite",
+  "size": 2339878,
+  "sha256": "945f713bc23570bd4ed60f848c401dc8eaf95713183d43ba14cf12e467d27a7d",
+  "license": "Apache-2.0",
+  "source": "MediaPipe palm detection (hand_detector.tflite), from https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task; model card: MediaPipe Hands (Lite/Full)",
+  "url": null,
+  "accelerators": ["CPU","GPU"],
+  "inputShape": [1,192,192,3],
+  "timeoutMs": 500
+}

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="timer_smart">Smart timer</string>
+    <string name="smart_timer_hint">Raise your palm or smile to take the photo. Tap the shutter to cancel.</string>
+    <string name="smart_timer_unavailable">Smart timer needs the face and hand models; using a 3 s timer</string>
+    <string name="smart_timer_timeout">No palm or smile seen, timer stopped</string>
+    <string name="smart_timer_cancelled">Smart timer cancelled</string>
+    <string name="headset_button_action_title">Headset button action</string>
+    <string name="media_button_action_title">Play/pause button action (Bluetooth remote)</string>
+</resources>

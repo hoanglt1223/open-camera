@@ -17,7 +17,8 @@ Machine learning runtimes and models (details, hashes and sources in docs/models
 - LiteRT (TensorFlow Lite) and its GPU delegate, Copyright Google LLC, Apache License 2.0.
 - ONNX Runtime, Copyright Microsoft Corporation, MIT License.
 - MediaPipe Selfie Segmenter, Selfie Multiclass Segmenter, BlazeFace short range and
-  Face Mesh V2 models, Copyright Google LLC, Apache License 2.0 (per model card).
+  Face Mesh V2 models and the MediaPipe Hands palm detector, Copyright Google LLC, Apache License 2.0
+  (per model card).
 - MobileNetV3-Small ImageNet weights from Keras Applications, Apache License 2.0.
 - NIMA aesthetic MobileNet weights, Copyright 2018 idealo internet GmbH, Apache License 2.0.
 - U-2-Net (u2netp) weights, Copyright Xuebin Qin, Apache License 2.0.

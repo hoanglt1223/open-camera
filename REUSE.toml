@@ -31,7 +31,7 @@ SPDX-FileCopyrightText = "Open Camera contributors"
 SPDX-License-Identifier = "CC0-1.0"
 
 [[annotations]]
-path = ["ml/src/full/assets/models/selfie_segmenter/**", "ml/src/full/assets/models/face_detector/**", "ml/src/full/assets/models/face_landmarks/**"]
+path = ["ml/src/full/assets/models/selfie_segmenter/**", "ml/src/full/assets/models/face_detector/**", "ml/src/full/assets/models/face_landmarks/**", "ml/src/full/assets/models/palm_detector/**"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "Google LLC (MediaPipe models)"
 SPDX-License-Identifier = "Apache-2.0"

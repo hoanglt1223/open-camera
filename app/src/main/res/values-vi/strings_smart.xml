@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="timer_smart">Hẹn giờ thông minh</string>
+    <string name="smart_timer_hint">Giơ lòng bàn tay hoặc cười để chụp. Bấm nút chụp để hủy.</string>
+    <string name="smart_timer_unavailable">Hẹn giờ thông minh cần mô hình khuôn mặt và bàn tay; dùng hẹn giờ 3 giây</string>
+    <string name="smart_timer_timeout">Không thấy bàn tay hay nụ cười, đã dừng hẹn giờ</string>
+    <string name="smart_timer_cancelled">Đã hủy hẹn giờ thông minh</string>
+    <string name="headset_button_action_title">Thao tác nút tai nghe</string>
+    <string name="media_button_action_title">Thao tác nút phát/tạm dừng (remote Bluetooth)</string>
+</resources>

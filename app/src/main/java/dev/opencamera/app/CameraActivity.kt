@@ -5,6 +5,8 @@
 
 package dev.opencamera.app
 
+import dev.opencamera.app.ai.SmartShutter
+import dev.opencamera.app.ai.SmartTimer
 import dev.opencamera.app.develop.preset.PresetRepository
 import dev.opencamera.app.processing.PhotoStyle
 import dev.opencamera.app.processing.PhotoStyles
@@ -294,6 +296,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     private val videoRecordingStateButton by lazy { findViewById<ImageButton>(R.id.videoRecordingStateButton) }
     private val videoDynamicRangeButton by lazy { findViewById<Button>(R.id.videoDynamicRangeButton) }
     private val viewFinder by lazy { findViewById<PreviewView>(R.id.viewFinder) }
+    private val smartTimer by lazy { SmartTimer(this, lifecycleScope) { viewFinder.bitmap } }
     private val viewFinderFocus by lazy { findViewById<ImageView>(R.id.viewFinderFocus) }
     private val zoomLevel by lazy { findViewById<HorizontalSlider>(R.id.zoomLevel) }
 
@@ -708,6 +711,12 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         }
 
         shutterButton.setOnClickListener {
+            if (smartTimer.active) {
+                smartTimer.cancel()
+                viewModel.cameraState.value = CameraState.IDLE
+                Toast.makeText(this, R.string.smart_timer_cancelled, Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             uiState.update { it.copy(shutterPresses = it.shutterPresses + 1) }
 
             // Shutter animation
@@ -1423,6 +1432,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                         TimerMode.OFF -> R.drawable.ic_timer_off
                         TimerMode.ON_3S -> R.drawable.ic_timer_3_alt_1
                         TimerMode.ON_10S -> R.drawable.ic_timer_10_alt_1
+                        TimerMode.SMART -> R.drawable.ic_timer_3_alt_1
                     },
                     0,
                     0
@@ -1432,6 +1442,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                         TimerMode.OFF -> R.string.timer_off
                         TimerMode.ON_3S -> R.string.timer_3
                         TimerMode.ON_10S -> R.string.timer_10
+                        TimerMode.SMART -> R.string.timer_smart
                     }
                 )
             }
@@ -2871,6 +2882,10 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
     override fun onPause() {
         super.onPause()
+        if (smartTimer.active) {
+            smartTimer.cancel()
+            viewModel.cameraState.value = CameraState.IDLE
+        }
         // The gallery (another app) has taken the screen.
         PerfTrace.end(PerfTrace.OPEN_GALLERY)
     }
@@ -2920,6 +2935,12 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     }
 
     private fun startTimerAndRun(runnable: () -> Unit) {
+        if (assistantIntent?.timerDurationSeconds == null && viewModel.timerMode.value == TimerMode.SMART &&
+            viewModel.canRestartCamera()
+        ) {
+            startSmartTimer(runnable)
+            return
+        }
         // Allow forcing timer if requested by the assistant
         val timerModeSeconds =
             assistantIntent?.timerDurationSeconds ?: viewModel.timerMode.value.seconds
@@ -2938,6 +2959,45 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         countDownView.startCountDown(timerModeSeconds) {
             viewModel.cameraState.value = previousCameraState
             runnable()
+        }
+    }
+
+    /**
+     * Smart timer: waits for a raised palm (then a short countdown) or for everyone smiling with
+     * open eyes. Without the models it falls back to the plain 3 second countdown.
+     */
+    private fun startSmartTimer(runnable: () -> Unit) {
+        val previousCameraState = viewModel.cameraState.value
+        viewModel.cameraState.value = CameraState.COUNTDOWN
+        countDownView.onPreviewAreaChanged(Rect().apply { viewFinder.getGlobalVisibleRect(this) })
+        fun countdown(seconds: Int) = countDownView.startCountDown(seconds) {
+            viewModel.cameraState.value = previousCameraState
+            runnable()
+        }
+        lifecycleScope.launch {
+            val available = withContext(Dispatchers.IO) { FeatureGuard.attempt(LOG_TAG, "smart timer models") { smartTimer.available() } } == true
+            if (viewModel.cameraState.value != CameraState.COUNTDOWN) return@launch
+            if (!available) {
+                Toast.makeText(this@CameraActivity, R.string.smart_timer_unavailable, Toast.LENGTH_SHORT).show()
+                countdown(SMART_FALLBACK_SECONDS)
+                return@launch
+            }
+            Toast.makeText(this@CameraActivity, R.string.smart_timer_hint, Toast.LENGTH_LONG).show()
+            smartTimer.start(
+                onTrigger = { trigger ->
+                    when (trigger) {
+                        SmartShutter.Trigger.PALM -> countdown(SMART_PALM_SECONDS)
+                        else -> {
+                            viewModel.cameraState.value = previousCameraState
+                            runnable()
+                        }
+                    }
+                },
+                onTimeout = {
+                    viewModel.cameraState.value = previousCameraState
+                    Toast.makeText(this@CameraActivity, R.string.smart_timer_timeout, Toast.LENGTH_SHORT).show()
+                },
+            )
         }
     }
 
@@ -3666,6 +3726,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     companion object {
         private val LOG_TAG = CameraActivity::class.simpleName!!
         private const val COLOR_MATCH_ITEM = "__color_match__"
+        private const val SMART_FALLBACK_SECONDS = 3
+        private const val SMART_PALM_SECONDS = 2
 
         /** Debug builds: "all" or a skin id makes the skin throw, to exercise the fallback chain. */
         const val EXTRA_DEBUG_SKIN_FAIL = "debug_skin_fail"
