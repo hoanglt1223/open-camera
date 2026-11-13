@@ -153,6 +153,18 @@ class ProPanelView(context: Context) : LinearLayout(context) {
             settings.peaking) { update(settings.copy(peaking = !settings.peaking)) })
         chipRow.addView(toggle(R.string.pro_zebra, R.string.pro_zebra_description,
             settings.zebra) { update(settings.copy(zebra = !settings.zebra)) })
+        if (settings.zebra) {
+            chipRow.addView(chip(context.getString(R.string.pro_zebra_level, settings.zebraPercent)) {
+                update(settings.copy(zebraPercent = ExposureAids.nextZebraLevel(settings.zebraPercent)))
+            }.apply {
+                contentDescription = context.getString(
+                    R.string.pro_value_description, context.getString(R.string.pro_zebra_level_description),
+                    "${settings.zebraPercent}%",
+                )
+            })
+        }
+        chipRow.addView(toggle(R.string.pro_false_color, R.string.pro_false_color_description,
+            settings.falseColor) { update(settings.copy(falseColor = !settings.falseColor)) })
         chipRow.addView(toggle(R.string.pro_histogram, R.string.pro_histogram,
             settings.histogram) { update(settings.copy(histogram = !settings.histogram)) })
         formatLabel?.let { label ->

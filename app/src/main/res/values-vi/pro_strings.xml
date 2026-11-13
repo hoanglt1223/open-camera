@@ -34,6 +34,11 @@
     <string name="pro_zebra">Zebra</string>
     <string name="pro_zebra_description">Sọc zebra trên vùng sáng</string>
     <string name="pro_histogram">Biểu đồ histogram</string>
+    <string name="pro_zebra_level">Zebra ≥%1$d%%</string>
+    <string name="pro_zebra_level_description">Ngưỡng zebra</string>
+    <string name="pro_false_color">Màu giả</string>
+    <string name="pro_false_color_description">Bản đồ phơi sáng màu giả</string>
+    <string name="pro_aids_unavailable">Peaking, zebra và màu giả không dùng được trên máy này</string>
     <string name="pro_format_description">Định dạng ảnh</string>
     <string name="pro_format_jpeg">JPEG</string>
     <string name="pro_format_raw">RAW</string>

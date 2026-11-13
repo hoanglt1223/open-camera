@@ -19,6 +19,14 @@ class ProSettingsStore(context: Context) {
         get() = prefs.getBoolean(KEY_ENABLED, false)
         set(value) = prefs.edit { putBoolean(KEY_ENABLED, value) }
 
+    /** Returns true the first time it is called for [reason]; the aids notice shows once per reason. */
+    fun firstAidsNotice(reason: ExposureAids.Unavailable): Boolean {
+        val key = "aids_notice_${reason.name}"
+        if (prefs.getBoolean(key, false)) return false
+        prefs.edit { putBoolean(key, true) }
+        return true
+    }
+
     fun load(cameraId: String): ProSettings {
         val json = prefs.getString(key(cameraId), null) ?: return ProSettings()
         return runCatching {
@@ -35,6 +43,8 @@ class ProSettingsStore(context: Context) {
                 peaking = o.optBoolean("peaking", false),
                 zebra = o.optBoolean("zebra", false),
                 histogram = o.optBoolean("histogram", true),
+                falseColor = o.optBoolean("falseColor", false),
+                zebraPercent = o.optInt("zebraPercent", ExposureAids.DEFAULT_ZEBRA_PERCENT).coerceIn(1, 100),
             )
         }.getOrDefault(ProSettings())
     }
@@ -49,6 +59,8 @@ class ProSettingsStore(context: Context) {
             .put("peaking", settings.peaking)
             .put("zebra", settings.zebra)
             .put("histogram", settings.histogram)
+            .put("falseColor", settings.falseColor)
+            .put("zebraPercent", settings.zebraPercent)
         settings.iso?.let { o.put("iso", it) }
         settings.exposureNs?.let { o.put("exposureNs", it) }
         settings.focusDiopters?.let { o.put("focus", it.toDouble()) }

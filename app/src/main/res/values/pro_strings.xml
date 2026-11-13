@@ -34,6 +34,11 @@
     <string name="pro_zebra">Zebra</string>
     <string name="pro_zebra_description">Zebra stripes on highlights</string>
     <string name="pro_histogram">Histogram</string>
+    <string name="pro_zebra_level">Zebra ≥%1$d%%</string>
+    <string name="pro_zebra_level_description">Zebra level</string>
+    <string name="pro_false_color">False color</string>
+    <string name="pro_false_color_description">False color exposure map</string>
+    <string name="pro_aids_unavailable">Peaking, zebra and false color are not available on this device</string>
     <string name="pro_format_description">Photo format</string>
     <string name="pro_format_jpeg">JPEG</string>
     <string name="pro_format_raw">RAW</string>

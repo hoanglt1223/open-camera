@@ -26,6 +26,8 @@ data class ProSettings(
     val peaking: Boolean = false,
     val zebra: Boolean = false,
     val histogram: Boolean = true,
+    val falseColor: Boolean = false,
+    val zebraPercent: Int = ExposureAids.DEFAULT_ZEBRA_PERCENT,
 ) {
     val manualExposure get() = iso != null && exposureNs != null
 }
