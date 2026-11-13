@@ -42,7 +42,10 @@ class MlRuntime private constructor(context: Context) {
     private val app = context.applicationContext
     val registry = ModelRegistry.get(app)
     private val prefs = PreferenceManager.getDefaultSharedPreferences(app)
-    private val backends: List<InferenceBackend> = listOf(LiteRtBackend(), OrtBackend())
+    private val backends: List<InferenceBackend> = installedBackends()
+
+    /** False in builds without an inference runtime: ML features hide and nothing is downloaded. */
+    val supported: Boolean get() = backends.isNotEmpty()
     private val loaded = HashMap<String, Loaded>()
     private val executors = HashMap<String, ExecutorService>()
     private val strikes = HashMap<String, Int>()
@@ -83,6 +86,7 @@ class MlRuntime private constructor(context: Context) {
 
     /** True when the model is declared, present (bundled or downloaded) and not disabled. */
     fun isAvailable(modelId: String): Boolean {
+        if (!supported) return false
         val spec = registry.spec(modelId) ?: return false
         return modelId !in disabledSnapshot() && registry.state(spec) == ModelRegistry.State.AVAILABLE
     }

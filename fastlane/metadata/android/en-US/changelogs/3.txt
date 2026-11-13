@@ -1,0 +1,2 @@
+- HDR and Night shots are saved as Ultra HDR on Android 14 and newer.
+- New foss build for F-Droid: no prebuilt ML runtimes; OpenCV is built from source. AI features are only in the full build.

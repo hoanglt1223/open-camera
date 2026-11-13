@@ -11,6 +11,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+val generatingBp = gradle.startParameter.taskNames.any { it.endsWith("generateBp") }
+
 android {
     namespace = "dev.opencamera.app"
     compileSdk = 36
@@ -19,8 +21,8 @@ android {
         applicationId = "dev.opencamera.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.1.0-beta2"
+        versionCode = 3
+        versionName = "0.1.0-beta3"
     }
 
     // Release signing comes from ~/.gradle/gradle.properties (openCamera.release.*); the keystore
@@ -33,6 +35,23 @@ android {
                 storePassword = providers.gradleProperty("openCamera.release.storePassword").get()
                 keyAlias = providers.gradleProperty("openCamera.release.keyAlias").get()
                 keyPassword = providers.gradleProperty("openCamera.release.keyPassword").get()
+            }
+        }
+    }
+
+    // full: everything. foss: no prebuilt ML runtimes (LiteRT, ONNX Runtime) or OpenCV binaries,
+    // for F-Droid; the features that need them hide themselves at runtime.
+    // gradle-generatebp only reads releaseRuntimeClasspath, and Soong always builds the full app.
+    if (!generatingBp) {
+        flavorDimensions += "distribution"
+        productFlavors {
+            create("full") {
+                dimension = "distribution"
+                isDefault = true
+            }
+            create("foss") {
+                dimension = "distribution"
+                proguardFile("proguard-foss.pro")
             }
         }
     }
@@ -122,9 +141,11 @@ apply(from = "../gradle/bundle-profiles.gradle")
 android.sourceSets.getByName("main").assets.srcDir("build/generated/profiles-assets")
 tasks.named("preBuild").configure { dependsOn("bundleDeviceProfiles") }
 
+val fullImplementation = if (generatingBp) "implementation" else "fullImplementation"
+
 dependencies {
     // gradle-generatebp cannot resolve project dependencies; Soong gets them via filegroups.
-    if (gradle.startParameter.taskNames.none { it.endsWith("generateBp") }) {
+    if (!generatingBp) {
         implementation(project(":profiles"))
         implementation(project(":capture"))
         implementation(project(":pipeline"))
@@ -132,10 +153,10 @@ dependencies {
         implementation(project(":ml"))
     }
     // :ml runtimes, listed here as well so gradle-generatebp vendors them for Soong.
-    implementation(libs.litert)
-    implementation(libs.litert.gpu)
-    implementation(libs.litert.gpu.api)
-    implementation(libs.onnxruntime.android)
+    fullImplementation(libs.litert)
+    fullImplementation(libs.litert.gpu)
+    fullImplementation(libs.litert.gpu.api)
+    fullImplementation(libs.onnxruntime.android)
     implementation(libs.androidx.activity.ktx)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.foundation)
@@ -158,7 +179,11 @@ dependencies {
     implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.media3.transformer)
     implementation(libs.androidx.media3.effect)
-    implementation(libs.opencv)
+    fullImplementation(libs.opencv)
+    // foss: OpenCV only when built from source (scripts/fdroid/build-opencv-android.sh).
+    if (!generatingBp && providers.gradleProperty("openCamera.opencvDir").isPresent) {
+        "fossImplementation"(project(":opencv-source"))
+    }
     implementation(libs.androidx.preference)
     // Installs the baseline profile (src/main/baseline-prof.txt) on sideloaded installs too.
     implementation(libs.androidx.profileinstaller)

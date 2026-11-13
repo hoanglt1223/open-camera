@@ -67,10 +67,18 @@ Requirements: JDK 17 or newer, Android SDK platform 36, NDK 27.0.12077973 and
 CMake 3.22.1 (for `:pipeline`).
 
 ```sh
-./gradlew assembleDebug        # app/build/outputs/apk/debug/app-debug.apk
+./gradlew assembleFullDebug    # app/build/outputs/apk/full/debug/app-full-debug.apk
 ./gradlew test lint
 ./gradlew app:generateBp       # refresh the generated part of app/Android.bp
 ```
+
+Two product flavors:
+
+- `full`: everything, including the prebuilt LiteRT, ONNX Runtime and OpenCV libraries and the
+  bundled models. GitHub releases, the self-hosted F-Droid repo and the ROM ship this one.
+- `foss`: for the main F-Droid repository. It leaves out the prebuilt ML runtimes, OpenCV and
+  the models; AI features, Portrait, Panorama, Document mode and the OpenCV based retouch tools
+  hide themselves. Everything else is the same. Build it with `./gradlew assembleFossRelease`.
 
 ### ROM (Soong)
 

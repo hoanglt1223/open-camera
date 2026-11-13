@@ -11,7 +11,7 @@ ADB=~/adb-gauguin.sh scripts/bench/run.sh --test openPro --iterations 10
 scripts/bench/compare.py benchmarks/<run> --against benchmarks/baseline-261112
 ```
 
-`run.sh` assembles `:app:assembleBenchmark` and `:macrobenchmark:assembleBenchmark`, installs both,
+`run.sh` assembles `:app:assembleFullBenchmark` and `:macrobenchmark:assembleBenchmark`, installs both,
 grants camera/mic/location/media permissions, installs the APK's baseline profile, compiles
 `speed-profile` (the state of a user install after dexopt), runs `am instrument` and pulls the
 JSON into `benchmarks/<UTC timestamp>/` together with `instrument.log`. It then runs `compare.py`

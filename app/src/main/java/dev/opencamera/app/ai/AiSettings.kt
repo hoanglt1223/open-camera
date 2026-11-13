@@ -7,24 +7,25 @@ package dev.opencamera.app.ai
 
 import android.content.Context
 import androidx.preference.PreferenceManager
+import dev.opencamera.ml.ML_RUNTIME_INCLUDED
 
-/** ML feature switches. Everything except scene detection is off by default. */
+/** ML feature switches. Everything except scene detection is off by default; all off without an ML runtime. */
 class AiSettings(context: Context) {
     private val prefs = PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
 
     var portrait: Boolean
-        get() = prefs.getBoolean(KEY_PORTRAIT, false)
+        get() = ML_RUNTIME_INCLUDED && prefs.getBoolean(KEY_PORTRAIT, false)
         set(value) = prefs.edit().putBoolean(KEY_PORTRAIT, value).apply()
 
     /** Slider position in [0, 1]; 0.93 is about f/2. */
     val portraitAperture get() = prefs.getInt(KEY_PORTRAIT_APERTURE, 93) / 100f
-    val livePortraitPreview get() = prefs.getBoolean(KEY_LIVE_PORTRAIT, true)
-    val sceneDetection get() = prefs.getBoolean(KEY_SCENE, true)
-    val composition get() = prefs.getBoolean(KEY_COMPOSITION, false)
-    val bestShot get() = prefs.getBoolean(KEY_BEST_SHOT, false)
+    val livePortraitPreview get() = ML_RUNTIME_INCLUDED && prefs.getBoolean(KEY_LIVE_PORTRAIT, true)
+    val sceneDetection get() = ML_RUNTIME_INCLUDED && prefs.getBoolean(KEY_SCENE, true)
+    val composition get() = ML_RUNTIME_INCLUDED && prefs.getBoolean(KEY_COMPOSITION, false)
+    val bestShot get() = ML_RUNTIME_INCLUDED && prefs.getBoolean(KEY_BEST_SHOT, false)
     val bestShotFrames get() = prefs.getString(KEY_BEST_SHOT_FRAMES, "5")?.toIntOrNull()?.coerceIn(2, 8) ?: 5
     /** 0 = off. */
-    val beauty get() = prefs.getInt(KEY_BEAUTY, 0) / 100f
+    val beauty get() = if (ML_RUNTIME_INCLUDED) prefs.getInt(KEY_BEAUTY, 0) / 100f else 0f
 
     companion object {
         const val KEY_PORTRAIT = "ai_portrait"

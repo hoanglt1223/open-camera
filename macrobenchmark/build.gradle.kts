@@ -17,6 +17,7 @@ android {
     defaultConfig {
         minSdk = 29
         targetSdk = 36
+        missingDimensionStrategy("distribution", "full")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Runs against the release-like build; the emulator/debuggable checks would refuse it otherwise.
         testInstrumentationRunnerArguments["androidx.benchmark.suppressErrors"] = "EMULATOR"

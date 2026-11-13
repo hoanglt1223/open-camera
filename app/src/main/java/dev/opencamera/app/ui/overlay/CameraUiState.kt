@@ -20,6 +20,7 @@ import dev.opencamera.app.pro.ProCapabilities
 import dev.opencamera.app.pro.ProSettings
 import dev.opencamera.app.video.VideoMode
 import dev.opencamera.capture.MultiFrameSetting
+import dev.opencamera.ml.ML_RUNTIME_INCLUDED
 
 /** Entries of the mode carousel. Night, Portrait and Pro are Photo with a feature switched on. */
 enum class UiMode { MORE, NIGHT, PORTRAIT, PHOTO, VIDEO, PRO, QR }
@@ -36,8 +37,14 @@ object UiModes {
         }
     }
 
-    fun available(proAvailable: Boolean, videoAvailable: Boolean, moreAvailable: Boolean) = UiMode.entries.filter {
+    fun available(
+        proAvailable: Boolean,
+        videoAvailable: Boolean,
+        moreAvailable: Boolean,
+        portraitAvailable: Boolean = ML_RUNTIME_INCLUDED,
+    ) = UiMode.entries.filter {
         when (it) {
+            UiMode.PORTRAIT -> portraitAvailable
             UiMode.PRO -> proAvailable
             UiMode.VIDEO -> videoAvailable
             UiMode.MORE -> moreAvailable

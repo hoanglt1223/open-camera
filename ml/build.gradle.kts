@@ -34,6 +34,12 @@ android {
         noCompress += listOf("tflite", "onnx")
     }
 
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("full") { dimension = "distribution" }
+        create("foss") { dimension = "distribution" }
+    }
+
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
@@ -41,10 +47,10 @@ android {
 
 dependencies {
     implementation(libs.androidx.preference)
-    implementation(libs.litert)
-    implementation(libs.litert.gpu)
-    implementation(libs.litert.gpu.api)
-    implementation(libs.onnxruntime.android)
+    "fullImplementation"(libs.litert)
+    "fullImplementation"(libs.litert.gpu)
+    "fullImplementation"(libs.litert.gpu.api)
+    "fullImplementation"(libs.onnxruntime.android)
     testImplementation(libs.junit)
     testImplementation(libs.json)
 }

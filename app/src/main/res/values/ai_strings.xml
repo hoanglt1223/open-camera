@@ -93,4 +93,5 @@
         <item>GPU</item>
         <item>NNAPI</item>
     </string-array>
+    <string name="ai_not_in_build">This build does not include the on-device AI runtime, so AI features (portrait blur, scene detection, AI masks and AI retouching) are not available. Install the full build to use them.</string>
 </resources>

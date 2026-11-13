@@ -82,4 +82,5 @@
         <item>GPU</item>
         <item>NNAPI</item>
     </string-array>
+    <string name="ai_not_in_build">Bản này không kèm bộ chạy AI trên máy, nên các tính năng AI (xóa phông chân dung, nhận diện cảnh, mặt nạ AI, chỉnh sửa AI) không dùng được. Hãy cài bản đầy đủ để dùng.</string>
 </resources>

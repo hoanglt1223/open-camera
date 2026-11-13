@@ -31,7 +31,7 @@ class OverlayModelTest {
 
     @Test
     fun swipeSkipsMoreAndStopsAtEnds() {
-        val modes = UiModes.available(proAvailable = true, videoAvailable = true, moreAvailable = true)
+        val modes = UiModes.available(proAvailable = true, videoAvailable = true, moreAvailable = true, portraitAvailable = true)
         assertEquals(UiMode.VIDEO, UiModes.swipe(UiMode.PHOTO, true, modes))
         assertEquals(UiMode.PORTRAIT, UiModes.swipe(UiMode.PHOTO, false, modes))
         assertNull(UiModes.swipe(UiMode.NIGHT, false, modes))
@@ -40,7 +40,10 @@ class OverlayModelTest {
 
     @Test
     fun unavailableModesAreHidden() {
-        val modes = UiModes.available(proAvailable = false, videoAvailable = false, moreAvailable = false)
+        val modes = UiModes.available(
+            proAvailable = false, videoAvailable = false, moreAvailable = false, portraitAvailable = false,
+        )
+        assertFalse(UiMode.PORTRAIT in modes)
         assertFalse(UiMode.PRO in modes)
         assertFalse(UiMode.VIDEO in modes)
         assertFalse(UiMode.MORE in modes)
