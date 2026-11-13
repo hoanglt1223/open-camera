@@ -88,4 +88,10 @@
     <string name="video_value_stab_gyro">con quay</string>
     <string name="video_value_stab_hal">camera</string>
     <string name="video_value_standard">chuẩn</string>
+    <string name="video_opt_lut_preview_on">Xem trước LUT: bật</string>
+    <string name="video_opt_lut_preview_off">Xem trước LUT: tắt</string>
+    <string name="video_opt_log_bake_on">Bản đã chỉnh màu: bật</string>
+    <string name="video_opt_log_bake_off">Bản đã chỉnh màu: tắt</string>
+    <string name="video_modes_log_preview_off">Không xem trước LUT được, đang hiện Log gốc</string>
+    <string name="video_modes_cube_failed">Không lưu được file .cube</string>
 </resources>

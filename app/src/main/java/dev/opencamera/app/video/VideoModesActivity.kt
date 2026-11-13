@@ -77,10 +77,17 @@ import dev.opencamera.capture.video.GyroPath
 import dev.opencamera.capture.video.SweepGuide
 import dev.opencamera.pipeline.document.DocumentProcessor
 import dev.opencamera.pipeline.document.PdfExporter
+import dev.opencamera.pipeline.looks.CubeWriter
+import dev.opencamera.pipeline.looks.LookParams
+import dev.opencamera.pipeline.looks.LookPreviewSurfaceProvider
+import dev.opencamera.pipeline.looks.LookSurfaceProcessor
+import dev.opencamera.pipeline.looks.Lut3d
+import dev.opencamera.pipeline.looks.ToneTable
 import dev.opencamera.pipeline.video.FrameAccumulator
 import dev.opencamera.pipeline.video.VideoRetimer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.guava.await
@@ -144,6 +151,13 @@ class VideoModesActivity : AppCompatActivity() {
     private var recordRotationDeg = 0
     private var slowPlan: SlowMotionPlan = SlowMotionPlan.Unsupported
     private var micWarned = false
+    private var recordName: String? = null
+
+    /** Log grade for the current look, built off the main thread; key is look id and intensity. */
+    @Volatile
+    private var grade: Pair<Pair<String, Float>, Lut3d>? = null
+    private var logProcessor: LookSurfaceProcessor? = null
+    private var logPreviewFailed = false
 
     private val gyroPath = GyroPath()
     private val sweepGuide = SweepGuide()
@@ -270,6 +284,8 @@ class VideoModesActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         closeHighSpeed()
+        logProcessor?.release()
+        logProcessor = null
         super.onDestroy()
         analysisExecutor.execute {
             session?.cancel()
@@ -419,8 +435,50 @@ class VideoModesActivity : AppCompatActivity() {
             }
         }.build()
 
-    private fun newPreview(builder: Preview.Builder = Preview.Builder()) =
-        builder.build().also { it.surfaceProvider = previewView.surfaceProvider }
+    private fun newPreview(builder: Preview.Builder = Preview.Builder(), graded: Boolean = false) =
+        builder.build().also { it.surfaceProvider = if (graded) gradedPreview() ?: previewView.surfaceProvider else previewView.surfaceProvider }
+
+    /** Blocking (parses the look LUT): the log grade for the saved look, cached per look. */
+    private fun logGrade(): Lut3d {
+        val prefs = LookPreferences(this)
+        val key = prefs.lookId to prefs.intensity
+        grade?.takeIf { it.first == key }?.let { return it.second }
+        val look = runCatching { LooksRepository.get(this).params(key.first, key.second) }.getOrNull()
+        return LogProfile.gradeLut(look?.lut, look?.intensity ?: 0f).also { grade = key to it }
+    }
+
+    /**
+     * Viewfinder that shows log footage through its grade, like the finished clip. Null when GL is
+     * unavailable; a renderer failure later drops to the flat log preview with a notice.
+     */
+    private fun gradedPreview(): Preview.SurfaceProvider? {
+        if (logPreviewFailed) return null
+        val p = logProcessor ?: FeatureGuard.attempt(TAG, "log preview GL") { LookSurfaceProcessor() }
+            ?.also { logProcessor = it }
+        if (p == null) {
+            logPreviewFailed = true
+            toast(R.string.video_modes_log_preview_off)
+            return null
+        }
+        lifecycleScope.launch {
+            val lut = withContext(Dispatchers.Default) { FeatureGuard.attempt(TAG, "log grade") { logGrade() } }
+            if (lut != null) p.setLook(gradeParams(lut))
+        }
+        return LookPreviewSurfaceProvider(this, previewView.surfaceProvider, { logProcessor }) {
+            logPreviewFailed = true
+            toast(R.string.video_modes_log_preview_off)
+        }
+    }
+
+    private fun gradeParams(lut: Lut3d) = LookParams(
+        lut = lut,
+        tone = ToneTable.build(listOf(0f to 0f, 1f to 1f), 0f),
+        intensity = 1f,
+        grainAmount = 0f,
+        grainSize = 1f,
+        vignetteAmount = 0f,
+        vignetteSoftness = 0.5f,
+    )
 
     /** Regular recording with the [RecordPlan] fallback chain. */
     private fun bindRecorder(s: VideoSettings, withAudioOptions: Boolean): Boolean {
@@ -440,7 +498,7 @@ class VideoModesActivity : AppCompatActivity() {
                     applyLog(pb)
                 }
                 val vc = vb.build()
-                p.bindToLifecycle(this, selector(), newPreview(pb), vc)
+                p.bindToLifecycle(this, selector(), newPreview(pb, graded = a.log && s.logPreview), vc)
                 videoCapture = vc
                 activeAttempt = a
             }
@@ -855,8 +913,9 @@ class VideoModesActivity : AppCompatActivity() {
             VideoMode.DUAL_VIDEO -> "DUAL"
             else -> "VID"
         }
+        val name = MediaSaver.name(prefix).also { recordName = it }
         val options = MediaStoreOutputOptions.Builder(contentResolver, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
-            .setContentValues(MediaSaver.outputOptionsValues(prefix))
+            .setContentValues(MediaSaver.outputOptionsValues(name))
             .apply { if (mode == VideoMode.SHORT_VIDEO) setDurationLimitMillis(settings.shortSeconds * 1000L) }
             .build()
         micWarned = false
@@ -917,6 +976,7 @@ class VideoModesActivity : AppCompatActivity() {
                     updateUi()
                     return
                 }
+                if (activeAttempt?.log == true) recordName?.let { exportGradeCube(it) }
                 postProcess(uri)
             }
         }
@@ -927,7 +987,7 @@ class VideoModesActivity : AppCompatActivity() {
             mode == VideoMode.SLOW_MOTION && slowPlan is SlowMotionPlan.Retimed -> {
                 { retime(uri, (slowPlan as SlowMotionPlan.Retimed).factor) }
             }
-            mode == VideoMode.PRO_VIDEO && (activeAttempt?.log == true || useGyroEis()) -> {
+            mode == VideoMode.PRO_VIDEO && (LogOutput.bakes(activeAttempt?.log == true, settings.logBake) || useGyroEis()) -> {
                 { runPost(uri, withContext(Dispatchers.IO) { proJob() }, "VID_POST") }
             }
             mode == VideoMode.SHORT_VIDEO && musicUri != null -> {
@@ -960,10 +1020,8 @@ class VideoModesActivity : AppCompatActivity() {
 
     /** Blocking: parses the look LUT; call off the main thread. */
     private fun proJob(): VideoPostProcessor.Job {
-        val cube = if (activeAttempt?.log == true) {
-            val prefs = LookPreferences(this)
-            val look = runCatching { LooksRepository.get(this).params(prefs.lookId, prefs.intensity) }.getOrNull()
-            LogProfile.gradeCube(look?.lut, look?.intensity ?: 0f)
+        val cube = if (LogOutput.bakes(activeAttempt?.log == true, settings.logBake)) {
+            LogProfile.toColorCube(logGrade())
         } else {
             null
         }
@@ -971,6 +1029,22 @@ class VideoModesActivity : AppCompatActivity() {
             GyroEisTransformation(gyroPath, it, facts?.focalOverSensor ?: 0.8f, recordRotationDeg, mirrored = !back)
         }
         return VideoPostProcessor.Job(lutCube = cube, eis = eis)
+    }
+
+    /** Writes the grade the viewfinder showed next to the log clip, for grading on a computer. */
+    private fun exportGradeCube(videoName: String) {
+        val app = applicationContext
+        lifecycleScope.launch {
+            val saved = withContext(Dispatchers.IO) {
+                FeatureGuard.attempt(TAG, "cube export") {
+                    val lut = logGrade()
+                    MediaSaver.saveDocument(app, LogProfile.sidecarName(videoName), "application/octet-stream") {
+                        it.write(CubeWriter.write(lut, LogOutput.cubeTitle(videoName)).toByteArray())
+                    }
+                }
+            }
+            if (saved == null) toast(R.string.video_modes_cube_failed)
+        }
     }
 
     private suspend fun runPost(input: Uri, job: VideoPostProcessor.Job, prefix: String): String {
@@ -985,7 +1059,7 @@ class VideoModesActivity : AppCompatActivity() {
             withContext(Dispatchers.IO) { MediaSaver.saveVideo(applicationContext, out, prefix) }
             return getString(R.string.video_modes_saved_post)
         } finally {
-            out.delete()
+            withContext(NonCancellable + Dispatchers.IO) { out.delete() }
         }
     }
 
@@ -1139,6 +1213,14 @@ class VideoModesActivity : AppCompatActivity() {
                     if (f?.toneCurve == true) {
                         opt(getString(if (a?.log == true) R.string.video_opt_log_on else R.string.video_opt_log_off)) {
                             update(true) { it.copy(log = !(a?.log ?: it.log), hdr = false) }
+                        }
+                        if (a?.log == true) {
+                            opt(getString(if (s.logPreview) R.string.video_opt_lut_preview_on else R.string.video_opt_lut_preview_off)) {
+                                update(true) { it.copy(logPreview = !it.logPreview) }
+                            }
+                            opt(getString(if (s.logBake) R.string.video_opt_log_bake_on else R.string.video_opt_log_bake_off)) {
+                                update(false) { it.copy(logBake = !it.logBake) }
+                            }
                         }
                     }
                     if (f?.hdrRanges?.isNotEmpty() == true) {

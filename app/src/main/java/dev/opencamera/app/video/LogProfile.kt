@@ -37,27 +37,49 @@ object LogProfile {
         return TonemapCurve(p, p, p)
     }
 
-    /** LUT cube indexed [r][g][b] holding RGB ints, for Media3's SingleColorLut. */
-    fun gradeCube(look: Lut3d?, intensity: Float, size: Int = 33): Array<Array<IntArray>> {
+    /**
+     * The grade from log to display (plus the look at [intensity]) as a `.cube`-ordered LUT. The
+     * live preview, the baked copy and the exported `.cube` all come from this one table.
+     */
+    fun gradeLut(look: Lut3d?, intensity: Float, size: Int = 33): Lut3d {
         val rgb = FloatArray(3)
         val graded = FloatArray(3)
-        return Array(size) { r ->
-            Array(size) { g ->
-                IntArray(size) { b ->
-                    rgb[0] = decode(r / (size - 1f))
-                    rgb[1] = decode(g / (size - 1f))
-                    rgb[2] = decode(b / (size - 1f))
-                    // The decoded value is linear light; display it with the sRGB-like 1/2.2.
-                    for (k in 0..2) rgb[k] = rgb[k].pow(1f / 2.2f)
-                    if (look != null) {
-                        sample(look, rgb[0], rgb[1], rgb[2], graded)
-                        for (k in 0..2) rgb[k] += (graded[k] - rgb[k]) * intensity
-                    }
-                    (0xff shl 24) or (to8(rgb[0]) shl 16) or (to8(rgb[1]) shl 8) or to8(rgb[2])
+        val data = FloatArray(size * size * size * 3)
+        var i = 0
+        for (b in 0 until size) for (g in 0 until size) for (r in 0 until size) {
+            rgb[0] = decode(r / (size - 1f))
+            rgb[1] = decode(g / (size - 1f))
+            rgb[2] = decode(b / (size - 1f))
+            // The decoded value is linear light; display it with the sRGB-like 1/2.2.
+            for (k in 0..2) rgb[k] = rgb[k].pow(1f / 2.2f)
+            if (look != null) {
+                sample(look, rgb[0], rgb[1], rgb[2], graded)
+                for (k in 0..2) rgb[k] += (graded[k] - rgb[k]) * intensity
+            }
+            for (k in 0..2) data[i++] = rgb[k].coerceIn(0f, 1f)
+        }
+        return Lut3d(size, data)
+    }
+
+    /** [lut] as a cube indexed [r][g][b] holding RGB ints, for Media3's SingleColorLut. */
+    fun toColorCube(lut: Lut3d): Array<Array<IntArray>> {
+        val n = lut.size
+        val d = lut.data
+        return Array(n) { r ->
+            Array(n) { g ->
+                IntArray(n) { b ->
+                    val o = ((b * n + g) * n + r) * 3
+                    (0xff shl 24) or (to8(d[o]) shl 16) or (to8(d[o + 1]) shl 8) or to8(d[o + 2])
                 }
             }
         }
     }
+
+    fun gradeCube(look: Lut3d?, intensity: Float, size: Int = 33): Array<Array<IntArray>> =
+        toColorCube(gradeLut(look, intensity, size))
+
+    /** Sidecar name for a log recording: the video's display name with `.cube`. */
+    fun sidecarName(videoName: String) = videoName.substringBeforeLast(".mp4") + ".cube"
 
     private fun to8(v: Float) = (v.coerceIn(0f, 1f) * 255f).roundToInt()
 
@@ -85,4 +107,12 @@ object LogProfile {
             out[k] = c0 * (1 - db) + c1 * db
         }
     }
+}
+
+/** What a finished log recording produces besides the flat clip itself. */
+object LogOutput {
+    /** A graded copy is rendered only for log clips when the user keeps baking on. */
+    fun bakes(log: Boolean, bakeSetting: Boolean) = log && bakeSetting
+
+    fun cubeTitle(videoName: String) = "Open Camera log grade for $videoName"
 }

@@ -38,6 +38,8 @@ data class VideoSettings(
     val slowShutterSeconds: Int = 4,
     val freezeSeconds: Int = 6,
     val documentEnhance: Int = 0,
+    val logPreview: Boolean = true,
+    val logBake: Boolean = true,
 ) {
     companion object {
         private const val PREFS = "video_modes"
@@ -63,6 +65,8 @@ data class VideoSettings(
                 slowShutterSeconds = p.getInt("ss_seconds", d.slowShutterSeconds),
                 freezeSeconds = p.getInt("freeze", d.freezeSeconds),
                 documentEnhance = p.getInt("doc", d.documentEnhance),
+                logPreview = p.getBoolean("log_preview", d.logPreview),
+                logBake = p.getBoolean("log_bake", d.logBake),
             )
         }
 
@@ -79,6 +83,7 @@ data class VideoSettings(
             .putInt("short", shortSeconds).putBoolean("orig_audio", keepOriginalAudio)
             .putBoolean("ss_lighten", slowShutterLighten).putInt("ss_seconds", slowShutterSeconds)
             .putInt("freeze", freezeSeconds).putInt("doc", documentEnhance)
+            .putBoolean("log_preview", logPreview).putBoolean("log_bake", logBake)
             .apply()
     }
 }
