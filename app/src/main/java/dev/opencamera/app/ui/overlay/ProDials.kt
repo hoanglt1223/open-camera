@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.opencamera.app.R
+import dev.opencamera.app.pro.ExposureAids
 import dev.opencamera.app.pro.ExposureMath
 import dev.opencamera.app.pro.MeteringMode
 import dev.opencamera.app.pro.ProCapabilities
@@ -367,12 +368,18 @@ private fun Color.toArgbCompat(): Int = android.graphics.Color.argb(
 private fun ProToggles(pro: ProUiState, actions: CameraUiActions) {
     val s = pro.settings
     val view = LocalView.current
-    data class Item(val label: Int, val on: Boolean?, val action: () -> Unit)
+    data class Item(val label: Int, val on: Boolean?, val arg: Int? = null, val action: () -> Unit)
     val items = buildList {
         if (!s.manualExposure) add(Item(R.string.pro_ae_lock, s.aeLock) { actions.proSettings(s.copy(aeLock = !s.aeLock)) })
         if (s.focusDiopters == null) add(Item(R.string.pro_af_lock, pro.afLocked) { actions.proAfLock(!pro.afLocked) })
         add(Item(R.string.pro_peaking, s.peaking) { actions.proSettings(s.copy(peaking = !s.peaking)) })
         add(Item(R.string.pro_zebra, s.zebra) { actions.proSettings(s.copy(zebra = !s.zebra)) })
+        if (s.zebra) {
+            add(Item(R.string.pro_zebra_level, null, s.zebraPercent) {
+                actions.proSettings(s.copy(zebraPercent = ExposureAids.nextZebraLevel(s.zebraPercent)))
+            })
+        }
+        add(Item(R.string.pro_false_color, s.falseColor) { actions.proSettings(s.copy(falseColor = !s.falseColor)) })
         add(Item(R.string.pro_histogram, s.histogram) { actions.proSettings(s.copy(histogram = !s.histogram)) })
         add(Item(R.string.pro_reset, null) { actions.proReset() })
     }
@@ -385,7 +392,8 @@ private fun ProToggles(pro: ProUiState, actions: CameraUiActions) {
             item { Pill(format, null) { Haptics.segment(view); actions.proFormat() } }
         }
         items(items) { item ->
-            Pill(stringResource(item.label), item.on) { Haptics.segment(view); item.action() }
+            val text = item.arg?.let { stringResource(item.label, it) } ?: stringResource(item.label)
+            Pill(text, item.on) { Haptics.segment(view); item.action() }
         }
     }
 }

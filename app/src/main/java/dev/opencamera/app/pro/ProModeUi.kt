@@ -33,6 +33,7 @@ import dev.opencamera.app.R
 import dev.opencamera.app.models.CameraConfiguration
 import dev.opencamera.app.models.PhotoOutputFormat
 import dev.opencamera.app.repositories.PreferencesRepository
+import dev.opencamera.app.ui.views.PreviewFrames
 import dev.opencamera.app.viewmodels.CameraViewModel
 import dev.opencamera.profiles.LensChip
 import dev.opencamera.app.ui.overlay.ProUiState
@@ -85,6 +86,16 @@ class ProModeUi(
 
     private val active get() = store.enabled && caps != null && configuration is CameraConfiguration.Photo
 
+    /** Exposure aids also run over the video preview; the manual controls stay photo-only. */
+    private val aidsActive get() = store.enabled && caps != null &&
+        (configuration is CameraConfiguration.Photo || configuration is CameraConfiguration.Video)
+
+    /** Set once the GPU aids cannot run; they stay off for this activity. */
+    private var aidsUnavailable: ExposureAids.Unavailable? =
+        ExposureAids.gpuSupport(android.os.Build.VERSION.SDK_INT)?.also {
+            Log.i(LOG_TAG, "Exposure aids: GPU path unavailable ($it)")
+        }
+
     /** The skinned overlay draws the toggle and the dials; the View toggle and panel stay hidden. */
     var externalUi = false
         set(value) {
@@ -122,6 +133,7 @@ class ProModeUi(
             insets
         }
         panel.listener = this
+        overlay.onGpuFailure = { disableAids(it) }
 
         activity.lifecycleScope.launch {
             activity.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -231,8 +243,9 @@ class ProModeUi(
         val enabled = store.enabled
         val label = formatLabel()
         _uiState.value = ProUiState(enabled, photo, caps, settings, afLocked, label)
-        overlay.isVisible = active
-        if (!active) overlay.show(null)
+        overlay.isVisible = aidsActive
+        if (!aidsActive) overlay.show(null)
+        aidsUnavailable?.let { if (aidsActive && ExposureAids.suppressed(settings, it)) notifyAidsOff(it) }
         toggle.isVisible = photo && !externalUi
         panel.isVisible = active && !externalUi
         // The skinned overlay draws its own toggle and dials; the hidden View copies are not updated.
@@ -247,6 +260,18 @@ class ProModeUi(
             activity.getString(if (enabled) R.string.pro_state_on else R.string.pro_state_off),
         )
         caps?.takeIf { active }?.let { panel.bind(it, settings, afLocked, label) }
+    }
+
+    private fun disableAids(reason: ExposureAids.Unavailable) {
+        if (aidsUnavailable == reason) return
+        Log.w(LOG_TAG, "Exposure aids disabled: $reason")
+        aidsUnavailable = reason
+        render()
+    }
+
+    private fun notifyAidsOff(reason: ExposureAids.Unavailable) {
+        if (!store.firstAidsNotice(reason)) return
+        android.widget.Toast.makeText(activity, R.string.pro_aids_unavailable, android.widget.Toast.LENGTH_LONG).show()
     }
 
     private fun formatLabel(): String? {
@@ -313,64 +338,74 @@ class ProModeUi(
     }
 
     private suspend fun analyzeLoop() {
+        // Two copies: the overlay draws one while the next preview frame lands in the other.
+        val buffers = arrayOfNulls<Bitmap>(2)
+        var next = 0
+        var pixels = IntArray(0)
+        val failures = ExposureAids.CopyFailures()
         while (true) {
             delay(FRAME_INTERVAL_MS)
             val s = settings
-            if (!active || !(s.peaking || s.zebra || s.histogram || s.manualExposure)) continue
-            // Small async copy (long side ~2x the analysis width) instead of a full-size readback on main.
-            val full = dev.opencamera.app.ui.views.PreviewFrames.copy(viewFinder, ANALYSIS_WIDTH * 2) ?: continue
-            val frame = withContext(Dispatchers.Default) { analyze(full, s) }
-            if (active) overlay.show(frame) else frame.mask?.recycle()
+            val aids = ExposureAids.active(s, aidsUnavailable)
+            val meter = active && s.manualExposure
+            if (!aidsActive || !(aids.any || meter)) {
+                failures.reset()
+                continue
+            }
+            val (w, h) = PreviewFrames.scaledSize(viewFinder, COPY_LONG_SIDE) ?: continue
+            val target = buffers[next]?.takeIf { it.width == w && it.height == h }
+                ?: Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).also { buffers[next] = it }
+            val copied = PreviewFrames.copyInto(viewFinder, target)
+            if (failures.record(copied)) {
+                disableAids(ExposureAids.Unavailable.FRAME_COPY)
+                continue
+            }
+            if (!copied) continue
+            // A same-value write bumps the generation id so the GPU re-uploads the reused bitmap.
+            target.setPixel(0, 0, target.getPixel(0, 0))
+            next = 1 - next
+            val needPixels = aids.histogram || meter
+            if (needPixels && pixels.size != w * h) pixels = IntArray(w * h)
+            val rect = surfaceRect()
+            val frame = withContext(Dispatchers.Default) {
+                if (needPixels) target.getPixels(pixels, 0, w, 0, 0, w, h)
+                ProOverlayView.Frame(
+                    source = target.takeIf { aids.shader },
+                    sourceRect = rect,
+                    aids = aids,
+                    zebraPercent = s.zebraPercent,
+                    histogram = if (aids.histogram) ExposureAids.histogram(pixels, w, HISTOGRAM_STEP) else null,
+                    meterText = if (meter) meterText(pixels, w) else null,
+                )
+            }
+            overlay.show(frame.takeIf { aidsActive })
         }
     }
 
-    private fun analyze(full: Bitmap, s: ProSettings): ProOverlayView.Frame {
-        val w = ANALYSIS_WIDTH
-        val h = (full.height.toLong() * w / full.width).toInt().coerceAtLeast(1)
-        val small = Bitmap.createScaledBitmap(full, w, h, true)
-        full.recycle()
-        val pixels = IntArray(w * h)
-        small.getPixels(pixels, 0, w, 0, 0, w, h)
-        small.recycle()
-        val luma = FrameAssists.lumaPlane(pixels)
+    /** The preview surface's displayed bounds inside the viewfinder, or null to fill it. */
+    private fun surfaceRect(): android.graphics.RectF? {
+        val child = (0 until viewFinder.childCount).map(viewFinder::getChildAt)
+            .firstOrNull { it is android.view.SurfaceView || it is android.view.TextureView } ?: return null
+        if (child.width <= 0 || child.height <= 0) return null
+        val r = android.graphics.RectF(0f, 0f, child.width.toFloat(), child.height.toFloat())
+        child.matrix.mapRect(r)
+        r.offset(child.left.toFloat(), child.top.toFloat())
+        return r
+    }
 
-        val mask = if (s.peaking || s.zebra) {
-            val peaking = if (s.peaking) FrameAssists.peakingMask(luma, w, h, PEAKING_THRESHOLD) else null
-            val zebra = if (s.zebra) FrameAssists.zebraMask(luma, w, ZEBRA_THRESHOLD) else null
-            val out = IntArray(w * h) {
-                when {
-                    zebra?.get(it) == true -> ZEBRA_COLOR
-                    peaking?.get(it) == true -> PEAKING_COLOR
-                    else -> Color.TRANSPARENT
-                }
-            }
-            Bitmap.createBitmap(out, w, h, Bitmap.Config.ARGB_8888)
-        } else {
-            null
-        }
-
-        val meter = if (s.manualExposure) {
-            val offset = ExposureMath.meterOffset(luma.average())
-            activity.getString(R.string.pro_meter_reading, ExposureMath.formatEv(offset.toFloat()))
-        } else {
-            null
-        }
-
-        return ProOverlayView.Frame(
-            mask = mask,
-            histogram = if (s.histogram) FrameAssists.histogram(luma) else null,
-            meterText = meter,
-        )
+    private fun meterText(pixels: IntArray, width: Int): String {
+        val hist = ExposureAids.histogram(pixels, width, HISTOGRAM_STEP, 256)
+        val count = hist.sum().coerceAtLeast(1)
+        val mean = hist.withIndex().sumOf { (v, n) -> v.toLong() * n } / count.toDouble()
+        return activity.getString(R.string.pro_meter_reading, ExposureMath.formatEv(ExposureMath.meterOffset(mean).toFloat()))
     }
 
     private companion object {
         val LOG_TAG = ProModeUi::class.simpleName!!
         const val FRAME_INTERVAL_MS = 66L
         const val SAVE_DELAY_MS = 400L
-        const val ANALYSIS_WIDTH = 320
-        const val PEAKING_THRESHOLD = 220
-        const val ZEBRA_THRESHOLD = 250
-        const val PEAKING_COLOR = 0xFFFF3B30.toInt()
-        const val ZEBRA_COLOR = 0xB0FFFFFF.toInt()
+        /** Long side of the preview copy the aids read; the shader upsamples it to the view. */
+        const val COPY_LONG_SIDE = 640
+        const val HISTOGRAM_STEP = 2
     }
 }
