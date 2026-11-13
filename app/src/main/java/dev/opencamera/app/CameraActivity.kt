@@ -3580,12 +3580,6 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             viewModel.multiFrame.source = ImageQuality.next(viewModel.multiFrame.source, imageQualityMp)
         }
 
-        override suspend fun previewSample(target: Bitmap): Boolean = try {
-            PreviewFrames.copyInto(viewFinder, target)
-        } catch (e: RuntimeException) {
-            false
-        }
-
         override suspend fun previewSnapshot(): Bitmap? = try {
             PreviewFrames.copy(viewFinder, maxOf(viewFinder.width, viewFinder.height) / 4)
         } catch (e: RuntimeException) {
