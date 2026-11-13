@@ -94,9 +94,9 @@ class MotionShot(val shutterTimestampNs: Long, val frames: Deferred<List<RingFra
 
 /**
  * Motion photo (1.5 s before and 1.5 s after the shutter, H.264 in a Google Motion Photo JPEG)
- * and pre-shot buffer (frames from just before the shutter saved next to the photo). Both
- * feed from the analysis stream through [tap]; when anything fails the still photo is kept
- * as is.
+ * and pre-shot buffer (frames from just before the shutter saved next to the photo). Motion
+ * feeds from viewfinder copies ([tapViewfinder]), pre-shot from the analysis stream ([tap]);
+ * when anything fails the still photo is kept as is.
  */
 class MotionPhotoController(private val context: Context) {
     private val prefs = PreferenceManager.getDefaultSharedPreferences(context)
