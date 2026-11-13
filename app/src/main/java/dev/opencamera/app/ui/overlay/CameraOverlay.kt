@@ -278,6 +278,12 @@ fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiS
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 AnimatedVisibility(
+                    !recording && state.shotWarning != 0,
+                    enter = fadeIn(s.medium()), exit = fadeOut(s.medium()),
+                ) {
+                    ShotWarning(state.shotWarning, state.shotWarningId, actions)
+                }
+                AnimatedVisibility(
                     ui.looksOpen && state.cameraMode == CameraMode.PHOTO,
                     enter = s.enter(), exit = s.exit(),
                 ) {
@@ -1314,6 +1320,54 @@ private fun valueOf(s: PhotoStyle, axis: StyleAxis) = when (axis) {
     StyleAxis.WARMTH -> s.warmth
     StyleAxis.COLOR -> s.color
 }
+
+/** "Photo looks blurred / eyes closed" with a retake button; hides itself after a few seconds. */
+@Composable
+private fun ShotWarning(message: Int, id: Long, actions: CameraUiActions) {
+    if (message == 0) return
+    val s = skin
+    val view = LocalView.current
+    LaunchedEffect(id) {
+        delay(SHOT_WARNING_MS)
+        actions.dismissShotWarning()
+    }
+    Row(
+        Modifier
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(24.dp))
+            .padding(start = 16.dp, end = 4.dp)
+            .heightIn(min = 48.dp)
+            .testTag("shot_warning")
+            .semantics { liveRegion = LiveRegionMode.Polite },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        BasicText(
+            stringResource(message),
+            Modifier.weight(1f, fill = false),
+            style = TextStyle(color = Color.White, fontSize = 13.sp),
+            maxLines = 2, overflow = TextOverflow.Ellipsis,
+        )
+        Box(
+            Modifier
+                .padding(start = 8.dp)
+                .heightIn(min = 48.dp)
+                .clickable(role = Role.Button) {
+                    Haptics.segment(view)
+                    actions.dismissShotWarning()
+                    actions.shutter()
+                }
+                .padding(horizontal = 12.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            BasicText(
+                stringResource(R.string.shot_check_retake),
+                style = TextStyle(color = s.accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold),
+            )
+        }
+    }
+}
+
+private const val SHOT_WARNING_MS = 5000L
 
 const val LOOK_COLOR_MATCH = "__color_match__"
 
