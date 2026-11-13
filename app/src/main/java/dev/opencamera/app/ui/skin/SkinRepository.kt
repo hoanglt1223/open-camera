@@ -46,12 +46,19 @@ class SkinCrashGuard(private val store: SkinStore) {
         data object Legacy : Decision
     }
 
-    fun onLaunch(selectedId: String): Decision {
+    /**
+     * [lastExitWasCrash] is false when the system says the previous process ended for another
+     * reason (permission revoked, killed from recents, low memory): a skin cut short by that is
+     * not to blame.
+     */
+    fun onLaunch(selectedId: String, lastExitWasCrash: Boolean = true): Decision {
         val pending = store.getString(KEY_PENDING)
         var failures = store.getInt(KEY_FAILURES)
         var resetFrom: String? = null
         var skin = selectedId
-        if (!pending.isNullOrEmpty()) {
+        if (!pending.isNullOrEmpty() && !lastExitWasCrash) {
+            store.putString(KEY_PENDING, null)
+        } else if (!pending.isNullOrEmpty()) {
             failures++
             store.putInt(KEY_FAILURES, failures)
             store.putString(KEY_PENDING, null)

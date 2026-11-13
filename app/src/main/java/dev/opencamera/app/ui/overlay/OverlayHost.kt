@@ -183,7 +183,7 @@ class OverlayHost(
     /** Returns false when the View layout must be used for this launch. */
     fun start(): Boolean {
         val guard = guard ?: return attach()
-        val decision = guard.onLaunch(repo.skin.value.id)
+        val decision = guard.onLaunch(repo.skin.value.id, lastExitWasCrash(context))
         if (decision is SkinCrashGuard.Decision.Legacy) {
             Log.w(TAG, "Skin layer disabled after repeated failures, using the View layout")
             return false
@@ -295,7 +295,25 @@ class OverlayHost(
         private const val TAG = "OverlayHost"
 
         /** Returns [extra] only on debuggable builds (fault injection and test hooks). */
-        fun debugFailure(context: Context, extra: String?): String? =
+        /**
+     * Whether the app's main process last ended in a crash or ANR. Unknown (before Android 11,
+     * or no record) counts as a crash, which keeps the guard on the safe side.
+     */
+    fun lastExitWasCrash(context: Context): Boolean {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R) return true
+        val am = context.getSystemService(android.app.ActivityManager::class.java) ?: return true
+        val process = context.applicationInfo.processName
+        val last = runCatching { am.getHistoricalProcessExitReasons(null, 0, 8) }.getOrNull()
+            ?.firstOrNull { it.processName == process } ?: return true
+        return last.reason in setOf(
+            android.app.ApplicationExitInfo.REASON_CRASH,
+            android.app.ApplicationExitInfo.REASON_CRASH_NATIVE,
+            android.app.ApplicationExitInfo.REASON_ANR,
+            android.app.ApplicationExitInfo.REASON_INITIALIZATION_FAILURE,
+        )
+    }
+
+    fun debugFailure(context: Context, extra: String?): String? =
             extra.takeIf { context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0 }
     }
 }

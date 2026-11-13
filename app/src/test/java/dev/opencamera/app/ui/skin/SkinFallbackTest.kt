@@ -74,6 +74,18 @@ class SkinFallbackTest {
     }
 
     @Test
+    fun exitThatIsNotACrashDoesNotBlameTheSkin() {
+        val store = MemoryStore()
+        val guard = SkinCrashGuard(store)
+        // Killed before the first frame because the camera permission was revoked.
+        guard.beforeContent("glass")
+        assertEquals(SkinCrashGuard.Decision.Compose("glass", null), guard.onLaunch("glass", lastExitWasCrash = false))
+        guard.beforeContent("glass")
+        assertEquals(SkinCrashGuard.Decision.Compose("glass", null), guard.onLaunch("glass", lastExitWasCrash = false))
+        assertEquals(0, store.getInt(SkinCrashGuard.KEY_FAILURES))
+    }
+
+    @Test
     fun firstFrameClearsTheFlag() {
         val guard = SkinCrashGuard(MemoryStore())
         guard.beforeContent("glass")

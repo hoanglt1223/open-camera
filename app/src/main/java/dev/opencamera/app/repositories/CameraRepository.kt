@@ -17,6 +17,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOn
@@ -78,6 +79,9 @@ class CameraRepository(
      * List of external cameras. These will change once the user connects or disconnects a camera.
      */
     private val externalCameras = suspend {
+        // Collected while the permission prompt is up too: CameraX must not start before the
+        // grant, and an empty list would make the screen give up, so wait for it instead.
+        while (!context.permissionGranted(Manifest.permission.CAMERA)) delay(PERMISSION_POLL_MS)
         cameraProvider.availableCameraInfos
             .filter { cameraXCameraInfo ->
                 cameraXCameraInfo.lensFacing == CameraSelector.LENS_FACING_EXTERNAL
@@ -155,6 +159,7 @@ class CameraRepository(
     ) { "Camera permission not granted" }
 
     companion object {
+        private const val PERMISSION_POLL_MS = 250L
         /**
          * List of main camera IDs. These should never be excluded.
          */
