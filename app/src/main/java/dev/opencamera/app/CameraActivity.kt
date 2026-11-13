@@ -138,6 +138,7 @@ import dev.opencamera.app.models.AssistantIntent
 import dev.opencamera.app.models.CameraConfiguration
 import dev.opencamera.app.models.CameraFacing
 import dev.opencamera.app.models.CameraMode
+import dev.opencamera.app.modes.MotionPhotoController
 import dev.opencamera.app.ai.AiController
 import dev.opencamera.app.ai.BestShotCapture
 import dev.opencamera.app.ai.CompositionOverlayView
@@ -419,6 +420,26 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                     viewModel.setSaveLocation(false)
                 }
             }
+        }
+    }
+
+    /** Feeds viewfinder copies to the motion photo ring while motion photo is on. */
+    private suspend fun motionFrameLoop() {
+        var target: Bitmap? = null
+        try {
+            while (true) {
+                delay(MOTION_FRAME_INTERVAL_MS)
+                if (viewModel.cameraMode.value != CameraMode.PHOTO) continue
+                val (w, h) = PreviewFrames.surfaceScaledSize(viewFinder, MotionPhotoController.MOTION_LONG_SIDE) ?: continue
+                val bitmap = target?.takeIf { it.width == w && it.height == h }
+                    ?: Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).also { target?.recycle(); target = it }
+                val ts = SystemClock.elapsedRealtimeNanos()
+                if (!PreviewFrames.copyInto(viewFinder, bitmap)) continue
+                val rotation = viewModel.screenRotation.value.compensationValue % 360
+                withContext(Dispatchers.Default) { viewModel.motionPhoto.tapViewfinder(bitmap, ts, rotation) }
+            }
+        } finally {
+            target?.recycle()
         }
     }
 
@@ -1312,6 +1333,10 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             viewModel.pendingChangeNotice.collect {
                 Toast.makeText(this@CameraActivity, R.string.camera_change_pending, Toast.LENGTH_SHORT).show()
             }
+        }
+
+        launch {
+            viewModel.motionPhoto.motionPhoto.collectLatest { on -> if (on) motionFrameLoop() }
         }
 
         launch {
@@ -3614,6 +3639,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         private const val RELAYOUT_WAIT_MS = 250L
         private const val AFTER_FIRST_PREVIEW_FALLBACK_MS = 4000L
         const val PERF_TAG = "OcPerf"
+        private const val MOTION_FRAME_INTERVAL_MS = 45L
         private const val FULL_RES_STREAM_TIMEOUT_MS = 4000L
         private const val SHARED_SIZE_TIMEOUT_MS = 2000L
         private const val CAPTURE_RESULT_WAIT_MS = 800L

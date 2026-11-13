@@ -69,6 +69,22 @@ class MotionTakeTest {
     }
 
     @Test
+    fun argbToNv21MatchesBt601() {
+        val w = 4
+        val h = 2
+        val argb = IntArray(w * h) { if (it % w < 2) 0xff000000.toInt() else 0xffff0000.toInt() }
+        val out = ByteArray(w * h * 3 / 2)
+        MotionPhotoPolicy.argbToNv21(argb, w, h, out)
+        assertEquals(0, out[0].toInt() and 0xff)
+        assertEquals(77, out[2].toInt() and 0xff)
+        // Chroma of black: neutral; of red: V high, U low (V comes first in NV21).
+        assertEquals(128, out[8].toInt() and 0xff)
+        assertEquals(128, out[9].toInt() and 0xff)
+        assertEquals(255, out[10].toInt() and 0xff)
+        assertTrue((out[11].toInt() and 0xff) < 100)
+    }
+
+    @Test
     fun fallbackReasons() {
         assertEquals(MotionFailure.LOW_MEMORY, MotionPhotoPolicy.precheck(123L, 40, lowMemory = true))
         assertEquals(MotionFailure.NO_STREAM, MotionPhotoPolicy.precheck(0L, 0, lowMemory = false))
@@ -86,12 +102,9 @@ class MotionTakeTest {
     }
 
     @Test
-    fun windowAroundTheShutter() {
+    fun closestFrameToTheShutter() {
         val ts = (0 until 60).map { it * 66_000_000L + Random(1).nextLong(1000) }
         val shutter = ts[30]
-        val idx = MotionPhotoPolicy.window(ts, shutter, 1_500_000_000L, 1_500_000_000L)
-        assertTrue(idx.all { ts[it] in shutter - 1_500_000_000L..shutter + 1_500_000_000L })
-        assertEquals(45, idx.size)
         assertEquals(30, MotionPhotoPolicy.closest(ts, shutter + 10_000_000L))
         assertEquals(-1, MotionPhotoPolicy.closest(emptyList(), shutter))
     }

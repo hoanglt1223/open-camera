@@ -23,18 +23,17 @@ class FrameRingTest {
     }
 
     @Test
-    fun heldRingDoesNotReuseSnapshotBuffers() {
+    fun copiesAreDetachedFromRecycledBuffers() {
         val ring = FrameRing(maxFrames = 2)
         ring.add(frame(16, 0))
         ring.add(frame(16, 1))
-        assertNotNull(ring.recycle(16))
+        val copies = ring.copyOf { it.timestampNs >= 1 }
+        assertEquals(listOf(1L), copies.map { it.timestampNs })
         ring.add(frame(16, 2))
-        ring.hold()
-        assertNull(ring.recycle(16))
-        ring.release()
-        assertNotNull(ring.recycle(16))
-        // Size mismatch never reuses.
-        ring.add(frame(16, 3))
+        val reused = ring.recycle(16)
+        assertNotNull(reused)
+        reused!!.fill(7)
+        assertEquals(0, copies[0].nv21[0].toInt())
         assertNull(ring.recycle(32))
     }
 }

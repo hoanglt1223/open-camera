@@ -25,9 +25,30 @@ object MotionPhotoPolicy {
     fun ringCapacity(frameBytes: Int, maxFrames: Int, budgetBytes: Long): Int =
         if (frameBytes <= 0) maxFrames else minOf(maxFrames.toLong(), budgetBytes / frameBytes).toInt().coerceAtLeast(1)
 
-    /** Indices of [timestampsNs] inside [shutterNs] - [preNs] .. [shutterNs] + [postNs]. */
-    fun window(timestampsNs: List<Long>, shutterNs: Long, preNs: Long, postNs: Long): List<Int> =
-        timestampsNs.indices.filter { timestampsNs[it] in (shutterNs - preNs)..(shutterNs + postNs) }
+    /**
+     * ARGB pixels to NV21 (full-range BT.601, like JPEG) in [out]; [width] and [height] must be even.
+     */
+    fun argbToNv21(argb: IntArray, width: Int, height: Int, out: ByteArray) {
+        require(width % 2 == 0 && height % 2 == 0 && argb.size >= width * height && out.size >= width * height * 3 / 2)
+        val base = width * height
+        for (r in 0 until height) {
+            val row = r * width
+            for (c in 0 until width) {
+                val p = argb[row + c]
+                val red = (p shr 16) and 0xff
+                val green = (p shr 8) and 0xff
+                val blue = p and 0xff
+                out[row + c] = ((77 * red + 150 * green + 29 * blue + 128) shr 8).toByte()
+                if (r % 2 == 0 && c % 2 == 0) {
+                    val v = ((128 * red - 107 * green - 21 * blue + 128) shr 8) + 128
+                    val u = ((-43 * red - 85 * green + 128 * blue + 128) shr 8) + 128
+                    val o = base + (r / 2) * width + c
+                    out[o] = v.coerceIn(0, 255).toByte()
+                    out[o + 1] = u.coerceIn(0, 255).toByte()
+                }
+            }
+        }
+    }
 
     /** Index of the timestamp closest to [shutterNs]. */
     fun closest(timestampsNs: List<Long>, shutterNs: Long): Int =

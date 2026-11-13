@@ -36,7 +36,11 @@ import dev.opencamera.pipeline.creative.MotionPhotoPolicy
 import dev.opencamera.app.R
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -63,18 +67,9 @@ class FrameRing(private val maxFrames: Int, private val budgetBytes: Long = Long
     }
 
     /** Buffer to reuse for the next frame when the ring is full and sizes match. */
-    private var holds = 0
-
-    /** While held, evicted buffers are not reused, so a snapshot's frames stay intact. */
-    @Synchronized
-    fun hold() { holds++ }
-
-    @Synchronized
-    fun release() { holds = (holds - 1).coerceAtLeast(0) }
-
     @Synchronized
     fun recycle(size: Int): ByteArray? =
-        if (holds == 0 && frames.isNotEmpty() && frames.size >= capacity(size) && frames.first().nv21.size == size) frames.removeFirst().nv21 else null
+        if (frames.isNotEmpty() && frames.size >= capacity(size) && frames.first().nv21.size == size) frames.removeFirst().nv21 else null
 
     @get:Synchronized
     val bytes: Long get() = frames.sumOf { it.nv21.size.toLong() }
@@ -85,9 +80,17 @@ class FrameRing(private val maxFrames: Int, private val budgetBytes: Long = Long
     @Synchronized
     fun snapshot(): List<RingFrame> = frames.toList()
 
+    /** Copies of the frames matching [keep], taken under the lock so no buffer is reused meanwhile. */
+    @Synchronized
+    fun copyOf(keep: (RingFrame) -> Boolean): List<RingFrame> =
+        frames.filter(keep).map { RingFrame(it.nv21.copyOf(), it.width, it.height, it.timestampNs, it.rotation) }
+
     @Synchronized
     fun clear() = frames.clear()
 }
+
+/** Frames of one shot, gathered around the shutter moment [shutterTimestampNs]. */
+class MotionShot(val shutterTimestampNs: Long, val frames: Deferred<List<RingFrame>>)
 
 /**
  * Motion photo (1.5 s before and 1.5 s after the shutter, H.264 in a Google Motion Photo JPEG)
@@ -104,7 +107,8 @@ class MotionPhotoController(private val context: Context) {
     private val _preShot = MutableStateFlow(prefs.getBoolean(KEY_PRE_SHOT, false))
     val preShot = _preShot.asStateFlow()
 
-    val active get() = _motionPhoto.value || _preShot.value
+    /** Whether the analysis stream is needed: only the pre-shot buffer reads it. */
+    val active get() = _preShot.value
 
     private val motionRing = FrameRing(MOTION_FRAMES, MOTION_BUDGET_BYTES)
     private val activityManager = context.getSystemService(ActivityManager::class.java)
@@ -128,6 +132,8 @@ class MotionPhotoController(private val context: Context) {
     private var pendingTake: PendingTake? = null
     private val preRing = FrameRing(PRE_SHOT_FRAMES)
     private var counter = 0
+    private var viewfinderCounter = 0
+    private var lastMotionTs = 0L
 
     fun setMotionPhoto(on: Boolean) {
         _motionPhoto.value = on
@@ -141,19 +147,35 @@ class MotionPhotoController(private val context: Context) {
         if (!on) preRing.clear()
     }
 
-    /** Called for every idle analysis frame (analysis thread). */
-    fun tap(image: ImageProxy) {
-        val n = counter++
-        if (_motionPhoto.value && n % MEMORY_CHECK_EVERY == 0) {
+    private var argb = IntArray(0)
+
+    /**
+     * Adds a viewfinder copy taken at [timestampNs] (elapsed realtime) to the motion ring. The
+     * copies come from the displayed preview, so motion photo binds no extra camera stream:
+     * an analysis stream next to preview, ZSL and still capture halved the preview rate on
+     * gauguin. [rotation] turns the upright-on-screen copy upright in the world.
+     */
+    fun tapViewfinder(bitmap: Bitmap, timestampNs: Long, rotation: Int) {
+        if (!_motionPhoto.value) return
+        if (viewfinderCounter++ % MEMORY_CHECK_EVERY == 0) {
             memoryLow = isMemoryLow()
             if (memoryLow) motionRing.clear()
         }
-        if (_motionPhoto.value && !memoryLow && n % 2 == 0) {
-            val f = max(1, ceil(max(image.width, image.height) / MOTION_LONG_SIDE.toFloat()).toInt())
-            val w = (image.width / f) and 15.inv()
-            val h = (image.height / f) and 15.inv()
-            if (w >= 64 && h >= 64) motionRing.add(copy(image, f, w, h, motionRing.recycle(w * h * 3 / 2)))
-        }
+        if (memoryLow || timestampNs - lastMotionTs < MIN_FRAME_GAP_NS) return
+        val w = bitmap.width and 15.inv()
+        val h = bitmap.height and 15.inv()
+        if (w < 64 || h < 64) return
+        lastMotionTs = timestampNs
+        if (argb.size != w * h) argb = IntArray(w * h)
+        bitmap.getPixels(argb, 0, w, 0, 0, w, h)
+        val out = motionRing.recycle(w * h * 3 / 2) ?: ByteArray(w * h * 3 / 2)
+        MotionPhotoPolicy.argbToNv21(argb, w, h, out)
+        motionRing.add(RingFrame(out, w, h, timestampNs, rotation))
+    }
+
+    /** Called for every idle analysis frame (analysis thread); feeds the pre-shot buffer. */
+    fun tap(image: ImageProxy) {
+        val n = counter++
         if (_preShot.value && n % 3 == 0) {
             val w = image.width and 1.inv()
             val h = image.height and 1.inv()
@@ -164,9 +186,32 @@ class MotionPhotoController(private val context: Context) {
     /** Stream timestamp of the newest frame: the shutter moment in the frames' own time base. */
     fun shutterTimestamp(): Long = motionRing.snapshot().lastOrNull()?.timestampNs ?: 0L
 
+    /**
+     * Starts a motion shot at the shutter: copies the buffered "before" frames now (a slow
+     * full-resolution capture can stall the stream and the ring would roll past them), then the
+     * "after" frames once the post-roll has passed. Null when motion photo is off.
+     */
+    fun beginShot(scope: CoroutineScope): MotionShot? {
+        if (!_motionPhoto.value) return null
+        val ts = shutterTimestamp()
+        // Copied now: a slow full-resolution capture can stall the stream long after the shutter.
+        val before = copyWindow(ts) { true }
+        val frames = scope.async(Dispatchers.Default) {
+            if (ts == 0L || memoryLow) return@async before
+            delay(POST_ROLL_MS)
+            val last = before.lastOrNull()?.timestampNs ?: ts
+            before + copyWindow(ts) { it.timestampNs > last }
+        }
+        return MotionShot(ts, frames)
+    }
+
+    private fun copyWindow(shutterNs: Long, keep: (RingFrame) -> Boolean): List<RingFrame> =
+        motionRing.copyOf { keep(it) && it.timestampNs in (shutterNs - PRE_ROLL_NS)..(shutterNs + POST_ROLL_MS * 1_000_000) }
+
     /** Clears buffers when the stream restarts with another size or camera. */
     fun reset() {
         motionRing.clear()
+        lastMotionTs = 0L
         preRing.clear()
     }
 
@@ -194,23 +239,19 @@ class MotionPhotoController(private val context: Context) {
      * On any failure the still is left as is, the reason is logged and a notice is shown once
      * per reason. Returns true when the clip was embedded.
      */
-    suspend fun embed(uri: Uri, shutterTimestampNs: Long): Boolean {
+    suspend fun embed(uri: Uri, shot: MotionShot): Boolean {
         if (!_motionPhoto.value) return false
         pendingTake = null
-        if (shutterTimestampNs != 0L && !memoryLow) delay(POST_ROLL_MS)
-        motionRing.hold()
-        try {
-            return embedHeld(uri, shutterTimestampNs)
-        } finally {
-            motionRing.release()
+        val shutterTimestampNs = shot.shutterTimestampNs
+        val frames = try {
+            shot.frames.await()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            fail(MotionFailure.NO_STREAM, e.toString())
+            return false
         }
-    }
-
-    private suspend fun embedHeld(uri: Uri, shutterTimestampNs: Long): Boolean {
         return withContext(Dispatchers.Default) {
-            val all = motionRing.snapshot()
-            val window = MotionPhotoPolicy.window(all.map { it.timestampNs }, shutterTimestampNs, PRE_ROLL_NS, POST_ROLL_MS * 1_000_000)
-            val frames = window.map { all[it] }
             MotionPhotoPolicy.precheck(shutterTimestampNs, frames.size, memoryLow || isMemoryLow())?.let {
                 fail(it, "${frames.size} frames in the window, ring ${motionRing.size} frames ${motionRing.bytes / 1024} KiB")
                 return@withContext false
@@ -266,8 +307,7 @@ class MotionPhotoController(private val context: Context) {
             "${best?.sharpness?.let { "%.0f".format(it) }}, faces ${faces != null}, ${SystemClock.elapsedRealtime() - t0} ms")
         best ?: return
         val f = frames[best.index]
-        val copy = RingFrame(f.nv21.copyOf(), f.width, f.height, f.timestampNs, f.rotation)
-        pendingTake = PendingTake(uri, copy, ((f.timestampNs - frames.first().timestampNs) / 1000).coerceAtLeast(0))
+        pendingTake = PendingTake(uri, f, ((f.timestampNs - frames.first().timestampNs) / 1000).coerceAtLeast(0))
         val shutterScore = BestTake.score(candidates.first { it.index == shutter })
         _bestTakeOffers.tryEmit(BestTakeOffer(uri, if (shutterScore > 0) BestTake.score(best) / shutterScore else 0.0))
     }
@@ -488,26 +528,27 @@ class MotionPhotoController(private val context: Context) {
         buffer.get(rowBuffer, 0, n)
         return rowBuffer
     }
-    private companion object {
-        const val TAG = "MotionPhoto"
-        const val KEY_MOTION = "motion_photo"
-        const val KEY_PRE_SHOT = "pre_shot_buffer"
-        const val MOTION_LONG_SIDE = 768
-        const val MOTION_FRAMES = 48
-        const val MOTION_BUDGET_BYTES = 32L shl 20
-        const val MIN_FREE_HEAP_BYTES = 48L shl 20
-        const val MEMORY_CHECK_EVERY = 30
-        const val FACE_CANDIDATES = 3
-        val LEFT_EYE = intArrayOf(33, 133, 159, 145)
-        val RIGHT_EYE = intArrayOf(362, 263, 386, 374)
-        val CARRIED_TAGS = arrayOf(
+    companion object {
+        private const val TAG = "MotionPhoto"
+        private const val KEY_MOTION = "motion_photo"
+        private const val KEY_PRE_SHOT = "pre_shot_buffer"
+        const val MOTION_LONG_SIDE = 640
+        private const val MOTION_FRAMES = 48
+        private const val MOTION_BUDGET_BYTES = 32L shl 20
+        private const val MIN_FREE_HEAP_BYTES = 48L shl 20
+        private const val MEMORY_CHECK_EVERY = 30
+        private const val MIN_FRAME_GAP_NS = 60_000_000L
+        private const val FACE_CANDIDATES = 3
+        private val LEFT_EYE = intArrayOf(33, 133, 159, 145)
+        private val RIGHT_EYE = intArrayOf(362, 263, 386, 374)
+        private val CARRIED_TAGS = arrayOf(
             ExifInterface.TAG_DATETIME, ExifInterface.TAG_DATETIME_ORIGINAL, ExifInterface.TAG_DATETIME_DIGITIZED,
             ExifInterface.TAG_OFFSET_TIME_ORIGINAL, ExifInterface.TAG_MAKE, ExifInterface.TAG_MODEL,
             ExifInterface.TAG_GPS_LATITUDE, ExifInterface.TAG_GPS_LATITUDE_REF,
             ExifInterface.TAG_GPS_LONGITUDE, ExifInterface.TAG_GPS_LONGITUDE_REF,
         )
-        const val PRE_SHOT_FRAMES = 5
-        const val PRE_ROLL_NS = 1_500_000_000L
-        const val POST_ROLL_MS = 1_500L
+        private const val PRE_SHOT_FRAMES = 5
+        private const val PRE_ROLL_NS = 1_500_000_000L
+        private const val POST_ROLL_MS = 1_500L
     }
 }
