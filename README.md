@@ -15,6 +15,20 @@ Application id: `dev.opencamera.app` (debug builds use `dev.opencamera.app.dev`)
 This project is unrelated to the GPL app `net.sourceforge.opencamera`; the two
 install side by side.
 
+## Install
+
+Signed release APKs are on [GitHub releases](https://github.com/hoanglt1223/open-camera/releases).
+To get updates through an F-Droid client (F-Droid, Neo Store, Droid-ify), add the
+project's own repository, which serves the same signed full build:
+
+- URL: `https://hoanglt1223.github.io/open-camera-fdroid/repo`
+- Fingerprint (SHA-256): `25CB5CB382DF8BA83A046EBA1E4B10EB37302296BE9A48597F6689A09C95BE1B`
+- One-tap link: [add repository](https://hoanglt1223.github.io/open-camera-fdroid/repo?fingerprint=25CB5CB382DF8BA83A046EBA1E4B10EB37302296BE9A48597F6689A09C95BE1B)
+
+APK signing certificate (SHA-256): `999623e2de4a85557102624929916dcd80126aaf2354697dc0406efd0a345902`.
+Maintainers publish a release to that repository with
+`scripts/fdroid-repo/update-repo.sh <tag>`; the repository index key stays offline.
+
 ## Modules
 
 | Module | Purpose |
