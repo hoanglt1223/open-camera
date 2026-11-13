@@ -15,5 +15,10 @@
     <string name="stream_fallback_baseline">Camera opened in basic mode: some features are off for this camera</string>
     <string name="stream_fallback_failed">Camera could not be opened</string>
     <string name="full_res_fallback">Full-resolution multi-frame capture is not available; using the standard camera stream</string>
+    <string name="raw_merged_unsupported">Merged RAW is not available on this camera; saving JPEG</string>
+    <string name="raw_merged_low_memory">Not enough free memory for merged RAW; saving a single-frame DNG or JPEG</string>
+    <string name="raw_merged_capture_failed">The RAW burst did not complete; saving what was captured</string>
+    <string name="raw_merged_failed">Merged RAW failed; saving a single-frame DNG</string>
+    <string name="raw_dng_failed">The DNG could not be saved; saving JPEG only</string>
     <string name="camera_change_pending">Applying after the current capture</string>
 </resources>

@@ -106,16 +106,15 @@ class Camera2Burst(private val manager: CameraManager) {
         val reader = ImageReader.newInstance(
             output.size.width, output.size.height, output.format, frames.size.coerceIn(2, MAX_BUFFERS),
         )
-        val images = Channel<Image>(Channel.UNLIMITED)
+        // Images are pulled by the consumer: acquiring in the listener fails once maxImages are
+        // held while a slow frame is processed, and a failed acquire never gets another callback,
+        // which stalled bursts until their timeout.
+        val available = Channel<Unit>(Channel.CONFLATED)
         val results = ConcurrentHashMap<Long, TotalCaptureResult>()
         val failure = CompletableDeferred<Throwable>()
         var session: CameraCaptureSession? = null
         try {
-            reader.setOnImageAvailableListener({ r ->
-                runCatching { r.acquireNextImage() }.getOrNull()?.let { img ->
-                    if (images.trySend(img).isFailure) img.close()
-                }
-            }, handler)
+            reader.setOnImageAvailableListener({ available.trySend(Unit) }, handler)
             val s = createSession(device, reader, handler).also { session = it }
             val requests = frames.map { f -> request(device, reader, output.format, f, look) }
             s.captureBurst(requests, object : CameraCaptureSession.CaptureCallback() {
@@ -137,7 +136,12 @@ class Camera2Burst(private val manager: CameraManager) {
             }, handler)
             for (i in frames.indices) {
                 if (failure.isCompleted) throw failure.getCompleted()
-                val image = images.receive()
+                var image: Image? = reader.acquireNextImage()
+                while (image == null) {
+                    if (failure.isCompleted) throw failure.getCompleted()
+                    available.receive()
+                    image = reader.acquireNextImage()
+                }
                 try {
                     val result = awaitResult(results, image.timestamp, failure)
                     onFrame(i, output.format, image, result)
@@ -148,8 +152,7 @@ class Camera2Burst(private val manager: CameraManager) {
             return frames.size
         } finally {
             session?.let { runCatching { it.abortCaptures() }; runCatching { it.close() } }
-            images.close()
-            while (true) images.tryReceive().getOrNull()?.close() ?: break
+            available.close()
             runCatching { reader.close() }
         }
     }

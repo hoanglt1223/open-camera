@@ -19,6 +19,11 @@ class ProSettingsStore(context: Context) {
         get() = prefs.getBoolean(KEY_ENABLED, false)
         set(value) = prefs.edit { putBoolean(KEY_ENABLED, value) }
 
+    /** Pro "RAW merged" format; the camera's own RAW options live in the app preferences. */
+    var rawMerged: Boolean
+        get() = prefs.getBoolean(KEY_RAW_MERGED, false)
+        set(value) = prefs.edit { putBoolean(KEY_RAW_MERGED, value) }
+
     /** Returns true the first time it is called for [reason]; the aids notice shows once per reason. */
     fun firstAidsNotice(reason: ExposureAids.Unavailable): Boolean {
         val key = "aids_notice_${reason.name}"
@@ -74,5 +79,6 @@ class ProSettingsStore(context: Context) {
     companion object {
         const val PREFS_NAME = "pro_mode"
         private const val KEY_ENABLED = "enabled"
+        private const val KEY_RAW_MERGED = "raw_merged"
     }
 }

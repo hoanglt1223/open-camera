@@ -14,6 +14,7 @@
 
 #include "mf/pipeline.h"
 #include "mf/raw.h"
+#include "mf/rawmerge.h"
 #include "stack/stack.h"
 
 #define LOG_TAG "OpenCameraPipeline"
@@ -31,6 +32,23 @@ struct Burst {
 };
 
 Burst *fromHandle(jlong handle) { return reinterpret_cast<Burst *>(handle); }
+
+mf::RawMerger *mergerFromHandle(jlong handle) { return reinterpret_cast<mf::RawMerger *>(handle); }
+
+// RawDevelopParams.toArray() layout: cfa, black[4], white, wb[4], ccm[9], gain.
+bool readRawParams(JNIEnv *env, jfloatArray params, mf::RawParams &rp) {
+    if (!params || env->GetArrayLength(params) < 20) return false;
+    jfloat p[20];
+    env->GetFloatArrayRegion(params, 0, 20, p);
+    if (int(p[0]) < 0 || int(p[0]) > 3) return false;
+    rp.cfa = static_cast<mf::Cfa>(int(p[0]));
+    for (int i = 0; i < 4; ++i) rp.black[i] = p[1 + i];
+    rp.white = p[5];
+    for (int i = 0; i < 4; ++i) rp.wb[i] = p[6 + i];
+    for (int i = 0; i < 9; ++i) rp.ccm[i] = p[10 + i];
+    rp.gain = p[19];
+    return true;
+}
 
 uint8_t *bufferAddress(JNIEnv *env, jobject buffer, jlong *capacity) {
     if (!buffer) return nullptr;
@@ -167,15 +185,8 @@ Java_dev_opencamera_pipeline_NativePipeline_nativeAddRawFrame(JNIEnv *env, jobje
         LOGE("raw buffer too small for %dx%d", b->width, b->height);
         return JNI_FALSE;
     }
-    jfloat p[20];
-    env->GetFloatArrayRegion(params, 0, 20, p);
     mf::RawParams rp;
-    rp.cfa = static_cast<mf::Cfa>(int(p[0]));
-    for (int i = 0; i < 4; ++i) rp.black[i] = p[1 + i];
-    rp.white = p[5];
-    for (int i = 0; i < 4; ++i) rp.wb[i] = p[6 + i];
-    for (int i = 0; i < 9; ++i) rp.ccm[i] = p[10 + i];
-    rp.gain = p[19];
+    if (!readRawParams(env, params, rp)) return JNI_FALSE;
     std::vector<float> shading;
     if (lsc && lscW >= 2 && lscH >= 2 && env->GetArrayLength(lsc) >= lscW * lscH * 4) {
         shading.resize(size_t(lscW) * lscH * 4);
@@ -359,6 +370,132 @@ Java_dev_opencamera_pipeline_NativePipeline_nativeRankSharpness(JNIEnv *env, job
 JNIEXPORT void JNICALL
 Java_dev_opencamera_pipeline_NativePipeline_nativeReleaseBurst(JNIEnv *, jobject, jlong handle) {
     delete fromHandle(handle);
+}
+
+// Starts a merged-RAW accumulation with the reference frame. params: cfa, white, black[4].
+// Returns 0 when the frame or the metadata is unusable, or memory runs out.
+JNIEXPORT jlong JNICALL
+Java_dev_opencamera_pipeline_NativePipeline_nativeRawMergeBegin(JNIEnv *env, jobject, jint width,
+                                                                jint height, jobject rawBuf,
+                                                                jint rowStride, jfloatArray params,
+                                                                jfloatArray lsc, jint lscW, jint lscH) {
+    if (!params || env->GetArrayLength(params) < 6 || width < 64 || height < 64) return 0;
+    jlong cap = 0;
+    const uint8_t *raw = bufferAddress(env, rawBuf, &cap);
+    if (!raw || rowStride < (width & ~1) * 2 || cap < jlong(rowStride) * ((height & ~1) - 1) + (width & ~1) * 2) {
+        LOGE("raw merge: buffer too small for %dx%d", width, height);
+        return 0;
+    }
+    jfloat p[6];
+    env->GetFloatArrayRegion(params, 0, 6, p);
+    std::unique_ptr<mf::RawMerger> merger(new (std::nothrow) mf::RawMerger());
+    if (!merger) return 0;
+    mf::RawMergeParams mp;
+    mp.cfa = static_cast<mf::Cfa>(int(p[0]));
+    mp.white = p[1];
+    if (lsc && lscW >= 2 && lscH >= 2 && env->GetArrayLength(lsc) >= lscW * lscH * 4) {
+        try {
+            mp.lsc.resize(size_t(lscW) * lscH * 4);
+        } catch (const std::bad_alloc &) {
+            return 0;
+        }
+        env->GetFloatArrayRegion(lsc, 0, jsize(mp.lsc.size()), mp.lsc.data());
+        mp.lscW = lscW;
+        mp.lscH = lscH;
+    }
+    std::string error;
+    if (!merger->begin(width, height, mp, reinterpret_cast<const uint16_t *>(raw), rowStride, p + 2, &error)) {
+        LOGE("raw merge: %s", error.c_str());
+        return 0;
+    }
+    return reinterpret_cast<jlong>(merger.release());
+}
+
+// Aligns and accumulates one frame; returns its mean weight (0..1), or -1 on failure.
+JNIEXPORT jfloat JNICALL
+Java_dev_opencamera_pipeline_NativePipeline_nativeRawMergeAdd(JNIEnv *env, jobject, jlong handle,
+                                                              jobject rawBuf, jint rowStride,
+                                                              jfloatArray black) {
+    mf::RawMerger *m = mergerFromHandle(handle);
+    if (!m || !black || env->GetArrayLength(black) < 4) return -1;
+    jlong cap = 0;
+    const uint8_t *raw = bufferAddress(env, rawBuf, &cap);
+    if (!raw || rowStride < m->width() * 2 || cap < jlong(rowStride) * (m->height() - 1) + m->width() * 2) {
+        LOGE("raw merge: frame buffer too small");
+        return -1;
+    }
+    jfloat b[4];
+    env->GetFloatArrayRegion(black, 0, 4, b);
+    float weight = 0;
+    std::string error;
+    if (!m->add(reinterpret_cast<const uint16_t *>(raw), rowStride, b, &weight, &error)) {
+        LOGE("raw merge: %s", error.c_str());
+        return -1;
+    }
+    return weight;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_dev_opencamera_pipeline_NativePipeline_nativeRawMergeFinish(JNIEnv *, jobject, jlong handle) {
+    mf::RawMerger *m = mergerFromHandle(handle);
+    std::string error;
+    if (!m || !m->finish(&error)) {
+        LOGE("raw merge finish: %s", error.c_str());
+        return JNI_FALSE;
+    }
+    return JNI_TRUE;
+}
+
+// [width, height, frames, noise sigma of the reference luma].
+JNIEXPORT jfloatArray JNICALL
+Java_dev_opencamera_pipeline_NativePipeline_nativeRawMergeInfo(JNIEnv *env, jobject, jlong handle) {
+    mf::RawMerger *m = mergerFromHandle(handle);
+    if (!m) return nullptr;
+    const jfloat info[4] = {float(m->width()), float(m->height()), float(m->frames()), m->noiseSigma()};
+    jfloatArray out = env->NewFloatArray(4);
+    if (out) env->SetFloatArrayRegion(out, 0, 4, info);
+    return out;
+}
+
+// Linear camera RGB (3 x uint16, native byte order) of rows [y0, y0 + rows) of the finished merge.
+JNIEXPORT jboolean JNICALL
+Java_dev_opencamera_pipeline_NativePipeline_nativeRawMergeRows(JNIEnv *env, jobject, jlong handle,
+                                                               jint y0, jint rows, jobject outBuf) {
+    mf::RawMerger *m = mergerFromHandle(handle);
+    if (!m) return JNI_FALSE;
+    jlong cap = 0;
+    uint8_t *out = bufferAddress(env, outBuf, &cap);
+    if (!out || rows < 1 || cap < jlong(rows) * m->width() * 6) return JNI_FALSE;
+    return m->demosaicRows(y0, rows, reinterpret_cast<uint16_t *>(out)) ? JNI_TRUE : JNI_FALSE;
+}
+
+// Develops the finished merge (as a 16-bit mosaic with black 0 and white 65535) into a frame of burst.
+JNIEXPORT jboolean JNICALL
+Java_dev_opencamera_pipeline_NativePipeline_nativeRawMergeDevelop(JNIEnv *env, jobject, jlong handle,
+                                                                  jlong burstHandle, jfloatArray params) {
+    mf::RawMerger *m = mergerFromHandle(handle);
+    Burst *b = fromHandle(burstHandle);
+    mf::RawParams rp;
+    if (!m || !b || m->mosaic().empty() || int(b->frames.size()) >= b->capacity ||
+        b->width != m->width() || b->height != m->height() || !readRawParams(env, params, rp)) {
+        return JNI_FALSE;
+    }
+    for (float &v : rp.black) v = 0;
+    rp.white = 65535;
+    try {
+        mf::Frame f;
+        if (!mf::developRaw(m->mosaic().data(), m->width(), m->height(), m->width() * 2, rp, f)) return JNI_FALSE;
+        b->frames.push_back(std::move(f));
+    } catch (const std::bad_alloc &) {
+        LOGE("out of memory while developing the merged raw");
+        return JNI_FALSE;
+    }
+    return JNI_TRUE;
+}
+
+JNIEXPORT void JNICALL
+Java_dev_opencamera_pipeline_NativePipeline_nativeRawMergeRelease(JNIEnv *, jobject, jlong handle) {
+    delete mergerFromHandle(handle);
 }
 
 }  // extern "C"
