@@ -92,7 +92,7 @@ class DevelopActivity : AppCompatActivity(), DevelopEngine.Listener {
     internal val loader by lazy { SourceLoader(this) }
     internal val store by lazy { EditStore(File(filesDir, "edits")) }
     internal val looks by lazy { LooksRepository.get(this) }
-    internal val presets by lazy { PresetRepository(File(filesDir, "develop-presets")) { looks.descriptors } }
+    internal val presets by lazy { PresetRepository(File(filesDir, PresetRepository.DIR_NAME)) { looks.descriptors } }
     internal val ai by lazy { AiMaskProvider(this) }
     private val retouchCache by lazy { dev.opencamera.app.develop.io.RetouchCache(File(cacheDir, "retouch")) }
 

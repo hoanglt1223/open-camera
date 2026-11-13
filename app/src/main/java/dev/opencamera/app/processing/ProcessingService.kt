@@ -362,7 +362,7 @@ class ProcessingService : Service() {
         /** Bursts archived by a dead process go into the persistent queue to be merged. */
         private fun enqueueOrphanBursts(context: Context) {
             val prefs = LookPreferences(context)
-            val look = prefs.lookId.takeIf { LooksRepository.get(context).descriptor(it) != null }
+            val look = prefs.lookId.takeIf { LooksRepository.get(context).descriptor(it) != null }?.let { prefs.captureLookId(it) }
             for (dir in BurstRecovery.orphans(context)) {
                 val job = queue(context).enqueue(BurstRecovery.SCHEME + dir.name, look, prefs.intensity, prefs.watermark.key)
                 if (job.state == JobState.FAILED || job.state == JobState.DONE) BurstArchive.delete(dir)

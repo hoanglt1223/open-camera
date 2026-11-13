@@ -140,6 +140,7 @@ data class CameraUiState(
     val imageQuality: String = "",
     val looks: List<LookItem> = emptyList(),
     val lookId: String = "",
+    val style: dev.opencamera.app.processing.PhotoStyle = dev.opencamera.app.processing.PhotoStyle(),
     val recordingPaused: Boolean = false,
     val pro: ProUiState? = null,
     /** The user's Glass blur switch (the device may still draw less). */
@@ -171,6 +172,12 @@ interface CameraUiActions {
     fun gallery()
     fun pauseResume()
     fun selectLook(id: String)
+
+    /** Live style change (preview re-renders); also used by the style presets. */
+    fun setStyle(style: dev.opencamera.app.processing.PhotoStyle) {}
+
+    /** Writes the current style as an editor preset. */
+    fun saveStylePreset() {}
     fun allSettings()
     fun googleLens()
     fun proSettings(settings: ProSettings)

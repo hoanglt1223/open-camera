@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="photo_style">Kiểu ảnh</string>
+    <string name="photo_style_tone">Tông</string>
+    <string name="photo_style_warmth">Độ ấm</string>
+    <string name="photo_style_color">Màu</string>
+    <string name="photo_style_standard">Chuẩn</string>
+    <string name="photo_style_rich">Tương phản sâu</string>
+    <string name="photo_style_vibrant">Rực rỡ</string>
+    <string name="photo_style_warm">Ấm</string>
+    <string name="photo_style_cool">Lạnh</string>
+    <string name="photo_style_muted">Dịu</string>
+    <string name="photo_style_save">Lưu preset</string>
+    <string name="photo_style_preset_name">Kiểu ảnh %1$s / %2$s / %3$s</string>
+    <string name="photo_style_saved">Đã lưu preset chỉnh ảnh \"%1$s\"</string>
+    <string name="photo_style_save_failed">Không lưu được preset</string>
+</resources>
