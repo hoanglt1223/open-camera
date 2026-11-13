@@ -33,6 +33,11 @@ Third-party libraries added for the extra capture modes (all Apache License 2.0)
 - AndroidX Media3 Transformer and Effect 1.10.0 - Apache-2.0. Used for post-processing
   (log grade LUT, gyro stabilization, short-video music).
 
+Document text recognition (full flavor only):
+- Tesseract OCR 5 via Tesseract4Android 4.8.0, Apache License 2.0, with Leptonica (BSD 2-Clause),
+  libjpeg-turbo (IJG, BSD 3-Clause, zlib) and libpng (libpng License 2.0) built into its native libraries.
+- tessdata_fast English and Vietnamese models, Copyright Google LLC and Tesseract contributors, Apache License 2.0.
+
 Camera UI skins (Glass, Origin):
 - Jetpack Compose UI, Foundation and Animation (Compose BOM 2025.06.01), Copyright The
   Android Open Source Project, Apache License 2.0. Used for the skinned camera controls.

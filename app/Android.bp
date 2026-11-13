@@ -96,6 +96,7 @@ android_app {
         "androidx.recyclerview_recyclerview",
         "androidx.tracing_tracing",
         "androidx.tracing_tracing-ktx",
+        "OpenCamera_com.github.adaptech-cz.Tesseract4Android_tesseract4android",
         "OpenCamera_com.google.ai.edge.litert_litert",
         "OpenCamera_com.google.ai.edge.litert_litert-gpu",
         "OpenCamera_com.google.ai.edge.litert_litert-gpu-api",

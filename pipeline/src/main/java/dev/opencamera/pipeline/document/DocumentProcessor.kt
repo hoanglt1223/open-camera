@@ -183,11 +183,19 @@ object PdfExporter {
     private const val A4_H = 842
     private const val MARGIN = 18
 
-    fun write(pages: List<Bitmap>, out: OutputStream) {
+    /** A word of recognised text and its box in page-bitmap pixels. */
+    class Word(val text: String, val left: Int, val top: Int, val right: Int, val bottom: Int)
+
+    /**
+     * [text] optionally holds each page's recognised words. They are drawn under the page image,
+     * so the PDF looks the same but its text can be searched, selected and copied.
+     */
+    fun write(pages: List<Bitmap>, out: OutputStream, text: List<List<Word>> = emptyList()) {
         require(pages.isNotEmpty()) { "no pages" }
         val doc = PdfDocument()
         try {
             val paint = Paint(Paint.FILTER_BITMAP_FLAG)
+            val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.BLACK }
             pages.forEachIndexed { i, bmp ->
                 val landscape = bmp.width > bmp.height
                 val pw = if (landscape) A4_H else A4_W
@@ -199,6 +207,16 @@ object PdfExporter {
                 val left = (pw - w) / 2
                 val top = (ph - h) / 2
                 page.canvas.drawColor(Color.WHITE)
+                text.getOrNull(i)?.forEach { word ->
+                    val box = placeWord(word, s, left, top) ?: return@forEach
+                    val bw = box[2] - box[0]
+                    val bh = box[3] - box[1]
+                    textPaint.textSize = bh
+                    textPaint.textScaleX = 1f
+                    val measured = textPaint.measureText(word.text)
+                    if (measured > 0f) textPaint.textScaleX = bw / measured
+                    page.canvas.drawText(word.text, box[0], box[3] - bh * 0.2f, textPaint)
+                }
                 page.canvas.drawBitmap(bmp, null, Rect(left, top, left + w, top + h), paint)
                 doc.finishPage(page)
             }
@@ -206,6 +224,12 @@ object PdfExporter {
         } finally {
             doc.close()
         }
+    }
+
+    /** [word] in PDF points for a page image scaled by [scale] and placed at ([left], [top]); null if empty. */
+    fun placeWord(word: Word, scale: Float, left: Int, top: Int): FloatArray? {
+        if (word.text.isBlank() || word.right <= word.left || word.bottom <= word.top) return null
+        return floatArrayOf(left + word.left * scale, top + word.top * scale, left + word.right * scale, top + word.bottom * scale)
     }
 
     /** Page size used for a bitmap, exposed for tests and previews. */

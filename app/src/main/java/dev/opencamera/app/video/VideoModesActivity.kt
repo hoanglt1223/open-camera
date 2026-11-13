@@ -77,6 +77,9 @@ import dev.opencamera.capture.video.GyroPath
 import dev.opencamera.capture.video.SweepGuide
 import dev.opencamera.pipeline.document.DocumentProcessor
 import dev.opencamera.pipeline.document.PdfExporter
+import dev.opencamera.ml.ocr.Ocr
+import dev.opencamera.ml.ocr.OcrPage
+import dev.opencamera.ml.ocr.OcrWord
 import dev.opencamera.pipeline.looks.CubeWriter
 import dev.opencamera.pipeline.looks.LookParams
 import dev.opencamera.pipeline.looks.LookPreviewSurfaceProvider
@@ -180,6 +183,7 @@ class VideoModesActivity : AppCompatActivity() {
     private var lastDocDetect = 0L
     private var lastDocFrame: Bitmap? = null
     private val pages = mutableListOf<Bitmap>()
+    private val autoCapture = DocumentAutoCapture()
     private var musicUri: Uri? = null
     private var busy = false
     private var deviceRotation = Surface.ROTATION_0
@@ -739,11 +743,13 @@ class VideoModesActivity : AppCompatActivity() {
                     val quad = DocumentProcessor.detect(bmp)
                     lastDocFrame?.recycle()
                     lastDocFrame = bmp
+                    val auto = settings.documentAuto && autoCapture.onDetection(quad, bmp.width, bmp.height)
                     runOnUiThread {
                         overlay.frameWidth = bmp.width
                         overlay.frameHeight = bmp.height
                         overlay.quad = quad
                         overlay.refresh()
+                        if (auto && !busy && mode == VideoMode.DOCUMENT) captureDocumentPage()
                     }
                 }
             } else if (s != null && !s.complete && s.wantsFrame(ts)) {
@@ -880,19 +886,70 @@ class VideoModesActivity : AppCompatActivity() {
         if (busy) return
         busy = true
         updateUi()
+        val useOcr = settings.documentOcr && Ocr.included
         analysisExecutor.execute {
+            val text = if (useOcr) recognizePages() else null
+            val name = MediaSaver.name("SCAN")
             val ok = pages.isNotEmpty() && FeatureGuard.attempt(TAG, "pdf export") {
-                MediaSaver.savePdf(applicationContext, "SCAN") { PdfExporter.write(pages, it) }
+                MediaSaver.saveDocument(applicationContext, "$name.pdf", "application/pdf") { out ->
+                    PdfExporter.write(pages, out, text?.map { p -> p?.words?.map { it.toPdfWord() }.orEmpty() }.orEmpty())
+                }
             } != null
+            val plain = text?.mapNotNull { it?.text?.takeIf(String::isNotBlank) }?.joinToString("\n\n\u000c\n\n").orEmpty()
+            if (ok && plain.isNotEmpty()) {
+                FeatureGuard.attempt(TAG, "ocr text export") {
+                    MediaSaver.saveDocument(applicationContext, "$name.txt", "text/plain") { it.write(plain.toByteArray()) }
+                }
+            }
             if (ok) {
                 pages.forEach { it.recycle() }
                 pages.clear()
+                autoCapture.reset()
             }
             runOnUiThread {
                 busy = false
-                toast(if (ok) R.string.video_modes_pdf_saved else R.string.video_modes_failed)
+                statusText.text = ""
+                toast(
+                    when {
+                        !ok -> getString(R.string.video_modes_failed)
+                        useOcr && text == null -> getString(R.string.video_modes_ocr_unavailable)
+                        plain.isNotEmpty() -> getString(R.string.video_modes_pdf_saved_text)
+                        else -> getString(R.string.video_modes_pdf_saved)
+                    },
+                )
                 refreshOptions()
                 updateUi()
+            }
+        }
+    }
+
+    /**
+     * Runs on the analysis thread. Per-page results (null for a page that failed), or null when
+     * no OCR engine could be opened; the PDF is then written without a text layer.
+     */
+    private fun recognizePages(): List<OcrPage?>? {
+        val engine = Ocr.open(applicationContext) ?: return null
+        return try {
+            pages.mapIndexed { i, page ->
+                runOnUiThread { statusText.text = getString(R.string.video_modes_ocr_progress, i + 1, pages.size) }
+                FeatureGuard.attempt(TAG, "ocr page ") { engine.recognize(page) }
+            }
+        } finally {
+            runCatching { engine.close() }
+        }
+    }
+
+    private fun OcrWord.toPdfWord() = PdfExporter.Word(text, left, top, right, bottom)
+
+    /** Drops the last page, e.g. after a blurry or wrong auto capture. */
+    private fun deleteLastPage() {
+        if (busy) return
+        analysisExecutor.execute {
+            pages.removeLastOrNull()?.recycle()
+            val count = pages.size
+            runOnUiThread {
+                toast(getString(R.string.video_modes_page_deleted, count))
+                refreshOptions()
             }
         }
     }
@@ -1262,7 +1319,19 @@ class VideoModesActivity : AppCompatActivity() {
                 opt(getString(enhanceLabel(s.documentEnhance))) {
                     update(false) { it.copy(documentEnhance = (it.documentEnhance + 1) % 3) }
                 }
-                if (pages.isNotEmpty()) opt(getString(R.string.video_opt_export_pdf, pages.size)) { exportPdf() }
+                opt(getString(if (s.documentAuto) R.string.video_opt_doc_auto_on else R.string.video_opt_doc_auto_off)) {
+                    autoCapture.reset()
+                    update(false) { it.copy(documentAuto = !it.documentAuto) }
+                }
+                if (Ocr.included) {
+                    opt(getString(if (s.documentOcr) R.string.video_opt_doc_ocr_on else R.string.video_opt_doc_ocr_off)) {
+                        update(false) { it.copy(documentOcr = !it.documentOcr) }
+                    }
+                }
+                if (pages.isNotEmpty()) {
+                    opt(getString(R.string.video_opt_export_pdf, pages.size)) { exportPdf() }
+                    opt(getString(R.string.video_opt_doc_delete_last)) { deleteLastPage() }
+                }
             }
             VideoMode.DUAL_VIDEO, VideoMode.PANORAMA, VideoMode.BOKEH_VIDEO -> Unit
         }

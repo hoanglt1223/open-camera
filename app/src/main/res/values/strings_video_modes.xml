@@ -94,4 +94,13 @@
     <string name="video_opt_log_bake_off">Graded copy off</string>
     <string name="video_modes_log_preview_off">LUT preview unavailable, showing flat log</string>
     <string name="video_modes_cube_failed">Could not save the .cube file</string>
+    <string name="video_opt_doc_auto_on">Auto capture on</string>
+    <string name="video_opt_doc_auto_off">Auto capture off</string>
+    <string name="video_opt_doc_ocr_on">Text recognition on</string>
+    <string name="video_opt_doc_ocr_off">Text recognition off</string>
+    <string name="video_opt_doc_delete_last">Delete last page</string>
+    <string name="video_modes_page_deleted">Page deleted, %1$d left</string>
+    <string name="video_modes_ocr_progress">Recognising text, page %1$d of %2$d</string>
+    <string name="video_modes_ocr_unavailable">Text recognition unavailable, PDF saved without text</string>
+    <string name="video_modes_pdf_saved_text">Searchable PDF and text saved to Documents/OpenCamera</string>
 </resources>

@@ -16,6 +16,7 @@ android {
 
     defaultConfig {
         minSdk = 26
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     compileOptions {
@@ -51,6 +52,9 @@ dependencies {
     "fullImplementation"(libs.litert.gpu)
     "fullImplementation"(libs.litert.gpu.api)
     "fullImplementation"(libs.onnxruntime.android)
+    "fullImplementation"(libs.tesseract4android)
     testImplementation(libs.junit)
     testImplementation(libs.json)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
 }

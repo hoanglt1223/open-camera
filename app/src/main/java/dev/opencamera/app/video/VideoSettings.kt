@@ -40,6 +40,8 @@ data class VideoSettings(
     val documentEnhance: Int = 0,
     val logPreview: Boolean = true,
     val logBake: Boolean = true,
+    val documentAuto: Boolean = false,
+    val documentOcr: Boolean = true,
 ) {
     companion object {
         private const val PREFS = "video_modes"
@@ -67,6 +69,8 @@ data class VideoSettings(
                 documentEnhance = p.getInt("doc", d.documentEnhance),
                 logPreview = p.getBoolean("log_preview", d.logPreview),
                 logBake = p.getBoolean("log_bake", d.logBake),
+                documentAuto = p.getBoolean("doc_auto", d.documentAuto),
+                documentOcr = p.getBoolean("doc_ocr", d.documentOcr),
             )
         }
 
@@ -84,6 +88,7 @@ data class VideoSettings(
             .putBoolean("ss_lighten", slowShutterLighten).putInt("ss_seconds", slowShutterSeconds)
             .putInt("freeze", freezeSeconds).putInt("doc", documentEnhance)
             .putBoolean("log_preview", logPreview).putBoolean("log_bake", logBake)
+            .putBoolean("doc_auto", documentAuto).putBoolean("doc_ocr", documentOcr)
             .apply()
     }
 }

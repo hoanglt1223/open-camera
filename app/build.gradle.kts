@@ -157,6 +157,7 @@ dependencies {
     fullImplementation(libs.litert.gpu)
     fullImplementation(libs.litert.gpu.api)
     fullImplementation(libs.onnxruntime.android)
+    fullImplementation(libs.tesseract4android)
     implementation(libs.androidx.activity.ktx)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.foundation)
