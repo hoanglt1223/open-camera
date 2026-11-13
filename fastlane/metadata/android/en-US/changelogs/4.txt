@@ -1,0 +1,6 @@
+- Log video with LUT preview and a .cube per clip.
+- Adjustable photographic styles, saved as editor presets.
+- Document mode: auto capture, offline OCR, searchable PDF (full build).
+- Smart timer (palm or smiles); headset and Bluetooth remote shutter.
+- Warning when a photo looks blurred or eyes are closed.
+- Fixed a crash when the camera permission is denied.

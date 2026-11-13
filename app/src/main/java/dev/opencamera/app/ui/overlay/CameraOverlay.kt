@@ -558,6 +558,7 @@ private fun TopText(label: String, description: String, enabled: Boolean, onClic
     val view = LocalView.current
     Box(
         Modifier
+            .padding(horizontal = 4.dp)
             .heightIn(min = 48.dp)
             .widthIn(min = 48.dp)
             .semantics { contentDescription = description; stateDescription = label }
@@ -578,7 +579,10 @@ private fun TopText(label: String, description: String, enabled: Boolean, onClic
                 scaleX = fit
                 scaleY = fit
             },
-            style = TextStyle(color = s.fg, fontSize = 12.sp, fontWeight = FontWeight.SemiBold),
+            // Longer translations ("BẬT MIC", "30 FPS") would touch their neighbours at 12 sp.
+            style = TextStyle(
+                color = s.fg, fontSize = if (label.length > 5) 11.sp else 12.sp, fontWeight = FontWeight.SemiBold,
+            ),
             maxLines = 1,
         )
     }
@@ -1282,7 +1286,15 @@ private fun StylePanel(style: PhotoStyle, actions: CameraUiActions) {
     CountRecompositions("StylePanel")
     var axis by remember { mutableStateOf(StyleAxis.TONE) }
     val presetIndex = PhotoStyles.presetIndex(style)
-    Column(Modifier.fillMaxWidth().testTag("style_panel"), horizontalAlignment = Alignment.CenterHorizontally) {
+    // A light scrim keeps the chips and the dial readable over a bright scene.
+    Column(
+        Modifier
+            .padding(horizontal = 8.dp)
+            .fillMaxWidth()
+            .background(Color.Black.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
+            .testTag("style_panel"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         dev.opencamera.app.develop.ui.compose.ChipRow(
             PhotoStyles.PRESETS, label = { stringResource(STYLE_PRESET_LABELS.getValue(it.first)) },
             selected = { PhotoStyles.PRESETS.indexOf(it) == presetIndex },

@@ -1,0 +1,6 @@
+- Video Log có xem trước LUT và file .cube cho mỗi clip.
+- Kiểu ảnh chỉnh được, lưu thành preset chỉnh ảnh.
+- Tài liệu: tự chụp, OCR offline, PDF tìm được chữ (bản đầy đủ).
+- Hẹn giờ thông minh (giơ tay, cười); chụp bằng tai nghe, remote.
+- Cảnh báo ảnh mờ hoặc nhắm mắt.
+- Sửa crash khi từ chối quyền camera.
