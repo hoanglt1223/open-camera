@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # F-Droid recipe as proposed to fdroiddata (metadata/dev.opencamera.app.yml there).
+# Builds the foss flavor: no prebuilt ML runtimes, OpenCV built from source. F-Droid signs it;
+# the signed full build is served by https://hoanglt1223.github.io/open-camera-fdroid/repo.
 Categories:
   - Multimedia
 License: Apache-2.0
@@ -14,28 +16,30 @@ AutoName: Open Camera
 
 RepoType: git
 Repo: https://github.com/hoanglt1223/open-camera.git
-Binaries: https://github.com/hoanglt1223/open-camera/releases/download/v%v/open-camera-%v.apk
 
 Builds:
-  - versionName: 0.1.0-beta2
-    versionCode: 2
-    commit: v0.1.0-beta2
+  - versionName: 0.1.0-beta3
+    versionCode: 3
+    commit: COMMIT
     subdir: app
     gradle:
-      - yes
+      - foss
     srclibs:
       - open-camera-profiles@f8dceb0a509a0a287e4c9c0a9083984d72d0f5d2
+      - opencv@ea8e60798e0319ccbe902f7994153b574f639809
     rm:
       - app/libs
       - gradle/soong.gradle
     prebuild: echo "openCamera.profiles.dir=$$open-camera-profiles$$" >> ../local.properties
     scanignore:
       - settings.gradle.kts
+    build: bash ../scripts/fdroid/build-opencv-android.sh $$opencv$$ ../opencv-out arm64-v8a
+      armeabi-v7a
     ndk: 27.0.12077973
-
-AllowedAPKSigningKeys: 999623e2de4a85557102624929916dcd80126aaf2354697dc0406efd0a345902
+    gradleprops:
+      - openCamera.opencvDir=opencv-out
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9.]+(-beta[0-9]+)?$
-CurrentVersion: 0.1.0-beta2
-CurrentVersionCode: 2
+CurrentVersion: 0.1.0-beta3
+CurrentVersionCode: 3

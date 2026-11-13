@@ -48,6 +48,7 @@ import androidx.camera.view.CameraControllerInterop
 import dev.opencamera.capture.StreamConfig
 import kotlinx.coroutines.withTimeoutOrNull
 import androidx.core.view.doOnNextLayout
+import dev.opencamera.ml.ML_RUNTIME_INCLUDED
 import dev.opencamera.vendorbridge.VendorTagRegistry
 import dev.opencamera.vendorbridge.SourcePolicy
 import dev.opencamera.vendorbridge.ProcessingSource
@@ -3083,7 +3084,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             updateAiPortraitButton()
         }
         lifecycleScope.launch {
-            viewModel.cameraMode.collectLatest { aiPortraitButton.isVisible = it == CameraMode.PHOTO }
+            viewModel.cameraMode.collectLatest { aiPortraitButton.isVisible = ML_RUNTIME_INCLUDED && it == CameraMode.PHOTO }
         }
     }
 

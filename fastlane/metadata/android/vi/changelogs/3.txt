@@ -1,0 +1,2 @@
+- Ảnh HDR và Đêm được lưu dạng Ultra HDR trên Android 14 trở lên.
+- Bản foss mới cho F-Droid: không kèm bộ chạy ML dựng sẵn, OpenCV được build từ mã nguồn. Tính năng AI chỉ có ở bản đầy đủ.

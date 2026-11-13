@@ -6,7 +6,7 @@
 # dependencies. Phone maker features are only called through public APIs, never bundled.
 set -euo pipefail
 
-apk="${1:-app/build/outputs/apk/debug/app-debug.apk}"
+apk="${1:-app/build/outputs/apk/full/debug/app-full-debug.apk}"
 allowed='^lib/[^/]+/lib(opencamera_[a-z_]+|zxingcpp_android|image_processing_util_jni|surface_util_jni)\.so$'
 
 libs=$(unzip -Z1 "$apk" 'lib/*' 2>/dev/null || true)

@@ -14,6 +14,7 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
 import dev.opencamera.app.R
 import dev.opencamera.app.SettingsActivity
+import dev.opencamera.ml.ML_RUNTIME_INCLUDED
 import dev.opencamera.ml.MlRuntime
 import dev.opencamera.ml.ModelDownloader
 import dev.opencamera.ml.ModelRegistry
@@ -30,6 +31,16 @@ class AiSettingsFragment : SettingsActivity.SettingsFragment(R.xml.ai_preference
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         super.onCreatePreferences(savedInstanceState, rootKey)
+        if (!ML_RUNTIME_INCLUDED) {
+            preferenceScreen.removeAll()
+            preferenceScreen.addPreference(Preference(requireContext()).apply {
+                summary = getString(R.string.ai_not_in_build)
+                isIconSpaceReserved = false
+                isPersistent = false
+                isSelectable = false
+            })
+            return
+        }
         findPreference<ListPreference>(MlRuntime.PREF_ACCELERATOR)?.setOnPreferenceChangeListener { _, _ ->
             runtime.releaseAll()
             true

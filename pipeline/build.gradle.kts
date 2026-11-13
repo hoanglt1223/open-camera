@@ -17,6 +17,8 @@ android {
 
     defaultConfig {
         minSdk = 26
+        // Compiles against :ml's shared API; the app picks the :ml flavor that gets packaged.
+        missingDimensionStrategy("distribution", "full")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
@@ -47,7 +49,11 @@ dependencies {
     implementation(project(":ml"))
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.exifinterface)
-    implementation(libs.opencv)
+    // Optional at runtime: the app packages OpenCV (see OpenCv.available). With
+    // -PopenCamera.opencvDir it is the copy built from source instead of the Maven binary.
+    val opencv: Any = if (providers.gradleProperty("openCamera.opencvDir").isPresent) project(":opencv-source") else libs.opencv
+    compileOnly(opencv)
+    androidTestImplementation(opencv)
     testImplementation(libs.junit)
     testImplementation(libs.json)
     androidTestImplementation(libs.androidx.test.runner)

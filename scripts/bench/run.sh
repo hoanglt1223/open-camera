@@ -49,9 +49,9 @@ if [ "$build" = 1 ]; then
   # Profile rules must use source names, so the generator runs on an unminified build.
   minify=()
   [ "$profile" = 1 ] && minify=(-PopenCamera.benchNoMinify=true)
-  ./gradlew -q "${minify[@]}" :app:assembleBenchmark :macrobenchmark:assembleBenchmark
+  ./gradlew -q "${minify[@]}" :app:assembleFullBenchmark :macrobenchmark:assembleBenchmark
 fi
-APP_APK="$ROOT/app/build/outputs/apk/benchmark/app-benchmark.apk"
+APP_APK="$ROOT/app/build/outputs/apk/full/benchmark/app-full-benchmark.apk"
 TEST_APK="$ROOT/macrobenchmark/build/outputs/apk/benchmark/macrobenchmark-benchmark.apk"
 
 adb_ install -r "$APP_APK" >/dev/null

@@ -19,6 +19,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import dev.opencamera.app.R
 import dev.opencamera.app.ui.views.PreviewFrames
+import dev.opencamera.ml.ML_RUNTIME_INCLUDED
 import dev.opencamera.ml.MlRuntime
 import dev.opencamera.ml.tasks.Composition
 import dev.opencamera.ml.tasks.FaceMesh
@@ -75,13 +76,14 @@ class AiController(
 
     /** Steps queued with each saved photo. */
     fun captureOps(): AiOps? {
-        if (!isPhotoMode()) return null
+        if (!ML_RUNTIME_INCLUDED || !isPhotoMode()) return null
         val aperture = if (settings.portrait) settings.portraitAperture else null
         val ops = AiOps(portraitAperture = aperture, beauty = settings.beauty)
         return ops.takeUnless { it.isEmpty }
     }
 
     fun start() {
+        if (!ML_RUNTIME_INCLUDED) return
         sceneChip.setOnClickListener { shownScene.takeIf { it != Scene.NONE }?.let(onScenePreset) }
         owner.lifecycleScope.launch {
             owner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
