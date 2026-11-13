@@ -88,4 +88,10 @@
     <string name="video_value_stab_gyro">gyro</string>
     <string name="video_value_stab_hal">camera</string>
     <string name="video_value_standard">standard</string>
+    <string name="video_opt_lut_preview_on">LUT preview on</string>
+    <string name="video_opt_lut_preview_off">LUT preview off</string>
+    <string name="video_opt_log_bake_on">Graded copy on</string>
+    <string name="video_opt_log_bake_off">Graded copy off</string>
+    <string name="video_modes_log_preview_off">LUT preview unavailable, showing flat log</string>
+    <string name="video_modes_cube_failed">Could not save the .cube file</string>
 </resources>

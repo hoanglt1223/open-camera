@@ -27,8 +27,9 @@ object MediaSaver {
     fun name(prefix: String) =
         prefix + "_" + SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(Date())
 
-    fun outputOptionsValues(prefix: String) = ContentValues().apply {
-        put(MediaStore.MediaColumns.DISPLAY_NAME, name(prefix))
+    /** Values for a recording named [displayName] (from [name]). */
+    fun outputOptionsValues(displayName: String) = ContentValues().apply {
+        put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
         put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             put(MediaStore.MediaColumns.RELATIVE_PATH, CAMERA_DIR)
@@ -45,13 +46,17 @@ object MediaSaver {
             check(bitmap.compress(Bitmap.CompressFormat.JPEG, 95, it)) { "JPEG encode failed" }
         }
 
-    fun savePdf(context: Context, prefix: String, write: (OutputStream) -> Unit): Uri? {
+    fun savePdf(context: Context, prefix: String, write: (OutputStream) -> Unit): Uri? =
+        saveDocument(context, "${name(prefix)}.pdf", "application/pdf", write)
+
+    /** Non-media files (PDF, `.cube`) go to Documents: MediaStore keeps DCIM for photos and videos. */
+    fun saveDocument(context: Context, displayName: String, mime: String, write: (OutputStream) -> Unit): Uri? {
         val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
         } else {
             MediaStore.Files.getContentUri("external")
         }
-        return save(context, collection, DOCS_DIR, "${name(prefix)}.pdf", "application/pdf", write)
+        return save(context, collection, DOCS_DIR, displayName, mime, write)
     }
 
     private fun save(

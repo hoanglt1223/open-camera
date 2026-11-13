@@ -10,6 +10,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.math.roundToInt
 
 class VideoModesTest {
     private val full = VideoModeCaps(
@@ -98,6 +99,37 @@ class VideoModesTest {
         assertEquals(0xffffffff.toInt(), plain[4][4][4])
     }
 
+    @Test
+    fun exportedCubeRoundTripsAndMatchesBakedGrade() {
+        val lut = LogProfile.gradeLut(null, 0f, size = 9)
+        val parsed = dev.opencamera.pipeline.looks.CubeParser.parse(
+            dev.opencamera.pipeline.looks.CubeWriter.write(lut, LogOutput.cubeTitle("VID_1")),
+        )
+        assertEquals(9, parsed.size)
+        for (i in lut.data.indices) assertEquals(lut.data[i], parsed.data[i], 1e-5f)
+        // The baked copy uses the same table: red index 8, green 0, blue 0 in both orders.
+        val cube = LogProfile.toColorCube(lut)
+        val o = (0 * 9 + 0) * 9 * 3 + 8 * 3
+        assertEquals((lut.data[o] * 255f).roundToInt(), (cube[8][0][0] shr 16) and 0xff)
+        assertEquals(0f, lut.data[1], 1e-6f)
+    }
+
+    @Test
+    fun logOutputsDependOnLogAndBake() {
+        assertTrue(LogOutput.bakes(log = true, bakeSetting = true))
+        assertFalse(LogOutput.bakes(log = true, bakeSetting = false))
+        // A log request the camera downgraded to a plain recording never bakes a grade.
+        assertFalse(LogOutput.bakes(log = false, bakeSetting = true))
+        assertEquals("VID_20261113_101010_123.cube", LogProfile.sidecarName("VID_20261113_101010_123"))
+        assertEquals("VID_1.cube", LogProfile.sidecarName("VID_1.mp4"))
+    }
+
+    @Test
+    fun logSettingsDefaultToPreviewAndBake() {
+        val s = VideoSettings()
+        assertTrue(s.logPreview)
+        assertTrue(s.logBake)
+    }
     @Test
     fun timelineSkipsPauses() {
         val t = RecordingTimeline(startNs = 1_000)
