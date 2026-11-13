@@ -466,6 +466,21 @@ android_library_import {
 }
 
 android_library_import {
+    name: "OpenCamera_com.github.adaptech-cz.Tesseract4Android_tesseract4android",
+    aars: ["com/github/adaptech-cz/Tesseract4Android/tesseract4android/4.8.0/tesseract4android-4.8.0.aar"],
+    sdk_version: "36",
+    min_sdk_version: "26",
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    static_libs: [
+        "androidx.annotation_annotation",
+    ],
+    extract_jni: true,
+}
+
+android_library_import {
     name: "OpenCamera_com.google.ai.edge.litert_litert",
     aars: ["com/google/ai/edge/litert/litert/1.4.2/litert-1.4.2.aar"],
     sdk_version: "36",

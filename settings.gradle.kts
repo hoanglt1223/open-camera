@@ -23,6 +23,10 @@ dependencyResolutionManagement {
         maven("https://raw.githubusercontent.com/lineage-next/camerax-aperture/55b687c1232294e908ef6f46e004a58e57a0e63d/.m2")
         google()
         mavenCentral()
+        // Tesseract OCR (Apache-2.0) is published on JitPack only.
+        maven("https://jitpack.io") {
+            content { includeGroupByRegex("com\\.github\\.adaptech-cz.*") }
+        }
     }
 }
 

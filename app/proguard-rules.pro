@@ -38,3 +38,8 @@
     void onProgress(float);
 }
 -keep interface dev.opencamera.pipeline.NativePipeline$ProgressListener { *; }
+
+# Tesseract and Leptonica native code reads fields and calls methods of these classes by name.
+-keep class com.googlecode.tesseract.android.** { *; }
+-keep class com.googlecode.leptonica.android.** { *; }
+-dontwarn com.googlecode.**

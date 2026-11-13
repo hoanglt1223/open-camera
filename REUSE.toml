@@ -19,7 +19,7 @@ SPDX-FileCopyrightText = "2007-2023 Gradle, Inc."
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
-path = ["NOTICE", ".github/pull_request_template.md"]
+path = ["NOTICE", ".github/pull_request_template.md", "benchmarks/**", "app/src/main/baseline-prof.txt", "docs/vendor-tags.md"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "Open Camera contributors"
 SPDX-License-Identifier = "Apache-2.0"
@@ -31,31 +31,31 @@ SPDX-FileCopyrightText = "Open Camera contributors"
 SPDX-License-Identifier = "CC0-1.0"
 
 [[annotations]]
-path = ["ml/src/main/assets/models/selfie_segmenter/**", "ml/src/main/assets/models/face_detector/**", "ml/src/main/assets/models/face_landmarks/**"]
+path = ["ml/src/full/assets/models/selfie_segmenter/**", "ml/src/full/assets/models/face_detector/**", "ml/src/full/assets/models/face_landmarks/**"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "Google LLC (MediaPipe models)"
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
-path = "ml/src/main/assets/models/scene_classifier/**"
+path = "ml/src/full/assets/models/scene_classifier/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "Google LLC (Keras Applications MobileNetV3 weights); ImageNet class names"
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
-path = ["ml/src/main/assets/models/selfie_multiclass/**", "ml/src/main/assets/models/nima_mobilenet/**", "ml/src/main/assets/models/u2netp/**", "ml/src/main/assets/models/realesr_general_x4/**", "ml/src/main/assets/models/nafnet_sidd/**"]
+path = ["ml/src/full/assets/models/selfie_multiclass/**", "ml/src/full/assets/models/nima_mobilenet/**", "ml/src/full/assets/models/u2netp/**", "ml/src/full/assets/models/realesr_general_x4/**", "ml/src/full/assets/models/nafnet_sidd/**"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "Open Camera contributors"
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
-path = "ml/src/main/assets/models/migan/**"
+path = "ml/src/full/assets/models/migan/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2024 Picsart AI Research (PAIR)"
 SPDX-License-Identifier = "MIT"
 
 [[annotations]]
-path = "ml/src/main/assets/models/lama/**"
+path = "ml/src/full/assets/models/lama/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "Samsung AI Center (big-lama weights); Carve (ONNX export)"
 SPDX-License-Identifier = "Apache-2.0"
@@ -65,6 +65,18 @@ path = "app/libs/com/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "Google LLC (LiteRT); Microsoft Corporation (ONNX Runtime)"
 SPDX-License-Identifier = "Apache-2.0 AND MIT"
+[[annotations]]
+path = "app/libs/com/github/adaptech-cz/**"
+precedence = "override"
+SPDX-FileCopyrightText = "Adaptech s.r.o. and Tesseract contributors (Tesseract4Android); Leptonica; libjpeg-turbo; libpng"
+SPDX-License-Identifier = "Apache-2.0 AND BSD-2-Clause AND IJG AND BSD-3-Clause AND Zlib AND libpng-2.0"
+
+[[annotations]]
+path = "ml/src/full/assets/tessdata/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Google LLC and Tesseract contributors (tessdata_fast)"
+SPDX-License-Identifier = "Apache-2.0"
+
 [[annotations]]
 path = "pipeline/third_party/LibRaw/**"
 precedence = "aggregate"

@@ -28,6 +28,14 @@ SHA-256 match. Each process re-checks the hash before first use.
 | `selfie_segmenter` | `selfie_segmenter.tflite` | 0.2 MB | bundled | Apache-2.0 | `191ac9529ae506ee0beefa6b2c945a172dab9d07d1e802a290a4e4038226658b` | MediaPipe Selfie Segmenter (square, float16), https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite; model card: Model Card MediaPipe Selfie Segmentation |
 | `u2netp` | `u2netp.onnx` | 4.4 MB | download | Apache-2.0 | `309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8` | U-2-Net small (u2netp) salient object detection, xuebinqin/U-2-Net weights, ONNX as distributed in danielgatis/rembg release v0.0.0 |
 
+## OCR (document mode, full flavor)
+
+| Id | File | Size | Delivery | License | SHA-256 | Source |
+|---|---|---|---|---|---|---|
+| `tessdata eng` | `eng.traineddata` | 3.9 MB | bundled (`ml/src/full/assets/tessdata`) | Apache-2.0 | `7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2` | tesseract-ocr/tessdata_fast (LSTM, integer), https://github.com/tesseract-ocr/tessdata_fast, file unchanged |
+| `tessdata vie` | `vie.traineddata` | 0.5 MB | bundled (`ml/src/full/assets/tessdata`) | Apache-2.0 | `79df64caf7bcfb2a27df5042ecb6121e196eada34da774956995747636d5bfa1` | tesseract-ocr/tessdata_fast, file unchanged |
+
+The engine is Tesseract 5 through Tesseract4Android 4.8.0 (`com.github.adaptech-cz.Tesseract4Android:tesseract4android`, JitPack, Apache-2.0). Its native libraries are 16 KB aligned and link libc++ statically; they bundle Leptonica (BSD-2-Clause), libjpeg-turbo (IJG, BSD-3-Clause, Zlib) and libpng (libpng-2.0). The foss flavor has no OCR.
 ## Excluded
 
 | Model | Reason |
