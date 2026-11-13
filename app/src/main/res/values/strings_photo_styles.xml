@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="photo_style">Style</string>
+    <string name="photo_style_tone">Tone</string>
+    <string name="photo_style_warmth">Warmth</string>
+    <string name="photo_style_color">Colour</string>
+    <string name="photo_style_standard">Standard</string>
+    <string name="photo_style_rich">Rich contrast</string>
+    <string name="photo_style_vibrant">Vibrant</string>
+    <string name="photo_style_warm">Warm</string>
+    <string name="photo_style_cool">Cool</string>
+    <string name="photo_style_muted">Muted</string>
+    <string name="photo_style_save">Save preset</string>
+    <string name="photo_style_preset_name">Style %1$s / %2$s / %3$s</string>
+    <string name="photo_style_saved">Saved editor preset \"%1$s\"</string>
+    <string name="photo_style_save_failed">Could not save the preset</string>
+</resources>

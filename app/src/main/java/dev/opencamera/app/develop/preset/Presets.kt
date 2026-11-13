@@ -195,6 +195,8 @@ class PresetRepository(private val dir: File, private val looks: () -> List<Look
     }
 
     companion object {
+        /** User presets live in ilesDir/<DIR_NAME>; the camera's style presets are saved there too. */
+        const val DIR_NAME = "develop-presets"
         private const val ORDER = "order.txt"
 
         val PARAMETRIC = listOf(

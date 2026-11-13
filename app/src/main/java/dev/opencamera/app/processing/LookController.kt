@@ -170,12 +170,21 @@ class LookController(
         refresh()
     }
 
+    /** Saves new style values and re-renders the preview when the style is the selected look. */
+    fun setStyle(style: PhotoStyle) {
+        prefs.style = style
+        if (prefs.lookId == PhotoStyles.LOOK_ID) {
+            applied = null
+            refresh()
+        }
+    }
+
     /** ML steps for the next saved photo (portrait, beauty); set by the capture screen. */
     var captureOps: () -> AiOps? = { null }
 
     /** Queues [uri] for background rendering if a look, frame or ML step is active. */
     fun onPhotoSaved(uri: Uri) {
-        val look = _lookId.value.takeIf { repository.descriptor(it) != null }
+        val look = _lookId.value.takeIf { repository.descriptor(it) != null }?.let { prefs.captureLookId(it) }
         val frame = prefs.watermark
         val ops = runCatching { captureOps() }.getOrNull()?.takeUnless { it.isEmpty }
         if (look == null && frame == WatermarkTemplate.NONE && ops == null) return

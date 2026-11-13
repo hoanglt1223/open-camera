@@ -5,6 +5,8 @@
 
 package dev.opencamera.app.ui.overlay
 
+import dev.opencamera.app.processing.PhotoStyle
+import dev.opencamera.app.processing.PhotoStyles
 import android.graphics.RectF
 import android.os.Build
 import android.provider.MediaStore
@@ -209,7 +211,7 @@ private fun CameraUiState.forTopBar() = CameraUiState(
     lookId = lookId, timer = timer,
 )
 
-private fun CameraUiState.forLooks() = CameraUiState(looks = looks, lookId = lookId)
+private fun CameraUiState.forLooks() = CameraUiState(looks = looks, lookId = lookId, style = style)
 
 private fun CameraUiState.forLens() = CameraUiState(minZoom = minZoom, maxZoom = maxZoom, lensChips = lensChips)
 
@@ -279,7 +281,12 @@ fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiS
                     ui.looksOpen && state.cameraMode == CameraMode.PHOTO,
                     enter = s.enter(), exit = s.exit(),
                 ) {
-                    LooksStrip(state.forLooks(), actions)
+                    Column {
+                        LooksStrip(state.forLooks(), actions)
+                        AnimatedVisibility(state.lookId == PhotoStyles.LOOK_ID, enter = s.enter(), exit = s.exit()) {
+                            StylePanel(state.style, actions)
+                        }
+                    }
                 }
                 val pro = state.pro
                 val showPro = state.uiMode == UiMode.PRO && pro != null && pro.available
@@ -1254,6 +1261,59 @@ private fun LooksStrip(state: CameraUiState, actions: CameraUiActions) {
     }
 }
 
+private enum class StyleAxis(val label: Int) { TONE(R.string.photo_style_tone), WARMTH(R.string.photo_style_warmth), COLOR(R.string.photo_style_color) }
+
+private val STYLE_PRESET_LABELS = mapOf(
+    "standard" to R.string.photo_style_standard, "rich" to R.string.photo_style_rich,
+    "vibrant" to R.string.photo_style_vibrant, "warm" to R.string.photo_style_warm,
+    "cool" to R.string.photo_style_cool, "muted" to R.string.photo_style_muted,
+)
+
+/** Style presets, the axis being tuned (plus save) and one dial for it. */
+@Composable
+private fun StylePanel(style: PhotoStyle, actions: CameraUiActions) {
+    CountRecompositions("StylePanel")
+    var axis by remember { mutableStateOf(StyleAxis.TONE) }
+    val presetIndex = PhotoStyles.presetIndex(style)
+    Column(Modifier.fillMaxWidth().testTag("style_panel"), horizontalAlignment = Alignment.CenterHorizontally) {
+        dev.opencamera.app.develop.ui.compose.ChipRow(
+            PhotoStyles.PRESETS, label = { stringResource(STYLE_PRESET_LABELS.getValue(it.first)) },
+            selected = { PhotoStyles.PRESETS.indexOf(it) == presetIndex },
+        ) { _, p -> actions.setStyle(p.second) }
+        val save = stringResource(R.string.photo_style_save)
+        dev.opencamera.app.develop.ui.compose.ChipRow(
+            StyleAxis.entries + listOf(null),
+            label = { a -> if (a == null) save else stringResource(a.label) },
+            selected = { it == axis },
+            dirty = { a -> a != null && valueOf(style, a) != 0 },
+        ) { _, a -> if (a == null) actions.saveStylePreset() else axis = a }
+        dev.opencamera.app.develop.ui.compose.RulerDial(
+            label = stringResource(axis.label),
+            value = valueOf(style, axis).toFloat(),
+            min = -100f, max = 100f, step = 1f, default = 0f,
+            format = { PhotoStyles.label(it.toInt()) },
+            onChange = { v ->
+                val n = PhotoStyles.fromSlider(v)
+                actions.setStyle(
+                    when (axis) {
+                        StyleAxis.TONE -> style.copy(tone = n)
+                        StyleAxis.WARMTH -> style.copy(warmth = n)
+                        StyleAxis.COLOR -> style.copy(color = n)
+                    },
+                )
+            },
+            onCommit = {},
+            modifier = Modifier.padding(horizontal = 24.dp),
+        )
+    }
+}
+
+private fun valueOf(s: PhotoStyle, axis: StyleAxis) = when (axis) {
+    StyleAxis.TONE -> s.tone
+    StyleAxis.WARMTH -> s.warmth
+    StyleAxis.COLOR -> s.color
+}
+
 const val LOOK_COLOR_MATCH = "__color_match__"
 
 private const val MODE_DIP = 0.32f
@@ -1264,6 +1324,7 @@ val LabelShadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = .
 /** A stand-in swatch per look (landscape-like gradient tinted by the look id). */
 private fun lookSwatch(id: String, index: Int): Brush {
     if (id == "none") return Brush.verticalGradient(listOf(Color(0xFF6A8FB8), Color(0xFFC9B28D), Color(0xFF3B2D24)))
+    if (id == PhotoStyles.LOOK_ID) return Brush.linearGradient(listOf(Color(0xFF2B3A55), Color(0xFFE8B86D), Color(0xFFD9534F)))
     if (id == LOOK_COLOR_MATCH) return Brush.sweepGradient(listOf(Color(0xFFFF7A45), Color(0xFF4C8DFF), Color(0xFF34C759), Color(0xFFFF7A45)))
     val hue = ((id.hashCode() and 0x7fffffff) % 360).toFloat()
     val mono = id.contains("mono") || id.contains("noir") || id.contains("bw")

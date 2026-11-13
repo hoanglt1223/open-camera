@@ -8,6 +8,7 @@ package dev.opencamera.app.processing
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.preference.PreferenceManager
+import dev.opencamera.app.R
 import dev.opencamera.pipeline.looks.CubeParser
 import dev.opencamera.pipeline.looks.LookDescriptor
 import dev.opencamera.pipeline.looks.LookParams
@@ -60,12 +61,27 @@ class LooksRepository private constructor(context: Context) {
         all = null
     }
 
-    fun descriptor(id: String?) = descriptors.firstOrNull { it.id == id }
+    /** Looks plus the photographic style ids, which are not listed in [descriptors]. */
+    fun descriptor(id: String?): LookDescriptor? =
+        if (PhotoStyles.isStyle(id)) PhotoStyles.descriptor(id!!, app.getString(R.string.photo_style)) else descriptors.firstOrNull { it.id == id }
 
     /** Render parameters for [id], or null for "no look". Blocking; call off the main thread. */
     fun params(id: String?, intensity: Float): LookParams? {
+        if (PhotoStyles.isStyle(id)) return styleParams(id!!)
         val d = descriptor(id) ?: return null
         return LookParams.of(d, lut(d), intensity)
+    }
+
+    private var styleLut: Pair<PhotoStyle, Lut3d>? = null
+
+    /** The selected style ([PhotoStyles.LOOK_ID]) reads the saved values; a frozen id carries its own. */
+    @Synchronized
+    private fun styleParams(id: String): LookParams {
+        val style = PhotoStyles.parseFrozen(id)
+            ?: PhotoStyles.load(PreferenceManager.getDefaultSharedPreferences(app))
+        val lut = styleLut?.takeIf { it.first == style }?.second
+            ?: PhotoStyles.lut(style).also { styleLut = style to it }
+        return LookParams.of(PhotoStyles.descriptor(id, ""), lut, 1f)
     }
 
     @Synchronized
@@ -126,6 +142,14 @@ class LookPreferences(context: Context) {
     val intensity: Float get() = prefs.getInt(KEY_INTENSITY, 100).coerceIn(0, 100) / 100f
 
     val watermark: WatermarkTemplate get() = WatermarkTemplate.fromKey(prefs.getString(KEY_WATERMARK, null))
+
+    /** Look id for a photo being queued: the selected style is frozen to its current values. */
+    fun captureLookId(id: String = lookId): String =
+        if (id == PhotoStyles.LOOK_ID) PhotoStyles.frozenId(PhotoStyles.load(prefs)) else id
+
+    var style: PhotoStyle
+        get() = PhotoStyles.load(prefs)
+        set(value) = PhotoStyles.save(prefs, value)
 
     companion object {
         const val NONE = "none"

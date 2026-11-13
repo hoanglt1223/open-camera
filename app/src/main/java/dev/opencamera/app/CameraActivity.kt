@@ -5,6 +5,9 @@
 
 package dev.opencamera.app
 
+import dev.opencamera.app.develop.preset.PresetRepository
+import dev.opencamera.app.processing.PhotoStyle
+import dev.opencamera.app.processing.PhotoStyles
 import android.animation.ValueAnimator
 import android.app.KeyguardManager
 import android.content.ClipData
@@ -2883,10 +2886,12 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     private fun refreshLookPicker() {
         val looks = viewModel.lookController
         val items = listOf(LookPreferences.NONE to getString(R.string.look_none)) +
+                (PhotoStyles.LOOK_ID to getString(R.string.photo_style)) +
                 looks.repository.descriptors.map { it.id to it.name } +
                 (COLOR_MATCH_ITEM to getString(R.string.look_color_match))
         lookPickerView.setLooks(items, looks.lookId.value)
-        uiState.update { s -> s.copy(looks = items.map { (id, name) -> LookItem(id, name) }) }
+        val style = LookPreferences(this).style
+        uiState.update { s -> s.copy(looks = items.map { (id, name) -> LookItem(id, name) }, style = style) }
     }
 
     private fun setupLookPicker() {
@@ -3611,6 +3616,31 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         }
         override fun pauseResume() = act("pause") { videoRecordingStateButton.performClick() }
         override fun selectLook(id: String) = act("look") { lookPickerView.onLookSelected?.invoke(id) }
+        override fun setStyle(style: PhotoStyle) = act("style") {
+            val s = style.clamped()
+            uiState.update { it.copy(style = s) }
+            viewModel.lookController.setStyle(s)
+        }
+        override fun saveStylePreset() = act("style preset") {
+            val style = uiState.value.style
+            val app = applicationContext
+            val name = getString(
+                R.string.photo_style_preset_name,
+                PhotoStyles.label(style.tone), PhotoStyles.label(style.warmth), PhotoStyles.label(style.color),
+            )
+            lifecycleScope.launch {
+                val saved = withContext(Dispatchers.IO) {
+                    FeatureGuard.attempt(LOG_TAG, "save style preset") {
+                        PresetRepository(java.io.File(app.filesDir, PresetRepository.DIR_NAME)) { emptyList() }
+                            .save(name, PhotoStyles.PRESET_GROUPS, PhotoStyles.toEditStack(style))
+                    }
+                }
+                Toast.makeText(
+                    app, if (saved != null) getString(R.string.photo_style_saved, name) else getString(R.string.photo_style_save_failed),
+                    Toast.LENGTH_SHORT,
+                ).show()
+            }
+        }
         override fun allSettings() = act("settings") {
             PerfTrace.begin(PerfTrace.OPEN_SETTINGS)
             openSettings()
