@@ -15,5 +15,10 @@
     <string name="stream_fallback_baseline">Camera mở ở chế độ cơ bản: một số tính năng bị tắt cho camera này</string>
     <string name="stream_fallback_failed">Không thể mở camera</string>
     <string name="full_res_fallback">Không hỗ trợ chụp đa khung độ phân giải đầy đủ; đang dùng luồng camera chuẩn</string>
+    <string name="raw_merged_unsupported">Camera này không hỗ trợ RAW ghép; đang lưu JPEG</string>
+    <string name="raw_merged_low_memory">Không đủ bộ nhớ trống cho RAW ghép; lưu DNG một khung hoặc JPEG</string>
+    <string name="raw_merged_capture_failed">Chuỗi chụp RAW không hoàn tất; lưu phần đã chụp được</string>
+    <string name="raw_merged_failed">Ghép RAW thất bại; lưu DNG một khung</string>
+    <string name="raw_dng_failed">Không lưu được DNG; chỉ lưu JPEG</string>
     <string name="camera_change_pending">Sẽ áp dụng khi chụp xong</string>
 </resources>

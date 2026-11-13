@@ -1323,6 +1323,12 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         }
 
         launch {
+            viewModel.mergedRaw.notices.collect { res ->
+                Toast.makeText(this@CameraActivity, res, Toast.LENGTH_LONG).show()
+            }
+        }
+
+        launch {
             viewModel.fullResNotice.collect { res ->
                 Toast.makeText(this@CameraActivity, res, Toast.LENGTH_SHORT).show()
                 rebindIfAnalysisChanged()

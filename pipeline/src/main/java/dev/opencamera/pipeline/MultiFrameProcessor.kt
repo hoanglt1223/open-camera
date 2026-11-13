@@ -61,6 +61,12 @@ class Burst(width: Int, height: Int, val capacity: Int) : AutoCloseable {
         )
     }
 
+    /** Develops the finished [merger] (white balance and colour from [params]) into the burst. */
+    fun addMergedRaw(merger: RawMerger, params: RawDevelopParams): Boolean {
+        check(handle != 0L) { "Burst closed" }
+        return NativePipeline.nativeRawMergeDevelop(merger.nativeHandle(), handle, params.toArray())
+    }
+
     /** Box-downsampled luma of frame [index] ((width / factor) x (height / factor)), or null. */
     fun exportLuma(index: Int, factor: Int): ByteArray? {
         check(handle != 0L) { "Burst closed" }

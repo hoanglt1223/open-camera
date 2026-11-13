@@ -116,6 +116,7 @@ import dev.opencamera.app.models.ShadingMode
 import dev.opencamera.app.models.ThermalStatus
 import dev.opencamera.app.models.TimerMode
 import dev.opencamera.app.multiframe.ManualStill
+import dev.opencamera.app.multiframe.MergedRawCapture
 import dev.opencamera.app.multiframe.MultiFrameCaptureController
 import dev.opencamera.app.processing.BurstJobQueue
 import dev.opencamera.app.modes.CreativeCaptureController
@@ -204,6 +205,9 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
     val qrImageAnalyzer = QrImageAnalyzer(applicationContext, viewModelScope)
 
     val multiFrame = MultiFrameCaptureController(applicationContext, BurstJobQueue.get(applicationContext))
+
+    /** Pro "RAW merged" shots; Pro mode turns it on. */
+    val mergedRaw = MergedRawCapture(applicationContext, multiFrame)
 
     /** Moon, long exposure, light trails, passer-by removal, focus stacking, sports burst. */
     val creative = CreativeCaptureController(applicationContext, multiFrame, BurstJobQueue.get(applicationContext))
@@ -1351,6 +1355,10 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
             return
         }
 
+        if (allowMultiFrame && takeMergedRawPhoto()) {
+            return
+        }
+
         // No JPEG stream is bound in the full-resolution session: shots come from the app path.
         if (multiFrame.fullRes) {
             takeFullResPhoto(allowMultiFrame)
@@ -1615,6 +1623,49 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         }
         return true
     }
+    /**
+     * Pro "RAW merged": a RAW burst merged into a linear DNG plus a JPEG. Returns false when it
+     * does not apply; when no RAW frame could be taken, a regular JPEG is taken instead.
+     */
+    @SuppressLint("RestrictedApi")
+    private fun takeMergedRawPhoto(): Boolean {
+        if (!mergedRaw.enabled || inSingleCaptureMode.value || cameraFacing.value == CameraFacing.FRONT) {
+            return false
+        }
+        val cameraInfo = cameraController.cameraInfo ?: return false
+        cameraState.value = CameraState.TAKING_PHOTO
+        burstJob = viewModelScope.launch {
+            emitEvent(Event.PhotoCaptureStatus.CaptureStarted)
+            cameraSoundsUtils.playShutterClick()
+            val shot = try {
+                mergedRaw.capture(cameraInfo)
+            } catch (e: CancellationException) {
+                cameraState.value = CameraState.IDLE
+                Log.i(LOG_TAG, "Merged RAW cancelled")
+                throw e
+            } catch (e: Throwable) {
+                Log.e(LOG_TAG, "Merged RAW capture failed, taking a JPEG", e)
+                null
+            }
+            cameraState.value = CameraState.IDLE
+            if (shot == null) {
+                takePhoto(allowMultiFrame = false)
+                return@launch
+            }
+            viewModelScope.launch {
+                mergedRaw.save(shot, location.value) { uri ->
+                    uri ?: return@save
+                    mediaRepository.broadcastNewPicture(uri)
+                    lookController.onPhotoSaved(uri)
+                    emitEvent(
+                        Event.PhotoCaptureStatus.ImageSaved(ImageCapture.OutputFileResults(uri, ImageFormat.JPEG), null)
+                    )
+                }
+            }
+        }
+        return true
+    }
+
     /** One RAW_SENSOR still from the RAW session's ImageCapture (main thread). */
     private suspend fun takeRawImage(): ImageProxy = suspendCancellableCoroutine { cont ->
         cameraController.takePicture(cameraExecutor, object : ImageCapture.OnImageCapturedCallback() {

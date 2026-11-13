@@ -85,4 +85,27 @@ object NativePipeline {
     ): DoubleArray?
 
     external fun nativeReleaseBurst(handle: Long)
+
+    external fun nativeRawMergeBegin(
+        width: Int,
+        height: Int,
+        raw: ByteBuffer,
+        rowStride: Int,
+        params: FloatArray,
+        lensShading: FloatArray?,
+        lensShadingWidth: Int,
+        lensShadingHeight: Int,
+    ): Long
+
+    external fun nativeRawMergeAdd(handle: Long, raw: ByteBuffer, rowStride: Int, black: FloatArray): Float
+
+    external fun nativeRawMergeFinish(handle: Long): Boolean
+
+    external fun nativeRawMergeInfo(handle: Long): FloatArray?
+
+    external fun nativeRawMergeRows(handle: Long, y0: Int, rows: Int, out: ByteBuffer): Boolean
+
+    external fun nativeRawMergeDevelop(handle: Long, burst: Long, params: FloatArray): Boolean
+
+    external fun nativeRawMergeRelease(handle: Long)
 }

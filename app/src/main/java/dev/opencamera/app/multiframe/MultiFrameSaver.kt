@@ -15,6 +15,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import androidx.exifinterface.media.ExifInterface
 import java.io.File
+import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -56,36 +57,39 @@ object MultiFrameSaver {
             temp.writeBytes(jpeg)
             writeExif(temp, width, height, meta)
 
-            val name = SimpleDateFormat(FILENAME_FORMAT, Locale.US).format(meta.timestamp)
-            val values = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, name)
-                put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-                put(MediaStore.Images.Media.DATE_TAKEN, meta.timestamp)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    put(MediaStore.Images.Media.RELATIVE_PATH, STORAGE_DESTINATION)
-                    put(MediaStore.MediaColumns.IS_PENDING, 1)
-                }
-            }
-            val resolver = context.contentResolver
-            val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-                ?: return null
-            try {
-                resolver.openOutputStream(uri)?.use { out -> temp.inputStream().use { it.copyTo(out) } }
-                    ?: error("Cannot open $uri")
-            } catch (e: Exception) {
-                resolver.delete(uri, null, null)
-                throw e
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                resolver.update(
-                    uri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) },
-                    null, null
-                )
-            }
-            return uri
+            return insert(context, "image/jpeg", meta.timestamp) { out -> temp.inputStream().use { it.copyTo(out) } }
         } finally {
             temp.delete()
         }
+    }
+
+    /**
+     * Adds a DCIM/Camera entry of [mimeType] filled by [write]. The entry stays pending until
+     * [write] returns and is deleted if it throws. Returns null when MediaStore refuses it.
+     */
+    fun insert(context: Context, mimeType: String, timestamp: Long, write: (OutputStream) -> Unit): Uri? {
+        val name = SimpleDateFormat(FILENAME_FORMAT, Locale.US).format(timestamp)
+        val values = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, name)
+            put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+            put(MediaStore.Images.Media.DATE_TAKEN, timestamp)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Images.Media.RELATIVE_PATH, STORAGE_DESTINATION)
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+        }
+        val resolver = context.contentResolver
+        val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return null
+        try {
+            resolver.openOutputStream(uri)?.use(write) ?: error("Cannot open $uri")
+        } catch (e: Throwable) {
+            resolver.delete(uri, null, null)
+            throw e
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            resolver.update(uri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }, null, null)
+        }
+        return uri
     }
 
     private fun writeExif(file: File, width: Int, height: Int, meta: Metadata) {

@@ -43,6 +43,7 @@
     <string name="pro_format_jpeg">JPEG</string>
     <string name="pro_format_raw">RAW</string>
     <string name="pro_format_raw_jpeg">RAW+JPEG</string>
+    <string name="pro_format_raw_merged">RAW ghép</string>
     <string name="pro_reset">Đặt lại</string>
     <string name="pro_reset_description">Đặt lại điều khiển thủ công cho ống kính này</string>
     <string name="pro_state_on">bật</string>

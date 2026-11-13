@@ -32,6 +32,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import dev.opencamera.app.R
 import dev.opencamera.app.models.CameraConfiguration
 import dev.opencamera.app.models.PhotoOutputFormat
+import dev.opencamera.app.multiframe.RawMode
 import dev.opencamera.app.repositories.PreferencesRepository
 import dev.opencamera.app.ui.views.PreviewFrames
 import dev.opencamera.app.viewmodels.CameraViewModel
@@ -175,6 +176,7 @@ class ProModeUi(
         afLocked = false
         appliedRequest = null
         basePending = true
+        mergedRawSupported = cameraConfiguration is CameraConfiguration.Photo && viewModel.mergedRaw.supported(cameraInfo)
         caps = ProCapabilities.from(cameraInfo).also {
             settings = store.load(storeKey(it)).clampTo(it.ranges)
             Log.d(LOG_TAG, "Camera ${it.cameraId}: manualSensor=${it.manualSensor} " +
@@ -206,6 +208,7 @@ class ProModeUi(
         viewModel.multiFrame.manualExposureActive = active && settings.manualExposure
         viewModel.multiFrame.manualStill =
             if (active) dev.opencamera.app.multiframe.ManualStill.plan(settings.exposureNs, settings.iso) else null
+        viewModel.mergedRaw.enabled = active && rawMode() == RawMode.MERGED
         val control = control ?: return
         val base = baseOptions ?: return
         val request = settings.copy(peaking = false, zebra = false, histogram = false).takeIf { active }
@@ -274,13 +277,26 @@ class ProModeUi(
         android.widget.Toast.makeText(activity, R.string.pro_aids_unavailable, android.widget.Toast.LENGTH_LONG).show()
     }
 
+    /** Merged RAW needs a RAW_SENSOR output with manual sensor control; checked once per bind. */
+    private var mergedRawSupported = false
+
+    private fun rawMode(): RawMode {
+        val photo = configuration as? CameraConfiguration.Photo ?: return RawMode.OFF
+        return when {
+            store.rawMerged && mergedRawSupported -> RawMode.MERGED
+            photo.photoOutputFormat == PhotoOutputFormat.RAW || photo.photoOutputFormat == PhotoOutputFormat.RAW_JPEG -> RawMode.SINGLE
+            else -> RawMode.OFF
+        }
+    }
+
     private fun formatLabel(): String? {
         val photo = configuration as? CameraConfiguration.Photo ?: return null
-        if (PhotoOutputFormat.RAW_JPEG !in photo.camera.supportedPhotoOutputFormats) return null
+        if (PhotoOutputFormat.RAW_JPEG !in photo.camera.supportedPhotoOutputFormats && !mergedRawSupported) return null
         return activity.getString(
-            when (photo.photoOutputFormat) {
-                PhotoOutputFormat.RAW -> R.string.pro_format_raw
-                PhotoOutputFormat.RAW_JPEG -> R.string.pro_format_raw_jpeg
+            when {
+                rawMode() == RawMode.MERGED -> R.string.pro_format_raw_merged
+                photo.photoOutputFormat == PhotoOutputFormat.RAW -> R.string.pro_format_raw
+                photo.photoOutputFormat == PhotoOutputFormat.RAW_JPEG -> R.string.pro_format_raw_jpeg
                 else -> R.string.pro_format_jpeg
             }
         )
@@ -311,24 +327,39 @@ class ProModeUi(
         render()
     }
 
-    // Changing these preferences makes the view model rebind, which calls bind() again.
+    // JPEG -> RAW+JPEG -> RAW -> RAW merged -> JPEG, skipping what the camera lacks. The camera's
+    // own RAW options make the view model rebind, which calls bind() again; RAW merged keeps the
+    // JPEG session and only changes what the shutter does.
     override fun onCycleFormat() {
         val photo = configuration as? CameraConfiguration.Photo ?: return
         val supported = photo.camera.supportedPhotoOutputFormats
-        when (photo.photoOutputFormat) {
-            PhotoOutputFormat.RAW_JPEG -> if (PhotoOutputFormat.RAW in supported) {
-                preferencesRepository.disableJpegWithRaw.value = true
-            } else {
+        val merged = rawMode() == RawMode.MERGED
+        when {
+            merged -> {
+                store.rawMerged = false
                 preferencesRepository.enableRawImageCapture.value = false
             }
 
-            PhotoOutputFormat.RAW -> preferencesRepository.enableRawImageCapture.value = false
+            photo.photoOutputFormat == PhotoOutputFormat.RAW_JPEG && PhotoOutputFormat.RAW in supported ->
+                preferencesRepository.disableJpegWithRaw.value = true
 
-            else -> {
+            photo.photoOutputFormat == PhotoOutputFormat.RAW_JPEG || photo.photoOutputFormat == PhotoOutputFormat.RAW ->
+                if (mergedRawSupported) {
+                    store.rawMerged = true
+                    preferencesRepository.enableRawImageCapture.value = false
+                } else {
+                    preferencesRepository.enableRawImageCapture.value = false
+                }
+
+            PhotoOutputFormat.RAW_JPEG in supported -> {
                 preferencesRepository.disableJpegWithRaw.value = false
                 preferencesRepository.enableRawImageCapture.value = true
             }
+
+            mergedRawSupported -> store.rawMerged = true
         }
+        applyOptions()
+        render()
     }
 
     override fun onReset() {

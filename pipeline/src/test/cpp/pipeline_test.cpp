@@ -20,6 +20,7 @@
 #include "merge.h"
 #include "pipeline.h"
 #include "raw.h"
+#include "rawmerge.h"
 #include "stack.h"
 #include "superres.h"
 
@@ -340,6 +341,73 @@ void testRawDevelop() {
     check(cr > 200 && cb < 110, "red stays red after demosaic");
 }
 
+
+void testRawMerge() {
+    // Bayer burst of one scene, shifted by whole CFA blocks between frames, with sensor noise.
+    // Frame 5 has a bright block the others do not: the merge must not ghost it in.
+    const int w = 512, h = 384, n = 8;
+    const float black = 64, white = 1023, sigma = 12;
+    Scene scene;
+    std::mt19937 rng(11);
+    std::normal_distribution<float> noise(0.0f, sigma);
+    auto truth = [&](int x, int y) { return std::clamp(scene(float(x), float(y)) * 2.5f, 0.0f, 900.0f); };
+    auto frame = [&](int sx, int sy, bool ghost) {
+        std::vector<uint16_t> raw(size_t(w) * h);
+        for (int y = 0; y < h; ++y)
+            for (int x = 0; x < w; ++x) {
+                float v = truth(x + sx, y + sy);
+                if (ghost && x >= 200 && x < 264 && y >= 160 && y < 224) v = 850;
+                raw[size_t(y) * w + x] = uint16_t(std::clamp(black + v + noise(rng), 0.0f, white));
+            }
+        return raw;
+    };
+    const float blacks[4] = {black, black, black, black};
+    RawMergeParams p;
+    p.white = white;
+    RawMerger merger;
+    std::string error;
+    const std::vector<uint16_t> ref = frame(0, 0, false);
+    check(merger.begin(w, h, p, ref.data(), w * 2, blacks, &error), "raw merge starts");
+    const int shifts[n][2] = {{0, 0}, {2, 0}, {0, 2}, {-2, 2}, {4, -2}, {2, 2}, {-4, 0}, {0, -4}};
+    float ghostWeight = 1;
+    for (int i = 1; i < n; ++i) {
+        const std::vector<uint16_t> f = frame(shifts[i][0], shifts[i][1], i == 5);
+        float weight = 0;
+        check(merger.add(f.data(), w * 2, blacks, &weight, &error), "raw frame aligns and merges");
+        if (i == 5) ghostWeight = weight;
+    }
+    check(merger.finish(&error), "raw merge finishes");
+    const float scale = 65535.0f / (white - black);
+    double errSingle = 0, errMerged = 0;
+    int count = 0;
+    for (int y = 32; y < h - 32; ++y)
+        for (int x = 32; x < w - 32; ++x) {
+            if (x >= 180 && x < 284 && y >= 140 && y < 244) continue;
+            const double t = truth(x, y);
+            const double single = (double(ref[size_t(y) * w + x]) - black) - t;
+            const double merged = merger.mosaic()[size_t(y) * w + x] / scale - t;
+            errSingle += single * single;
+            errMerged += merged * merged;
+            ++count;
+        }
+    const double rmsSingle = std::sqrt(errSingle / count), rmsMerged = std::sqrt(errMerged / count);
+    double ghost = 0;
+    for (int y = 176; y < 208; ++y)
+        for (int x = 216; x < 248; ++x) ghost = std::max(ghost, std::abs(double(merger.mosaic()[size_t(y) * w + x] / scale - truth(x, y))));
+    std::printf("  raw merge: rms single %.2f merged %.2f, ghost frame weight %.2f, max ghost error %.1f\n",
+                rmsSingle, rmsMerged, ghostWeight, ghost);
+    check(rmsMerged < rmsSingle / 2.0, "merged mosaic halves the noise of one frame");
+    check(ghost < 6 * sigma, "moving block is not merged in");
+
+    std::vector<uint16_t> rgb(size_t(w) * 3 * 4);
+    check(merger.demosaicRows(100, 4, rgb.data()), "merged mosaic demosaics");
+    check(!merger.demosaicRows(h - 2, 4, rgb.data()), "rows past the end are rejected");
+    RawMerger empty;
+    check(!empty.add(ref.data(), w * 2, blacks, nullptr, &error), "add before begin is rejected");
+    p.white = 10;
+    check(!empty.begin(w, h, p, ref.data(), w * 2, blacks, &error), "white below black is rejected");
+}
+
 void testToneMap() {
     std::mt19937 rng(4);
     const int w = 640, h = 480;
@@ -521,6 +589,7 @@ int main(int argc, char **argv) {
     testSuperRes();
     testSuperResCrop();
     testRawDevelop();
+    testRawMerge();
     testToneMap();
     testStackOps();
     testFocusStack();

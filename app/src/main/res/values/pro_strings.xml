@@ -43,6 +43,7 @@
     <string name="pro_format_jpeg">JPEG</string>
     <string name="pro_format_raw">RAW</string>
     <string name="pro_format_raw_jpeg">RAW+JPEG</string>
+    <string name="pro_format_raw_merged">RAW merged</string>
     <string name="pro_reset">Reset</string>
     <string name="pro_reset_description">Reset manual controls for this lens</string>
     <string name="pro_state_on">on</string>
