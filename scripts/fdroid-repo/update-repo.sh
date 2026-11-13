@@ -26,7 +26,7 @@ ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 dl=$(mktemp -d)
 trap 'rm -rf "$dl"' EXIT
 gh release download "$TAG" -R "$SRC_REPO" -p '*.apk' -D "$dl"
-apk=$(ls "$dl"/*.apk)
+apk=$(ls "$dl"/*.apk | grep -v -- '-foss\.apk$')
 [ "$(echo "$apk" | wc -l)" -eq 1 ] || { echo "expected exactly one APK in $TAG" >&2; exit 1; }
 
 signers=$("$APKSIGNER" verify --print-certs "$apk" | grep -c 'certificate SHA-256 digest' || true)
