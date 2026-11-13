@@ -811,7 +811,8 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
     ) { cameraMode, cameraState, cancellable ->
         when (cameraState) {
             CameraState.IDLE -> true
-            CameraState.COUNTDOWN -> cameraMode == CameraMode.VIDEO
+            // The smart timer waits indefinitely, so its shutter stays live to cancel it.
+            CameraState.COUNTDOWN -> cameraMode == CameraMode.VIDEO || timerMode.value == TimerMode.SMART
             CameraState.TAKING_PHOTO -> cancellable
             CameraState.PRE_RECORDING_VIDEO -> false
             CameraState.RECORDING_VIDEO -> true

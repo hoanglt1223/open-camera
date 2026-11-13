@@ -68,6 +68,21 @@ enum class HardwareKey(
         R.string.zoom_buttons_title,
         R.string.zoom_buttons_invert_title,
         R.string.zoom_buttons_invert_summary,
+    ),
+    HEADSET(
+        KeyEvent.KEYCODE_HEADSETHOOK,
+        null,
+        false,
+        GestureAction.SHUTTER,
+        R.string.headset_button_action_title,
+    ),
+    MEDIA_PLAY(
+        // Bluetooth earbuds and most remote shutters send play/pause.
+        KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+        null,
+        false,
+        GestureAction.SHUTTER,
+        R.string.media_button_action_title,
     );
 
     val isTwoWayKey = secondKeycode != null

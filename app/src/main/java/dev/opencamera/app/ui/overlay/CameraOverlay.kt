@@ -484,6 +484,7 @@ private fun TimerIcon(state: CameraUiState, actions: CameraUiActions, idle: Bool
         TimerMode.OFF -> null
         TimerMode.ON_3S -> "3"
         TimerMode.ON_10S -> "10"
+        TimerMode.SMART -> "A"
     },
     enabled = idle, onClick = { actions.control(Control.TIMER) },
 )

@@ -491,6 +491,8 @@ class PreferencesRepository(
                 HardwareKey.MUTE -> "mute_button"
                 HardwareKey.VOLUME -> "volume_buttons"
                 HardwareKey.ZOOM -> "zoom_buttons"
+                HardwareKey.HEADSET -> "headset_button"
+                HardwareKey.MEDIA_PLAY -> "media_button"
             }
 
         fun GestureAction.toPreferenceString() = when (this) {
