@@ -18,8 +18,8 @@ RepoType: git
 Repo: https://github.com/hoanglt1223/open-camera.git
 
 Builds:
-  - versionName: 0.1.0-beta3
-    versionCode: 3
+  - versionName: 0.1.0-beta4
+    versionCode: 4
     commit: COMMIT
     subdir: app
     gradle:
@@ -41,5 +41,5 @@ Builds:
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9.]+(-beta[0-9]+)?$
-CurrentVersion: 0.1.0-beta3
-CurrentVersionCode: 3
+CurrentVersion: 0.1.0-beta4
+CurrentVersionCode: 4

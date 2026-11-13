@@ -43,9 +43,9 @@ android_app {
     aaptflags: [
         // DO NOT EDIT THIS SECTION MANUALLY
         "--version-name",
-        "0.1.0-beta3",
+        "0.1.0-beta4",
         "--version-code",
-        "3",
+        "4",
     ],
 
     required: [
