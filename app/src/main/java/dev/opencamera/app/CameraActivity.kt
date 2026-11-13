@@ -1315,6 +1315,21 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         }
 
         launch {
+            viewModel.motionPhoto.notices.collect { res ->
+                Toast.makeText(this@CameraActivity, res, Toast.LENGTH_LONG).show()
+            }
+        }
+
+        launch {
+            viewModel.motionPhoto.bestTakeOffers.collect { offer ->
+                Snackbar.make(secondaryBottomBarLayout, R.string.motion_best_take_found, Snackbar.LENGTH_LONG)
+                    .setAnchorView(secondaryBottomBarLayout)
+                    .setAction(R.string.motion_best_take_use) { viewModel.useBestTake(offer.uri) }
+                    .show()
+            }
+        }
+
+        launch {
             viewModel.creative.messages.collect { res ->
                 Toast.makeText(this@CameraActivity, res, Toast.LENGTH_LONG).show()
             }

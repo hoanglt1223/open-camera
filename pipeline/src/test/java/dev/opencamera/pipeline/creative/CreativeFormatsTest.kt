@@ -101,6 +101,50 @@ class CreativeFormatsTest {
     }
 
     @Test
+    fun motionPhotoXmpParsesAndOffsetsPointAtTheVideo() {
+        val jpeg = fakeJpeg(true)
+        val mp4 = ByteArray(7777) { (it * 11 + 3).toByte() }
+        val file = MotionPhotoFormat.build(jpeg, mp4, 1_480_000)
+        // Locate the APP1 XMP segment the way a reader does: walk markers from SOI.
+        var p = 2
+        var xmp: String? = null
+        while (xmp == null) {
+            assertEquals(0xff.toByte(), file[p])
+            val len = ((file[p + 2].toInt() and 0xff) shl 8) or (file[p + 3].toInt() and 0xff)
+            val body = String(file, p + 4, len - 2, Charsets.ISO_8859_1)
+            if (file[p + 1] == 0xe1.toByte() && body.startsWith("http://ns.adobe.com/xap/1.0/\u0000")) {
+                xmp = body.substringAfter("\u0000")
+            }
+            p += 2 + len
+        }
+        val doc = javax.xml.parsers.DocumentBuilderFactory.newInstance().apply { isNamespaceAware = true }
+            .newDocumentBuilder().parse(xmp.byteInputStream(Charsets.UTF_8))
+        val cam = "http://ns.google.com/photos/1.0/camera/"
+        val itemNs = "http://ns.google.com/photos/1.0/container/item/"
+        val desc = doc.getElementsByTagNameNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "Description").item(0) as org.w3c.dom.Element
+        assertEquals("1", desc.getAttributeNS(cam, "MotionPhoto"))
+        assertEquals("1", desc.getAttributeNS(cam, "MotionPhotoVersion"))
+        assertEquals("1480000", desc.getAttributeNS(cam, "MotionPhotoPresentationTimestampUs"))
+        assertEquals("1", desc.getAttributeNS(cam, "MicroVideo"))
+        // Legacy offset counts back from the end of the file to the start of the video.
+        val offset = desc.getAttributeNS(cam, "MicroVideoOffset").toInt()
+        assertArrayEquals(mp4, file.copyOfRange(file.size - offset, file.size))
+        val items = doc.getElementsByTagNameNS("http://ns.google.com/photos/1.0/container/", "Item")
+        assertEquals(2, items.length)
+        val primary = items.item(0) as org.w3c.dom.Element
+        val video = items.item(1) as org.w3c.dom.Element
+        assertEquals("Primary", primary.getAttributeNS(itemNs, "Semantic"))
+        assertEquals("image/jpeg", primary.getAttributeNS(itemNs, "Mime"))
+        assertEquals("MotionPhoto", video.getAttributeNS(itemNs, "Semantic"))
+        assertEquals("video/mp4", video.getAttributeNS(itemNs, "Mime"))
+        assertEquals(mp4.size, video.getAttributeNS(itemNs, "Length").toInt())
+        // Directory lengths add up: the primary image is everything before the video, ending with EOI.
+        val primaryEnd = file.size - video.getAttributeNS(itemNs, "Length").toInt()
+        assertEquals(0xff.toByte(), file[primaryEnd - 2])
+        assertEquals(0xd9.toByte(), file[primaryEnd - 1])
+    }
+
+    @Test
     fun clipSurvivesReRendering() {
         val mp4 = ByteArray(3000) { (it * 3).toByte() }
         val original = MotionPhotoFormat.build(fakeJpeg(false), mp4, 1_234_567)

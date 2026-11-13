@@ -1447,7 +1447,7 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
                         mediaRepository.broadcastNewPicture(it)
                         if (output.imageFormat !in RAW_FORMATS) {
                             val label = oemProcessingLabel
-                            val motion = wantsMotion && motionShutterTs != 0L
+                            val motion = wantsMotion
                             if (label == null && !motion) {
                                 lookController.onPhotoSaved(it)
                             } else viewModelScope.launch {
@@ -1683,7 +1683,7 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
             multiFrame.process(captured, location.value, preferencesRepository.usePhotoJpegUltraHdr.value) { uri ->
                 uri ?: return@process
                 mediaRepository.broadcastNewPicture(uri)
-                if (wantsMotion && motionShutterTs != 0L) {
+                if (wantsMotion) {
                     viewModelScope.launch {
                         motionPhoto.embed(uri, motionShutterTs)
                         lookController.onPhotoSaved(uri)
@@ -1695,6 +1695,13 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
                     Event.PhotoCaptureStatus.ImageSaved(ImageCapture.OutputFileResults(uri, ImageFormat.JPEG), null)
                 )
             }
+        }
+    }
+
+    /** Swaps the still of the motion photo at [uri] for the offered best take. */
+    fun useBestTake(uri: Uri) {
+        viewModelScope.launch {
+            if (motionPhoto.useBestTake(uri)) mediaRepository.broadcastNewPicture(uri)
         }
     }
 

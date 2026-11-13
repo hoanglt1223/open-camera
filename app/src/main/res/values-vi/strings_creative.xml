@@ -19,6 +19,12 @@
     <string name="creative_focus_unsupported">Camera này không lấy nét thủ công được; không dùng được ghép lấy nét</string>
     <string name="motion_photo_on">Bật ảnh động</string>
     <string name="motion_photo_off">Tắt ảnh động</string>
+    <string name="motion_photo_fallback_stream">Ảnh động cần luồng khung hình trực tiếp; đã lưu ảnh thường</string>
+    <string name="motion_photo_fallback_memory">Bộ nhớ thấp: đã lưu ảnh thường, không kèm ảnh động</string>
+    <string name="motion_photo_fallback_encode">Không lưu được đoạn ảnh động; giữ ảnh thường</string>
+    <string name="motion_best_take_found">Có khung nét hơn</string>
+    <string name="motion_best_take_use">Dùng khung này</string>
+    <string name="motion_best_take_failed">Không dùng được khung nét hơn; giữ ảnh gốc</string>
     <string name="pre_shot_on">Bật chụp trước</string>
     <string name="pre_shot_off">Tắt chụp trước</string>
     <string name="look_color_match">+ Khớp màu…</string>

@@ -19,6 +19,12 @@
     <string name="creative_focus_unsupported">This camera cannot focus manually; focus stacking is unavailable</string>
     <string name="motion_photo_on">Motion on</string>
     <string name="motion_photo_off">Motion off</string>
+    <string name="motion_photo_fallback_stream">Motion photo needs the live frame stream; saved a normal photo</string>
+    <string name="motion_photo_fallback_memory">Low memory: saved a normal photo without motion</string>
+    <string name="motion_photo_fallback_encode">Motion clip could not be saved; kept the normal photo</string>
+    <string name="motion_best_take_found">Sharper take found</string>
+    <string name="motion_best_take_use">Use it</string>
+    <string name="motion_best_take_failed">Could not use the best take; kept the original photo</string>
     <string name="pre_shot_on">Pre-shot on</string>
     <string name="pre_shot_off">Pre-shot off</string>
     <string name="look_color_match">+ Match colours…</string>
