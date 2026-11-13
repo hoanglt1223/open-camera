@@ -247,7 +247,6 @@ fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiS
         // Test tags double as resource ids so UiAutomator (macrobenchmark) finds them in any locale.
         @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
         Box(Modifier.fillMaxSize().semantics { testTagsAsResourceId = true }) {
-            GlassBackdrop(state.previewRect, actions)
             PreviewChrome(state.previewRect, state.uiMode)
 
             Column(
@@ -306,8 +305,7 @@ fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiS
                 }
                 Spacer(Modifier.height(4.dp))
                 Box(
-                    if (s.glass) Modifier.padding(horizontal = 20.dp).height(48.dp).glassCapsule().padding(horizontal = 6.dp)
-                    else Modifier.height(48.dp),
+                    Modifier.height(48.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     androidx.compose.animation.AnimatedVisibility(
@@ -328,7 +326,9 @@ fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiS
     }
 }
 
-/** Rounded preview corners (masks over the SurfaceView) and the Glass bottom scrim. */
+private val GlassBar = Color(0xFF050505)
+
+/** Rounded preview corners (masks over the SurfaceView), Glass black bars and bottom scrim. */
 @Composable
 private fun BoxScope.PreviewChrome(rect: RectF?, mode: UiMode) {
     CountRecompositions("PreviewChrome")
@@ -352,11 +352,20 @@ private fun BoxScope.PreviewChrome(rect: RectF?, mode: UiMode) {
             )
         }
         if (s.glass) {
-            val top = size.height * 0.55f
-            drawRect(
-                Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = .72f)), startY = top),
-                topLeft = Offset(0f, top), size = Size(size.width, size.height - top),
-            )
+            // As in the iOS camera: the strips outside a letterboxed preview are opaque black bars;
+            // only a preview that reaches the bottom edge gets a dark scrim under the controls.
+            val bottom = rect?.bottom ?: size.height
+            if (rect != null) {
+                if (rect.top > 0f) drawRect(GlassBar, Offset.Zero, Size(size.width, rect.top))
+                if (bottom < size.height) drawRect(GlassBar, Offset(0f, bottom), Size(size.width, size.height - bottom))
+            }
+            val top = size.height * 0.6f
+            if (bottom > top + 1f) {
+                drawRect(
+                    Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = .6f)), startY = top, endY = bottom),
+                    topLeft = Offset(0f, top), size = Size(size.width, bottom - top),
+                )
+            }
         }
         if (rect != null && radiusPx > 0f) {
             val path = Path().apply {
@@ -905,8 +914,7 @@ private fun ModeCarousel(state: CameraUiState, actions: CameraUiActions, ui: Ove
                 }
                 .clip(RoundedCornerShape(50))
                 .then(
-                    if (s.glass) Modifier.background(Color.White.copy(alpha = .20f))
-                    else Modifier.background(s.accentBrush)
+                    if (s.glass) Modifier else Modifier.background(s.accentBrush)
                 )
         )
         Layout(
@@ -1161,7 +1169,7 @@ private fun Thumb(state: CameraUiState, enabled: Boolean, onClick: () -> Unit) {
             spin.snapTo(0f)
         }
     }
-    val shape = CircleShape
+    val shape = if (s.glass) RoundedCornerShape(10.dp) else CircleShape
     Box(
         Modifier
             .size(if (s.glass) 52.dp else 48.dp)
@@ -1186,7 +1194,7 @@ private fun Thumb(state: CameraUiState, enabled: Boolean, onClick: () -> Unit) {
             .uprightGlyph(LocalGlyphRotation.current)
             .graphicsLayer { scaleX = pop.value; scaleY = pop.value }
             .then(
-                if (s.glass) Modifier.glassCapsule(circle = true).padding(3.dp).clip(shape)
+                if (s.glass) Modifier.clip(shape).background(s.chip)
                 else Modifier.clip(shape).background(s.chip).border(2.dp, s.accentBrush, shape)
             ),
         contentAlignment = Alignment.Center,
