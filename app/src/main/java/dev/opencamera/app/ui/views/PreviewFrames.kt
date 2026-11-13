@@ -34,6 +34,18 @@ object PreviewFrames {
         return (pv.width * k).roundToInt().coerceAtLeast(1) to (pv.height * k).roundToInt().coerceAtLeast(1)
     }
 
+    /**
+     * Size of the whole preview surface (not just the part the viewfinder shows) scaled so its
+     * long side is [longSide]; a copy at this size is not stretched. Null before layout.
+     */
+    fun surfaceScaledSize(pv: PreviewView, longSide: Int): Pair<Int, Int>? {
+        val child = (0 until pv.childCount).map { pv.getChildAt(it) }
+            .firstOrNull { it is SurfaceView || it is TextureView } ?: return null
+        if (child.width <= 0 || child.height <= 0) return null
+        val k = longSide.toFloat() / max(child.width, child.height)
+        return (child.width * k).roundToInt().coerceAtLeast(1) to (child.height * k).roundToInt().coerceAtLeast(1)
+    }
+
     /** A new bitmap with the current frame scaled to [longSide], or null when there is no frame. */
     suspend fun copy(pv: PreviewView, longSide: Int): Bitmap? {
         val (w, h) = scaledSize(pv, longSide) ?: return null

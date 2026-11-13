@@ -1368,9 +1368,9 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         syncReadiness()
 
         // Motion photo / pre-shot: the frames up to now are the "before" part.
-        val motionShutterTs = motionPhoto.shutterTimestamp()
-        val wantsMotion = !inSingleCaptureMode.value && motionPhoto.motionPhoto.value &&
-                cameraController.imageOutputFormat == ImageCapture.OUTPUT_FORMAT_JPEG
+        val motionShot = if (!inSingleCaptureMode.value &&
+            cameraController.imageOutputFormat == ImageCapture.OUTPUT_FORMAT_JPEG
+        ) motionPhoto.beginShot(viewModelScope) else null
         if (!inSingleCaptureMode.value && motionPhoto.preShot.value) {
             viewModelScope.launch {
                 motionPhoto.savePreShot(System.currentTimeMillis()).forEach { mediaRepository.broadcastNewPicture(it) }
@@ -1447,13 +1447,13 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
                         mediaRepository.broadcastNewPicture(it)
                         if (output.imageFormat !in RAW_FORMATS) {
                             val label = oemProcessingLabel
-                            val motion = wantsMotion && motionShutterTs != 0L
-                            if (label == null && !motion) {
+                            val motion = motionShot
+                            if (label == null && motion == null) {
                                 lookController.onPhotoSaved(it)
                             } else viewModelScope.launch {
                                 // The look queue rewrites the JPEG; tag and embed first so both are carried over.
                                 label?.let { l -> withContext(Dispatchers.IO) { tagProcessingSource(it, l) } }
-                                if (motion) motionPhoto.embed(it, motionShutterTs)
+                                if (motion != null) motionPhoto.embed(it, motion)
                                 lookController.onPhotoSaved(it)
                             }
                         }
@@ -1648,8 +1648,7 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
             ?: BurstPlan(BurstKind.SINGLE, 1)
         val config = multiFrame.streamConfig
         cameraState.value = CameraState.TAKING_PHOTO
-        val motionShutterTs = motionPhoto.shutterTimestamp()
-        val wantsMotion = motionPhoto.motionPhoto.value
+        val motionShot = motionPhoto.beginShot(viewModelScope)
         burstJob = viewModelScope.launch {
             emitEvent(Event.PhotoCaptureStatus.CaptureStarted)
             cameraSoundsUtils.playShutterClick()
@@ -1683,9 +1682,9 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
             multiFrame.process(captured, location.value, preferencesRepository.usePhotoJpegUltraHdr.value) { uri ->
                 uri ?: return@process
                 mediaRepository.broadcastNewPicture(uri)
-                if (wantsMotion && motionShutterTs != 0L) {
+                if (motionShot != null) {
                     viewModelScope.launch {
-                        motionPhoto.embed(uri, motionShutterTs)
+                        motionPhoto.embed(uri, motionShot)
                         lookController.onPhotoSaved(uri)
                     }
                 } else {
@@ -1695,6 +1694,13 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
                     Event.PhotoCaptureStatus.ImageSaved(ImageCapture.OutputFileResults(uri, ImageFormat.JPEG), null)
                 )
             }
+        }
+    }
+
+    /** Swaps the still of the motion photo at [uri] for the offered best take. */
+    fun useBestTake(uri: Uri) {
+        viewModelScope.launch {
+            if (motionPhoto.useBestTake(uri)) mediaRepository.broadcastNewPicture(uri)
         }
     }
 
