@@ -70,6 +70,8 @@ object NativePipeline {
         lensShadingHeight: Int,
     ): Boolean
 
+    external fun nativeExportToneBase(handle: Long): FloatArray?
+
     external fun nativeExportLuma(handle: Long, index: Int, factor: Int, out: ByteArray): Boolean
 
     external fun nativeProcessCrop(

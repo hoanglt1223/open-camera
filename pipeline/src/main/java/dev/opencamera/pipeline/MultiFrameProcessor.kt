@@ -94,8 +94,15 @@ class Burst(width: Int, height: Int, val capacity: Int) : AutoCloseable {
             msMerge = stats[4].toLong(),
             msFinish = stats[5].toLong(),
             frameCount = frameCount,
+            toneBase = exportToneBase(),
         )
     }
+
+    /** Luma before local tone mapping of the last [process], or null. Never throws. */
+    private fun exportToneBase(): LumaPlane? = runCatching {
+        val a = NativePipeline.nativeExportToneBase(handle) ?: return null
+        LumaPlane(a[0].toInt(), a[1].toInt(), a.copyOfRange(2, a.size))
+    }.getOrNull()
 
     /** Combines the burst with a creative [op]; returns null if the native side rejected it. */
     fun stack(op: StackOp, params: StackParams = StackParams()): MergedImage? {
@@ -207,6 +214,8 @@ class MergedImage(
     val msMerge: Long = 0,
     val msFinish: Long = 0,
     val frameCount: Int,
+    /** Pre tone mapping luma at 1/[BurstGainmap.FACTOR] size, for the Ultra HDR gain map. */
+    val toneBase: LumaPlane? = null,
 ) {
     fun toJpeg(quality: Int = 95): ByteArray {
         val stream = ByteArrayOutputStream(width * height / 3)

@@ -1601,7 +1601,7 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
                 takePhoto(allowMultiFrame = false)
                 return@launch
             }
-            multiFrame.process(captured, location.value) { uri ->
+            multiFrame.process(captured, location.value, preferencesRepository.usePhotoJpegUltraHdr.value) { uri ->
                 uri ?: return@process
                 mediaRepository.broadcastNewPicture(uri)
                 lookController.onPhotoSaved(uri)
@@ -1680,7 +1680,7 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
                 _fullResNotice.tryEmit(R.string.full_res_fallback)
                 return@launch
             }
-            multiFrame.process(captured, location.value) { uri ->
+            multiFrame.process(captured, location.value, preferencesRepository.usePhotoJpegUltraHdr.value) { uri ->
                 uri ?: return@process
                 mediaRepository.broadcastNewPicture(uri)
                 if (wantsMotion && motionShutterTs != 0L) {

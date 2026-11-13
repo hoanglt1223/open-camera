@@ -32,6 +32,22 @@ MergeParams mergeParamsFor(Mode mode) {
     }
 }
 
+GrayF boxDownLuma(const GrayF &y, int f) {
+    GrayF d(y.width / f, y.height / f);
+    const float inv = 1.0f / (f * f);
+    parallelFor(0, d.height, [&](int r) {
+        for (int x = 0; x < d.width; ++x) {
+            float s = 0;
+            for (int j = 0; j < f; ++j) {
+                const float *row = &y.px[size_t(r * f + j) * y.width + x * f];
+                for (int i = 0; i < f; ++i) s += row[i];
+            }
+            d.px[size_t(r) * d.width + x] = s * inv;
+        }
+    });
+    return d;
+}
+
 Frame cropFrame(const Frame &f, int x0, int y0, int w, int h) {
     Frame c(w, h);
     for (int r = 0; r < h; ++r) {
@@ -140,6 +156,7 @@ bool run(const std::vector<Frame> &frames, const Params &params, Result &result,
             chromaDenoise(vu, 0.5f);
             break;
     }
+    if (tone.evStep > 0) result.toneBase = boxDownLuma(y, kToneBaseFactor);
     localToneMap(y, vu, tone);
     toFrame(y, vu, result.image);
     result.msFinish = msSince(t2);

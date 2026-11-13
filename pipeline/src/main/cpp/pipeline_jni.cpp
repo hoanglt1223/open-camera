@@ -27,6 +27,7 @@ struct Burst {
     int height;
     int capacity;
     std::vector<mf::Frame> frames;
+    mf::GrayF toneBase;  // of the last merge
 };
 
 Burst *fromHandle(jlong handle) { return reinterpret_cast<Burst *>(handle); }
@@ -112,6 +113,21 @@ Java_dev_opencamera_pipeline_NativePipeline_nativeExportFrame(JNIEnv *env, jobje
     env->SetByteArrayRegion(out, jsize(f.y.size()), jsize(f.vu.size()),
                             reinterpret_cast<const jbyte *>(f.vu.data()));
     return JNI_TRUE;
+}
+
+// Pre tone mapping luma of the last merge as [width, height, px...], or null if there is none.
+JNIEXPORT jfloatArray JNICALL
+Java_dev_opencamera_pipeline_NativePipeline_nativeExportToneBase(JNIEnv *env, jobject, jlong handle) {
+    Burst *b = fromHandle(handle);
+    if (!b || b->toneBase.px.empty()) return nullptr;
+    const mf::GrayF &t = b->toneBase;
+    const jsize n = jsize(t.px.size());
+    jfloatArray arr = env->NewFloatArray(n + 2);
+    if (!arr) return nullptr;
+    const jfloat header[] = {jfloat(t.width), jfloat(t.height)};
+    env->SetFloatArrayRegion(arr, 0, 2, header);
+    env->SetFloatArrayRegion(arr, 2, n, t.px.data());
+    return arr;
 }
 
 // Adds an NV21 frame of the burst size (frames restored from disk).
@@ -256,6 +272,7 @@ Java_dev_opencamera_pipeline_NativePipeline_nativeProcessCrop(JNIEnv *env, jobje
         params.cropW = c[2];
         params.cropH = c[3];
     }
+    b->toneBase = mf::GrayF();
     mf::Result result;
     std::string error;
     if (!mf::processBurst(b->frames, params, result, progress, &error)) {
@@ -267,6 +284,7 @@ Java_dev_opencamera_pipeline_NativePipeline_nativeProcessCrop(JNIEnv *env, jobje
          b->frames.size(), b->width, b->height, mode, result.msAlign, result.msMerge,
          result.msFinish);
 
+    b->toneBase = std::move(result.toneBase);
     const mf::Frame &img = result.image;
     if (img.width != b->width || img.height != b->height) {
         LOGE("unexpected output size %dx%d", img.width, img.height);

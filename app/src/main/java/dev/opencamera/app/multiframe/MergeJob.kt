@@ -12,12 +12,14 @@ import android.os.SystemClock
 import android.util.Log
 import dev.opencamera.capture.BurstKind
 import dev.opencamera.pipeline.Burst
+import dev.opencamera.pipeline.BurstGainmap
 import dev.opencamera.pipeline.MultiFrameMode
 import dev.opencamera.pipeline.MultiFrameProcessor
 import dev.opencamera.pipeline.queue.BurstArchive
 import dev.opencamera.vendorbridge.ProcessingSource
 import dev.opencamera.vendorbridge.SourcePolicy
 import java.io.File
+import java.util.Locale
 import java.util.UUID
 
 /** Merge and save parameters of a burst; serialisable into a [BurstArchive]. */
@@ -32,6 +34,8 @@ data class MergeJob(
     val longitude: Double? = null,
     val altitude: Double? = null,
     val source: String = "YUV",
+    /** Save as Ultra HDR (JPEG_R) when the merge has headroom and the platform can encode it. */
+    val ultraHdr: Boolean = false,
 ) {
     val mode: MultiFrameMode
         get() = when (kind) {
@@ -65,15 +69,17 @@ data class MergeJob(
         longitude?.let { put("lon", it.toString()) }
         altitude?.let { put("alt", it.toString()) }
         put("source", source)
+        put("uhdr", ultraHdr.toString())
     }
 
     companion object {
         fun of(
             kind: BurstKind, toneEvStep: Float, crop: IntArray?, rotationDegrees: Int, timestamp: Long,
-            exposure: ExposureExif?, location: Location?, source: String,
+            exposure: ExposureExif?, location: Location?, source: String, ultraHdr: Boolean = false,
         ) = MergeJob(
             kind, toneEvStep, crop, rotationDegrees, timestamp, exposure,
             location?.latitude, location?.longitude, location?.takeIf { it.hasAltitude() }?.altitude, source,
+            ultraHdr,
         )
 
         fun fromMap(m: Map<String, String>): MergeJob? = runCatching {
@@ -90,6 +96,7 @@ data class MergeJob(
                 longitude = m["lon"]?.toDouble(),
                 altitude = m["alt"]?.toDouble(),
                 source = m["source"] ?: "YUV",
+                ultraHdr = m["uhdr"].toBoolean(),
             )
         }.getOrNull()
     }
@@ -112,7 +119,22 @@ object MergeRunner {
             MultiFrameProcessor.processOrFallback(burst, job.mode, job.toneEvStep, { progress?.invoke(it * 0.85f) }, job.crop)
         } ?: return null
         val t1 = SystemClock.elapsedRealtime()
-        val jpeg = image.toJpeg()
+        val sdrJpeg = image.toJpeg()
+        val tj = SystemClock.elapsedRealtime()
+        var gainmap = "off"
+        val jpeg = if (job.ultraHdr && job.kind != BurstKind.SINGLE && BurstGainmap.supported()) {
+            val onError: (Throwable) -> Unit = { e ->
+                gainmap = "failed"
+                Log.w(TAG, "Ultra HDR gain map failed, saving plain JPEG", e)
+            }
+            BurstGainmap.withGainmapOr(sdrJpeg, onError) {
+                val plane = BurstGainmap.build(image, job.toneEvStep)
+                gainmap = plane?.let { "max=${"%.2f".format(Locale.US, it.maxRatio)}" } ?: "none"
+                plane?.let { BurstGainmap.toUltraHdrJpeg(sdrJpeg, it) }
+            }
+        } else {
+            sdrJpeg
+        }
         progress?.invoke(0.95f)
         val t2 = SystemClock.elapsedRealtime()
         val uri = MultiFrameSaver.save(
@@ -135,7 +157,8 @@ object MergeRunner {
             TAG,
             "kind=${job.kind} source=${job.source} frames=${image.frameCount} size=${image.width}x${image.height} " +
                 "crop=${job.crop?.joinToString("x")} align=${image.msAlign} merge=${image.msMerge} " +
-                "finish=${image.msFinish} process=${t1 - t0}ms jpeg=${t2 - t1}ms save=${t3 - t2}ms " +
+                "finish=${image.msFinish} process=${t1 - t0}ms jpeg=${tj - t1}ms gainmap=$gainmap/${t2 - tj}ms " +
+                "save=${t3 - t2}ms " +
                 "noise=${image.noiseSigma} weight=${image.meanWeight} ref=${image.referenceIndex}"
         )
         return uri

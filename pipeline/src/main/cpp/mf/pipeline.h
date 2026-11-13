@@ -40,7 +40,12 @@ struct Result {
     double msAlign = 0;
     double msMerge = 0;
     double msFinish = 0;
+    // Luma before local tone mapping (0..255, gamma encoded), box-downsampled by
+    // kToneBaseFactor; empty when tone mapping is off. Source of the Ultra HDR gain map.
+    GrayF toneBase;
 };
+
+constexpr int kToneBaseFactor = 4;
 
 // Aligns and merges a burst into one frame. Returns false (with a reason) when the input is not
 // usable or memory runs out; callers then fall back to a single frame.
