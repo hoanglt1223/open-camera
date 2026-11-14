@@ -5,7 +5,7 @@
 # Builds the foss flavor: no prebuilt ML runtimes, OpenCV built from source. F-Droid signs it;
 # the signed full build is served by https://hoanglt1223.github.io/open-camera-fdroid/repo.
 Categories:
-  - Multimedia
+  - Camera
 License: Apache-2.0
 AuthorName: Open Camera contributors
 SourceCode: https://github.com/hoanglt1223/open-camera
@@ -20,8 +20,11 @@ Repo: https://github.com/hoanglt1223/open-camera.git
 Builds:
   - versionName: 0.1.0-beta4
     versionCode: 4
-    commit: COMMIT
+    commit: 50643bf0363da4984ad0a7f0f0c06646002e3265
     subdir: app
+    sudo:
+      - apt-get update
+      - apt-get install -y cmake ninja-build
     gradle:
       - foss
     srclibs:
@@ -33,8 +36,8 @@ Builds:
     prebuild: echo "openCamera.profiles.dir=$$open-camera-profiles$$" >> ../local.properties
     scanignore:
       - settings.gradle.kts
-    build: bash ../scripts/fdroid/build-opencv-android.sh $$opencv$$ ../opencv-out arm64-v8a
-      armeabi-v7a
+    build: CMAKE_DIR=/usr/bin bash ../scripts/fdroid/build-opencv-android.sh $$opencv$$
+      ../opencv-out arm64-v8a armeabi-v7a
     ndk: 27.0.12077973
     gradleprops:
       - openCamera.opencvDir=opencv-out
