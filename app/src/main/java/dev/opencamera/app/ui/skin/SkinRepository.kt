@@ -143,12 +143,6 @@ class SkinRepository private constructor(context: Context) {
 
     fun setBlurEnabled(enabled: Boolean) = prefs.edit { putBoolean(KEY_BLUR, enabled) }
 
-    /** A sheet backdrop took longer than the budget: step the automatic policy down once. */
-    fun reportBlurCost(ms: Double) {
-        android.util.Log.i("SkinRepository", "Sheet backdrop blur %.2f ms (policy %s)".format(ms, _policy.value))
-        if (ms > BLUR_BUDGET_MS && !_blurDowngraded.value) prefs.edit { putBoolean(KEY_BLUR_DOWNGRADED, true) }
-    }
-
     fun animatorScale(): Float = runCatching {
         Settings.Global.getFloat(app.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f)
     }.getOrDefault(1f)

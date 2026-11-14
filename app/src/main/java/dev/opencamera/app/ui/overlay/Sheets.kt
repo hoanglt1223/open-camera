@@ -5,11 +5,9 @@
 
 package dev.opencamera.app.ui.overlay
 
-import android.graphics.Bitmap
-import android.os.SystemClock
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -35,7 +33,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,14 +41,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
@@ -70,12 +64,9 @@ import androidx.compose.ui.util.fastForEach
 import dev.opencamera.app.R
 import dev.opencamera.app.models.CameraMode
 import dev.opencamera.app.modes.CreativeMode
-import dev.opencamera.app.ui.skin.BlurPolicy
 import dev.opencamera.app.ui.skin.Skins
 import dev.opencamera.app.video.VideoMode
 import dev.opencamera.capture.MultiFrameSetting
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 fun controlName(c: Control) = when (c) {
     Control.ASPECT -> R.string.ui_row_aspect
@@ -123,7 +114,7 @@ fun BoxScope.Sheets(state: CameraUiState, actions: CameraUiActions, ui: OverlayU
         exit = s.exit { it },
     ) {
         val bottomPad = with(LocalDensity.current) { state.insetBottom.toDp() }
-        SheetSurface(actions) {
+        SheetSurface {
             Column(
                 Modifier
                     .fillMaxWidth()
@@ -153,50 +144,26 @@ fun BoxScope.Sheets(state: CameraUiState, actions: CameraUiActions, ui: OverlayU
 }
 
 /**
- * Sheet background. Glass: one preview snapshot blurred once (GPU on FULL, a tiny CPU blur on
- * STATIC) behind a translucent tint; NONE and Origin: solid surface.
+ * Sheet background: a solid surface. Glass adds a fixed top-down sheen and a hairline edge so
+ * it reads frosted without copying or blurring the preview.
  */
 @Composable
-private fun SheetSurface(actions: CameraUiActions, content: @Composable () -> Unit) {
+private fun SheetSurface(content: @Composable () -> Unit) {
     val s = skin
     val shape = RoundedCornerShape(topStart = s.radiusL, topEnd = s.radiusL)
-    val policy = if (s.glass) s.blur else BlurPolicy.NONE
-    var backdrop by remember { mutableStateOf<Bitmap?>(null) }
-    LaunchedEffect(policy) {
-        if (policy == BlurPolicy.NONE) return@LaunchedEffect
-        val snapshot = actions.previewSnapshot() ?: return@LaunchedEffect
-        backdrop = if (policy == BlurPolicy.STATIC) {
-            withContext(Dispatchers.Default) {
-                val start = SystemClock.elapsedRealtimeNanos()
-                BackdropBlur.static(snapshot).also {
-                    BackdropBlur.report((SystemClock.elapsedRealtimeNanos() - start) / 1e6)
-                }
-            }
-        } else {
-            snapshot
-        }
-    }
     Box(
         Modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(if (policy == BlurPolicy.NONE) s.sheet else Color(0xFF1C1C1E))
+            .background(s.sheet)
+            .then(if (s.glass) Modifier.background(GlassSheen).border(1.dp, s.stroke, shape) else Modifier)
             .semantics { paneTitle = "sheet" },
     ) {
-        backdrop?.let { b ->
-            Image(
-                b.asImageBitmap(), null,
-                Modifier
-                    .matchParentSize()
-                    .then(if (policy == BlurPolicy.FULL) Modifier.blur(28.dp) else Modifier),
-                contentScale = ContentScale.Crop,
-                filterQuality = FilterQuality.High,
-            )
-            Box(Modifier.matchParentSize().background(s.surface.copy(alpha = .55f)))
-        }
         content()
     }
 }
+
+private val GlassSheen = Brush.verticalGradient(listOf(Color.White.copy(alpha = .10f), Color.White.copy(alpha = .02f)))
 
 @Composable
 private fun MoreSheet(state: CameraUiState, actions: CameraUiActions, close: () -> Unit) {
@@ -300,10 +267,6 @@ private fun SettingsSheet(state: CameraUiState, actions: CameraUiActions, close:
         }
     }
     Divider()
-    if (s.glass) {
-        SwitchRow(stringResource(R.string.ui_blur), state.blurEnabled) { actions.setBlur(it) }
-        Divider()
-    }
 
     val rows = when (state.cameraMode) {
         CameraMode.PHOTO -> listOf(

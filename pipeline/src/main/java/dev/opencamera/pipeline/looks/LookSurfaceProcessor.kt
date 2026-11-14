@@ -99,6 +99,10 @@ class LookSurfaceProcessor : SurfaceProcessor {
             onReleased?.invoke()
             return
         }
+        // A new session starts a new rate window; the old one says nothing about it.
+        frames = 0
+        fpsWindowStart = 0L
+        fps = 0f
         val st = SurfaceTexture(oesTexture)
         st.setDefaultBufferSize(request.resolution.width, request.resolution.height)
         val surface = Surface(st)
