@@ -340,6 +340,7 @@ fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiS
 }
 
 private val GlassBar = Color(0xFF050505)
+private val GlassCapsuleBase = Color(0xF21C1C1E)
 
 /** Rounded preview corners (masks over the SurfaceView), Glass black bars and bottom scrim. */
 @Composable
@@ -594,8 +595,9 @@ private fun TopText(label: String, description: String, enabled: Boolean, onClic
  */
 fun Modifier.glassCapsule(circle: Boolean = false) = this
     .clip(if (circle) CircleShape else RoundedCornerShape(50))
-    .background(Color.Black.copy(alpha = .14f))
-    .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = .20f), Color.White.copy(alpha = .08f))))
+    // Near-opaque with a fixed sheen: the capsule looks frosted but never shows the live preview.
+    .background(GlassCapsuleBase)
+    .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = .14f), Color.White.copy(alpha = .04f))))
     .drawWithContent {
         drawContent()
         val r = size.minDimension / 2

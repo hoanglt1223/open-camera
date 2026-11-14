@@ -8,7 +8,6 @@ package dev.opencamera.app.ui.overlay
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.ApplicationInfo
-import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Handler
 import android.os.Looper
@@ -27,7 +26,6 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.platform.AndroidUiDispatcher
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
-import androidx.core.graphics.scale
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -60,23 +58,6 @@ private class OverlayLifecycle(private val source: Lifecycle) : LifecycleOwner {
     fun release() {
         source.removeObserver(observer)
         runCatching { if (registry.currentState != Lifecycle.State.INITIALIZED) registry.currentState = Lifecycle.State.DESTROYED }
-    }
-}
-
-/** One-time backdrop blur for Glass sheets; never applied to the live preview. */
-object BackdropBlur {
-    var reporter: ((Double) -> Unit)? = null
-
-    /** Two-step downscale then upscale with filtering: a soft blur for a few hundred µs. */
-    fun static(src: Bitmap): Bitmap {
-        val w = 24
-        val h = (src.height.toLong() * w / src.width.coerceAtLeast(1)).toInt().coerceAtLeast(1)
-        val tiny = src.scale(w * 2, h * 2).scale(w, h)
-        return tiny.scale(w * 6, h * 6)
-    }
-
-    fun report(ms: Double) {
-        reporter?.invoke(ms)
     }
 }
 
@@ -192,7 +173,6 @@ class OverlayHost(
         if (decision.resetFrom != null) {
             Toast.makeText(context, R.string.ui_skin_reset, Toast.LENGTH_LONG).show()
         }
-        BackdropBlur.reporter = repo::reportBlurCost
         return attach()
     }
 
@@ -288,7 +268,6 @@ class OverlayHost(
 
     fun destroy() {
         detach()
-        BackdropBlur.reporter = null
     }
 
     companion object {

@@ -5,7 +5,6 @@
 
 package dev.opencamera.app.ui.overlay
 
-import android.graphics.Bitmap
 import android.graphics.RectF
 import android.net.Uri
 import androidx.compose.runtime.getValue
@@ -193,7 +192,4 @@ interface CameraUiActions {
     fun setSkin(id: String)
     fun cycleImageQuality()
     fun setBlur(enabled: Boolean)
-
-    /** A downscaled preview frame for a sheet backdrop, or null. */
-    suspend fun previewSnapshot(): Bitmap?
 }
