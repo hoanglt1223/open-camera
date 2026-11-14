@@ -1,0 +1,2 @@
+- Steady preview: ZSL is turned off on cameras where it slowed the viewfinder to 8 fps.
+- Glass skin: static black bars and frosted capsules, no live preview copy behind controls.
