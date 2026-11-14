@@ -60,6 +60,9 @@ class LookController(
      */
     val ownsPreview get() = ownPreview?.enabled == true
 
+    /** Preview rate measured by the look renderer over the last two seconds; 0 when unknown. */
+    val previewFps get() = processor?.fps ?: 0f
+
     /**
      * Wraps the preview view's surface provider so frames pass through the look renderer.
      * [onFailure] runs on the main thread when the renderer cannot serve the view; later binds

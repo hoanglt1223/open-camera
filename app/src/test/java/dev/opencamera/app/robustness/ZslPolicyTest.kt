@@ -21,4 +21,15 @@ class ZslPolicyTest {
         assertFalse(CameraViewModel.useZsl(enabled = true, supported = true, failed = false, extension = true))
         assertFalse(CameraViewModel.useZsl(enabled = false, supported = true, failed = false, extension = false))
     }
+
+    @Test
+    fun zslDroppedOnlyForAMeasuredSlowPreview() {
+        // gauguin with ZSL: 7.9 fps preview.
+        assertTrue(CameraViewModel.zslTooSlow(7.9f))
+        // Low light alone keeps the [14, 30] AE range.
+        assertFalse(CameraViewModel.zslTooSlow(14f))
+        assertFalse(CameraViewModel.zslTooSlow(29.9f))
+        // No measurement (no look renderer, or no frame yet) keeps ZSL.
+        assertFalse(CameraViewModel.zslTooSlow(0f))
+    }
 }

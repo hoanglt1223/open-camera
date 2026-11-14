@@ -2307,6 +2307,21 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
     @Volatile
     var zslFailed = false
 
+    /**
+     * Cameras whose ZSL session starved the preview (the full-size reprocessing stream held a
+     * Snapdragon 7-series HAL at 8 fps). Remembered across launches so the preview never starts
+     * slow and then rebinds.
+     */
+    private val zslSlowPrefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(applicationContext)
+
+    fun isZslSlow(cameraId: String) =
+        cameraId in zslSlowPrefs.getStringSet(KEY_ZSL_SLOW_CAMERAS, emptySet()).orEmpty()
+
+    fun markZslSlow(cameraId: String) {
+        val ids = zslSlowPrefs.getStringSet(KEY_ZSL_SLOW_CAMERAS, emptySet()).orEmpty() + cameraId
+        zslSlowPrefs.edit().putStringSet(KEY_ZSL_SLOW_CAMERAS, ids).apply()
+    }
+
     /** ZSL turns the phone's extension processing off, so a usable extension takes precedence. */
     private fun oemExtensionAvailable(camera: Camera): Boolean = runCatching {
         val mode = multiFrame.setting.value.oemFeature()?.toExtensionMode() ?: return false
@@ -2325,7 +2340,7 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
             ) {
                 ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY -> when (
                     useZsl(
-                        preferencesRepository.enableZsl.value, camera.supportsZsl, zslFailed,
+                        preferencesRepository.enableZsl.value, camera.supportsZsl, zslFailed || isZslSlow(camera.cameraId),
                         oemExtensionAvailable(camera),
                     )
                 ) {
@@ -2580,6 +2595,14 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         /** ZSL only when wanted, supported, not failed before and not hiding the phone's processing. */
         internal fun useZsl(enabled: Boolean, supported: Boolean, failed: Boolean, extension: Boolean) =
             enabled && supported && !failed && !extension
+
+        private const val KEY_ZSL_SLOW_CAMERAS = "zsl_slow_cameras"
+
+        /** Below this a ZSL preview reads as jumping; low light alone keeps 14 fps or more. */
+        const val ZSL_MIN_PREVIEW_FPS = 12f
+
+        /** True when a measured ZSL preview rate means ZSL should be dropped; 0 means unknown. */
+        internal fun zslTooSlow(fps: Float) = fps > 0f && fps < ZSL_MIN_PREVIEW_FPS
 
         private val LOG_TAG = CameraViewModel::class.simpleName!!
 

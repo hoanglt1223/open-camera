@@ -672,6 +672,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                         Log.i(PERF_TAG, "preview streaming ${now - lastBindStartMs} ms after bind start, ${now - lastModeTapMs} ms after mode tap")
                         lastBindStartMs = 0
                     }
+                    checkZslPreviewRate()
+
                     // Show grid
                     gridView.alpha = 1f
                     gridView.previewView = viewFinder
@@ -1960,6 +1962,31 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         return false
     }
 
+    private var zslCheck: kotlinx.coroutines.Job? = null
+
+    /**
+     * A ZSL session adds a full-size reprocessing stream to every preview request; some HALs
+     * then deliver the preview at a third of its rate, which reads as a jumping viewfinder. Once
+     * the preview streams, its measured rate decides whether this camera keeps ZSL.
+     */
+    private fun checkZslPreviewRate() {
+        zslCheck?.cancel()
+        val controller = viewModel.cameraController
+        if (controller.imageCaptureMode != ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG) return
+        val cameraId = lastBoundCamera?.cameraId ?: return
+        zslCheck = lifecycleScope.launch {
+            delay(ZSL_RATE_CHECK_MS)
+            val fps = viewModel.lookController.previewFps
+            if (!CameraViewModel.zslTooSlow(fps)) return@launch
+            if (controller.imageCaptureMode != ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG) return@launch
+            Log.w(LOG_TAG, "ZSL preview runs at %.1f fps on camera %s, using the regular capture mode".format(fps, cameraId))
+            viewModel.markZslSlow(cameraId)
+            if (!viewModel.bindable()) return@launch
+            val config = viewModel.cameraConfiguration.replayCache.lastOrNull() ?: return@launch
+            bindCameraUseCases(config, "zsl-slow")
+        }
+    }
+
     /**
      * The analysis stream is only bound while a multi-frame, creative or motion feature needs it,
      * and the session layout follows the active mode, flash, fallback cap and the phone's
@@ -2408,7 +2435,9 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                     } not supported by camera ${useCaseConfig.camera.cameraId})"
                 }
 
-                viewModel.cameraController.imageCaptureMode = useCaseConfig.photoCaptureMode
+                viewModel.cameraController.imageCaptureMode = useCaseConfig.photoCaptureMode.takeUnless {
+                    it == ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG && viewModel.isZslSlow(useCaseConfig.camera.cameraId)
+                } ?: ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY
 
                 viewModel.cameraController.imageOutputFormat = when (
                     useCaseConfig.photoOutputFormat
@@ -3739,13 +3768,6 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         override fun cycleImageQuality() = act("image quality") {
             viewModel.multiFrame.source = ImageQuality.next(viewModel.multiFrame.source, imageQualityMp)
         }
-
-        override suspend fun previewSnapshot(): Bitmap? = try {
-            PreviewFrames.copy(viewFinder, maxOf(viewFinder.width, viewFinder.height) / 4)
-        } catch (e: RuntimeException) {
-            Log.w(LOG_TAG, "Preview snapshot failed", e)
-            null
-        }
     }
     companion object {
         private val LOG_TAG = CameraActivity::class.simpleName!!
@@ -3763,6 +3785,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         private const val AFTER_FIRST_PREVIEW_FALLBACK_MS = 4000L
         const val PERF_TAG = "OcPerf"
         private const val MOTION_FRAME_INTERVAL_MS = 45L
+        private const val ZSL_RATE_CHECK_MS = 3_000L
         private const val FULL_RES_STREAM_TIMEOUT_MS = 4000L
         private const val SHARED_SIZE_TIMEOUT_MS = 2000L
         private const val CAPTURE_RESULT_WAIT_MS = 800L
