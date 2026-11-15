@@ -47,6 +47,13 @@
             app:title="@string/shot_check_title" />
 
         <SwitchPreference
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="macro_suggest"
+            app:summary="@string/macro_suggest_summary"
+            app:title="@string/macro_suggest_title" />
+
+        <SwitchPreference
             app:defaultValue="false"
             app:iconSpaceReserved="false"
             app:key="save_location"

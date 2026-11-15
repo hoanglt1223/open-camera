@@ -21,14 +21,24 @@ import dev.opencamera.app.video.VideoMode
 import dev.opencamera.capture.MultiFrameSetting
 import dev.opencamera.ml.ML_RUNTIME_INCLUDED
 
-/** Entries of the mode carousel. Night, Portrait and Pro are Photo with a feature switched on. */
-enum class UiMode { MORE, NIGHT, PORTRAIT, PHOTO, VIDEO, PRO, QR }
+/**
+ * Entries of the mode carousel. Night, Portrait and Pro are Photo with a feature switched on;
+ * Macro is Photo on the macro camera.
+ */
+enum class UiMode { MORE, NIGHT, PORTRAIT, PHOTO, VIDEO, PRO, MACRO, QR }
 
 object UiModes {
-    fun derive(mode: CameraMode, pro: Boolean, portrait: Boolean, multiFrame: MultiFrameSetting) = when (mode) {
+    fun derive(
+        mode: CameraMode,
+        pro: Boolean,
+        portrait: Boolean,
+        multiFrame: MultiFrameSetting,
+        macro: Boolean = false,
+    ) = when (mode) {
         CameraMode.VIDEO -> UiMode.VIDEO
         CameraMode.QR -> UiMode.QR
         CameraMode.PHOTO -> when {
+            macro -> UiMode.MACRO
             pro -> UiMode.PRO
             portrait -> UiMode.PORTRAIT
             multiFrame == MultiFrameSetting.NIGHT -> UiMode.NIGHT
@@ -41,8 +51,10 @@ object UiModes {
         videoAvailable: Boolean,
         moreAvailable: Boolean,
         portraitAvailable: Boolean = ML_RUNTIME_INCLUDED,
+        macroAvailable: Boolean = false,
     ) = UiMode.entries.filter {
         when (it) {
+            UiMode.MACRO -> macroAvailable
             UiMode.PORTRAIT -> portraitAvailable
             UiMode.PRO -> proAvailable
             UiMode.VIDEO -> videoAvailable
@@ -121,6 +133,11 @@ data class CameraUiState(
     val creative: CreativeMode = CreativeMode.OFF,
     val motionPhoto: Boolean = false,
     val portrait: Boolean = false,
+    /** The bound camera is the macro camera. */
+    val macro: Boolean = false,
+    val macroAvailable: Boolean = false,
+    /** Photo on the main camera with the subject too close: offer Macro. */
+    val macroSuggested: Boolean = false,
     val controls: Map<Control, LegacyControl> = emptyMap(),
     val lensChips: List<LensChipUi> = emptyList(),
     val minZoom: Float = 1f,
@@ -158,6 +175,9 @@ data class CameraUiState(
 interface CameraUiActions {
     fun shutter()
     fun selectMode(mode: UiMode)
+
+    /** The "Macro" suggestion chip was tapped. */
+    fun macroSuggestion() {}
 
     /** The mode carousel drag began; a chance to prepare the next mode. */
     fun modeDragStarted() {}

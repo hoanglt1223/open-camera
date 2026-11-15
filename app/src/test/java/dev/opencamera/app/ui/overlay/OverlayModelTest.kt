@@ -50,6 +50,18 @@ class OverlayModelTest {
         assertEquals(UiMode.QR, UiModes.swipe(UiMode.PHOTO, true, modes))
     }
 
+    @Test
+    fun macroIsListedOnlyWithAMacroCameraAndDerivedFromIt() {
+        assertFalse(UiMode.MACRO in UiModes.available(proAvailable = true, videoAvailable = true, moreAvailable = true))
+        val modes = UiModes.available(
+            proAvailable = true, videoAvailable = true, moreAvailable = true, macroAvailable = true,
+        )
+        assertEquals(UiMode.MACRO, UiModes.swipe(UiMode.PRO, true, modes))
+        assertEquals(UiMode.QR, UiModes.swipe(UiMode.MACRO, true, modes))
+        assertEquals(UiMode.MACRO, UiModes.derive(CameraMode.PHOTO, false, false, MultiFrameSetting.HDR_AUTO, macro = true))
+        assertEquals(UiMode.VIDEO, UiModes.derive(CameraMode.VIDEO, false, false, MultiFrameSetting.OFF, macro = true))
+    }
+
     private val caps = ProCapabilities(
         cameraId = "0", manualSensor = true, manualPostProcessing = true, raw = true,
         ranges = ProRanges(iso = 50..6400, exposureNs = 100_000L..1_000_000_000L, minFocusDiopters = 10f, ev = -12..12),

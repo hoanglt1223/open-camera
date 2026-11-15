@@ -39,6 +39,8 @@ data class CameraSpec(
     val capabilities: Set<Capability> = setOf(Capability.BACKWARD_COMPATIBLE),
     val physicalIds: List<String> = emptyList(),
     val hidden: Boolean = false,
+    /** SENSOR_INFO_COLOR_FILTER_ARRANGEMENT is MONO or NIR: no colour image. */
+    val monoColorFilter: Boolean = false,
 ) {
     val isLogical get() = Capability.LOGICAL_MULTI_CAMERA in capabilities
     val megapixels get() = pixelWidth.toLong() * pixelHeight / 1_000_000f

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="ui_mode_macro">Macro</string>
+    <string name="macro_suggestion">Macro</string>
+    <string name="macro_unavailable">Macro camera unavailable, using the main camera</string>
+    <string name="macro_suggest_title">Suggest Macro up close</string>
+    <string name="macro_suggest_summary">Offer the macro camera when the subject is too close for the main camera to focus</string>
+</resources>

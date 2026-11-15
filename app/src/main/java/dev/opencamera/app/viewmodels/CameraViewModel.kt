@@ -478,6 +478,54 @@ class CameraViewModel(application: Application) : ApertureViewModel(application)
         }
     }
 
+    /** Set when the macro camera could not be used; Macro mode stays hidden for this process. */
+    private val macroDisabled = MutableStateFlow(false)
+
+    @Volatile
+    private var macroCameraId: String? = null
+
+    /** The back macro camera ([DeviceProfileRepository.macroCameraId]), or null: no Macro mode. */
+    val macroCamera = combine(cameraRepository.cameras, macroDisabled) { cameras, disabled ->
+        val id = runCatching { deviceProfileRepository.macroCameraId() }.getOrNull()
+        macroCameraId = id
+        if (disabled || id == null) null else cameras.firstOrNull { it.cameraId == id }
+    }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    val currentConfiguration: CameraConfiguration? get() = _cameraConfiguration.value
+
+    fun isMacro(camera: Camera?) = camera != null && camera.cameraId == macroCameraId
+
+    /** The macro camera failed to open or bind: back to the main camera, Macro hidden. */
+    fun disableMacro() {
+        macroDisabled.value = true
+        leaveMacro(CameraMode.PHOTO)
+    }
+
+    /** Opens the macro camera in Photo in one configuration change (one bind). */
+    fun enterMacro(): Boolean {
+        val macro = macroCamera.value ?: return false
+        return updateConfiguration<CameraConfiguration>(retry = { enterMacro(); Unit }) { cfg ->
+            if (cfg.camera == macro && cfg.cameraMode == CameraMode.PHOTO) return@updateConfiguration cfg
+            preferencesRepository.lastCameraMode.value = CameraMode.PHOTO
+            when (val photo = createInitialCameraConfiguration(camera = macro, cameraMode = CameraMode.PHOTO)) {
+                // The whole sensor (4:3 on every macro module seen) at its largest size.
+                is CameraConfiguration.Photo -> photo.copy(photoAspectRatio = AspectRatio.RATIO_4_3)
+                else -> photo
+            }
+        }
+    }
+
+    /** Back to the main back camera in [cameraMode], in one configuration change. */
+    fun leaveMacro(cameraMode: CameraMode = CameraMode.PHOTO): Boolean =
+        updateConfiguration<CameraConfiguration>(retry = { leaveMacro(cameraMode); Unit }) { cfg ->
+            val main = cameraRepository.mainBackCamera?.takeIf { it.supportsCameraMode(cameraMode) }
+            if (main == null || !isMacro(cfg.camera)) return@updateConfiguration cfg
+            preferencesRepository.lastCameraMode.value = cameraMode
+            createInitialCameraConfiguration(camera = main, cameraMode = cameraMode)
+        }
+
     /**
      * CameraX's state of the current camera.
      */

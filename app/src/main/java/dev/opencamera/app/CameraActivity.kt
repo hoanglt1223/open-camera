@@ -49,6 +49,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import android.graphics.ImageFormat
 import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CaptureResult
 import android.util.Size
 import androidx.camera.camera2.interop.Camera2CameraInfo
 import androidx.camera.camera2.interop.CaptureRequestOptions
@@ -146,6 +147,7 @@ import dev.opencamera.app.models.AssistantIntent
 import dev.opencamera.app.models.CameraConfiguration
 import dev.opencamera.app.models.CameraFacing
 import dev.opencamera.app.models.CameraMode
+import dev.opencamera.app.modes.MacroSuggester
 import dev.opencamera.app.modes.MotionPhotoController
 import dev.opencamera.app.ai.AiController
 import dev.opencamera.app.ai.BestShotCapture
@@ -1050,6 +1052,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                         "Error: code: ${it.code}, type: ${it.type}",
                         it.cause
                     )
+                    val cfg = viewModel.currentConfiguration
+                    if (cfg != null && macroFailed(cfg, it.cause)) return@let
 
                     val showToast = { stringId: Int ->
                         Toast.makeText(
@@ -1958,6 +1962,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
             return bindWithFallback(useCases, quiet)
         }
         Log.e(LOG_TAG, "No use case combination could be bound")
+        viewModel.currentConfiguration?.let { if (macroFailed(it, null)) return false }
         if (!quiet) Toast.makeText(this, R.string.stream_fallback_failed, Toast.LENGTH_LONG).show()
         return false
     }
@@ -2296,6 +2301,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                     bindCameraUseCasesOrThrow(cameraConfiguration)
                 }?.let { return }
             }
+            if (macroFailed(cameraConfiguration, e)) return
             Log.e(LOG_TAG, "Bind failed for $cameraConfiguration, reopening in baseline mode", e)
             viewModel.lookController.disablePreviewEffect()
             viewModel.multiFrame.analyzer.resetStream()
@@ -2479,18 +2485,24 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                     useCaseConfig.camera.cameraFacing != CameraFacing.FRONT
                 ) {
                     // Full resolution YUV stream for multi-frame bursts
-                    viewModel.cameraController.imageAnalysisResolutionSelector =
-                        ResolutionSelector.Builder()
-                            .setAspectRatioStrategy(
-                                AspectRatioStrategy(
-                                    useCaseConfig.photoAspectRatio,
-                                    AspectRatioStrategy.FALLBACK_RULE_AUTO,
-                                )
+                    val analysisSelector = ResolutionSelector.Builder()
+                        .setAspectRatioStrategy(
+                            AspectRatioStrategy(
+                                useCaseConfig.photoAspectRatio,
+                                AspectRatioStrategy.FALLBACK_RULE_AUTO,
                             )
-                            .setResolutionStrategy(ResolutionStrategy.HIGHEST_AVAILABLE_STRATEGY)
-                            .build()
+                        )
+                        .setResolutionStrategy(ResolutionStrategy.HIGHEST_AVAILABLE_STRATEGY)
+                        .build()
+                    viewModel.cameraController.imageAnalysisResolutionSelector = analysisSelector
                     viewModel.cameraController.setImageAnalysisAnalyzer(
                         viewModel.multiFrame.analysisExecutor, viewModel.multiFrame.analyzer
+                    )
+                    // Per-frame focus state for the Macro suggestion; set before the bind, so no
+                    // extra bind. If it cannot be attached, there is simply no suggestion.
+                    CameraControllerInterop.attachAnalysisCaptureCallback(
+                        viewModel.cameraController, analysisSelector, viewModel.multiFrame.analysisExecutor,
+                        viewModel.multiFrame.analyzer, viewModel.multiFrame.resultTracker,
                     )
                     CameraController.IMAGE_CAPTURE or CameraController.IMAGE_ANALYSIS
                 } else {
@@ -3500,6 +3512,78 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         return true
     }
 
+    /**
+     * The macro camera could not be opened or bound: back to the main camera with a toast, and
+     * Macro is hidden for the rest of the session. False when [cfg] is not on the macro camera.
+     */
+    private fun macroFailed(cfg: CameraConfiguration, cause: Throwable?): Boolean {
+        if (!viewModel.isMacro(cfg.camera)) return false
+        Log.w(LOG_TAG, "Macro camera ${cfg.camera.cameraId} failed, back to the main camera", cause)
+        Toast.makeText(this, R.string.macro_unavailable, Toast.LENGTH_SHORT).show()
+        viewModel.disableMacro()
+        return true
+    }
+
+    /**
+     * Shows the Macro chip in Photo on a back camera when [MacroSuggester] finds the subject too
+     * close (preview capture results) or tap-to-focus keeps failing. Reads only; never refocuses.
+     */
+    @androidx.annotation.OptIn(ExperimentalCamera2Interop::class)
+    private suspend fun runMacroSuggestions() {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        var suggester: MacroSuggester? = null
+        var suggesterCamera: String? = null
+        var lastResult: Any? = null
+        fun publish(on: Boolean) {
+            if (uiState.value.macroSuggested != on) uiState.update { it.copy(macroSuggested = on) }
+        }
+        val tapObserver = androidx.lifecycle.Observer<Int> { st ->
+            if (st == CameraController.TAP_TO_FOCUS_FAILED || st == CameraController.TAP_TO_FOCUS_NOT_FOCUSED) {
+                suggester?.let { publish(it.onFocusFailed(SystemClock.uptimeMillis())) }
+            }
+        }
+        FeatureGuard.attempt(LOG_TAG, "Macro tap-to-focus watch") {
+            viewModel.cameraController.tapToFocusState.observe(this, tapObserver)
+        }
+        try {
+            while (true) {
+                delay(MACRO_SUGGEST_POLL_MS)
+                FeatureGuard.attempt(LOG_TAG, "Macro suggestion") {
+                    val s = uiState.value
+                    val camera = viewModel.currentConfiguration?.camera
+                    val eligible = camera != null && s.macroAvailable && s.uiMode == UiMode.PHOTO &&
+                        s.cameraState == CameraState.IDLE && camera.cameraFacing == CameraFacing.BACK &&
+                        !viewModel.isMacro(camera) && prefs.getBoolean(KEY_MACRO_SUGGEST, true)
+                    if (!eligible) {
+                        suggester?.reset()
+                        publish(false)
+                        return@attempt
+                    }
+                    if (camera.cameraId != suggesterCamera) {
+                        val minFocus = getSystemService(android.hardware.camera2.CameraManager::class.java)
+                            .getCameraCharacteristics(camera.cameraId)
+                            .get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE) ?: 0f
+                        suggester = MacroSuggester(minFocus)
+                        suggesterCamera = camera.cameraId
+                        publish(false)
+                    }
+                    val result = viewModel.multiFrame.resultTracker.latest
+                    if (result != null && result !== lastResult) {
+                        lastResult = result
+                        publish(
+                            suggester!!.onFrame(
+                                result.get(CaptureResult.CONTROL_AF_STATE),
+                                result.get(CaptureResult.LENS_FOCUS_DISTANCE),
+                            )
+                        )
+                    }
+                }
+            }
+        } finally {
+            runCatching { viewModel.cameraController.tapToFocusState.removeObserver(tapObserver) }
+        }
+    }
+
     private fun overlaySwipe(forward: Boolean) {
         val s = uiState.value
 
@@ -3513,13 +3597,14 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
     private fun CameraUiState.derived(): CameraUiState {
         val pro = pro?.enabled == true && pro.available
         return copy(
-            uiMode = UiModes.derive(cameraMode, pro, portrait, multiFrame),
+            uiMode = UiModes.derive(cameraMode, pro, portrait, multiFrame, macro),
             modes = UiModes.available(
                 // Pro reports unavailable while Video is bound; keeping it listed stops the
                 // carousel from reshuffling (and swipes from skipping Pro) on Photo <-> Video.
                 proAvailable = this.pro?.available == true || UiMode.PRO in modes,
                 videoAvailable = videoRecordingAvailable,
                 moreAvailable = !singleCapture,
+                macroAvailable = macroAvailable || macro,
             ),
         )
     }
@@ -3531,12 +3616,22 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         if (mode == UiMode.PRO) PerfTrace.begin(PerfTrace.OPEN_PRO)
         FeatureGuard.attempt(LOG_TAG, "Mode $mode") {
             val mf = viewModel.multiFrame
-            val photo = mode == UiMode.PHOTO || mode == UiMode.NIGHT || mode == UiMode.PORTRAIT || mode == UiMode.PRO
+            val photo = mode == UiMode.PHOTO || mode == UiMode.NIGHT || mode == UiMode.PORTRAIT ||
+                mode == UiMode.PRO || mode == UiMode.MACRO
+            // Entering or leaving Macro changes camera and mode in one configuration (one bind).
+            val onMacro = viewModel.isMacro(viewModel.currentConfiguration?.camera)
             if (!photo) {
-                viewModel.setCameraMode(if (mode == UiMode.VIDEO) CameraMode.VIDEO else CameraMode.QR)
+                val target = if (mode == UiMode.VIDEO) CameraMode.VIDEO else CameraMode.QR
+                if (onMacro) viewModel.leaveMacro(target) else viewModel.setCameraMode(target)
                 return@attempt
             }
-            if (viewModel.cameraMode.value != CameraMode.PHOTO) viewModel.setCameraMode(CameraMode.PHOTO)
+            when {
+                mode == UiMode.MACRO -> if (!viewModel.enterMacro()) {
+                    Toast.makeText(this, R.string.macro_unavailable, Toast.LENGTH_SHORT).show()
+                }
+                onMacro -> viewModel.leaveMacro(CameraMode.PHOTO)
+                viewModel.cameraMode.value != CameraMode.PHOTO -> viewModel.setCameraMode(CameraMode.PHOTO)
+            }
             val portrait = mode == UiMode.PORTRAIT
             if (aiController.settings.portrait != portrait) {
                 aiController.settings.portrait = portrait
@@ -3620,6 +3715,14 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         }
         launch { viewModel.isShutterButtonEnabled.collect { sync() } }
         launch {
+            combine(viewModel.cameraConfiguration, viewModel.macroCamera) { cfg, macro ->
+                viewModel.isMacro(cfg?.camera) to (macro != null)
+            }.distinctUntilChanged().collect { (macro, available) ->
+                uiState.update { it.copy(macro = macro, macroAvailable = available).derived() }
+            }
+        }
+        launch { runMacroSuggestions() }
+        launch {
             combine(viewModel.pendingSaves, BurstJobQueue.get(applicationContext).pending) { saves, merges ->
                 saves > 0 || merges > 0
             }.distinctUntilChanged().collect { saving -> uiState.update { it.copy(saving = saving) } }
@@ -3687,6 +3790,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         }
 
         override fun selectMode(mode: UiMode) = selectUiMode(mode)
+
+        override fun macroSuggestion() = selectUiMode(UiMode.MACRO)
 
         override fun modeDragStarted() = act("prewarm") { prewarmModeSwitch() }
 
@@ -3773,6 +3878,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         private val LOG_TAG = CameraActivity::class.simpleName!!
         private const val COLOR_MATCH_ITEM = "__color_match__"
         const val KEY_SHOT_CHECK = "shot_check"
+        const val KEY_MACRO_SUGGEST = "macro_suggest"
+        private const val MACRO_SUGGEST_POLL_MS = 100L
         private const val SMART_FALLBACK_SECONDS = 3
         private const val SMART_PALM_SECONDS = 2
 
