@@ -213,7 +213,11 @@ private fun CameraUiState.forTopBar() = CameraUiState(
 
 private fun CameraUiState.forLooks() = CameraUiState(looks = looks, lookId = lookId, style = style)
 
-private fun CameraUiState.forLens() = CameraUiState(minZoom = minZoom, maxZoom = maxZoom, lensChips = lensChips)
+// The zoom stops belong to the main lenses; on the fixed macro module they would switch away from it.
+internal fun CameraUiState.forLens() = CameraUiState(
+    minZoom = minZoom, maxZoom = maxZoom,
+    lensChips = if (uiMode == UiMode.MACRO) emptyList() else lensChips,
+)
 
 private fun CameraUiState.forModes() = CameraUiState(modes = modes, uiMode = uiMode, cameraState = cameraState)
 
