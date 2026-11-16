@@ -110,4 +110,11 @@ class OverlayModelTest {
         assertEquals(12, ev.index(ProSettings()))
         assertEquals(6, ev.apply(ProSettings(), 18).evIndex)
     }
+
+    @Test
+    fun macroHidesZoomChips() {
+        val chips = listOf(LensChipUi(".9", false), LensChipUi("1", true))
+        assertTrue(CameraUiState(uiMode = UiMode.MACRO, lensChips = chips).forLens().lensChips.isEmpty())
+        assertEquals(chips, CameraUiState(uiMode = UiMode.PHOTO, lensChips = chips).forLens().lensChips)
+    }
 }

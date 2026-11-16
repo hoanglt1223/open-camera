@@ -11,7 +11,7 @@ package dev.opencamera.app.modes
  * repeatedly. Only reads results; it never moves focus or rebinds. Hysteresis keeps the chip
  * from flickering. Not thread-safe; feed it from one thread.
  */
-class MacroSuggester(private val minFocusDiopters: Float) {
+class MacroSuggester(val minFocusDiopters: Float) {
     private var nearFrames = 0
     private var clearFrames = 0
     private val failures = ArrayDeque<Long>()

@@ -3574,12 +3574,14 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                     val result = viewModel.multiFrame.resultTracker.latest
                     if (result != null && result !== lastResult) {
                         lastResult = result
-                        publish(
-                            suggester!!.onFrame(
-                                result.get(CaptureResult.CONTROL_AF_STATE),
-                                result.get(CaptureResult.LENS_FOCUS_DISTANCE),
-                            )
-                        )
+                        val af = result.get(CaptureResult.CONTROL_AF_STATE)
+                        val distance = result.get(CaptureResult.LENS_FOCUS_DISTANCE)
+                        val on = suggester!!.onFrame(af, distance)
+                        // Field check of the suggester's input: adb shell setprop log.tag.MacroSuggest DEBUG
+                        if (Log.isLoggable(MACRO_SUGGEST_LOG_TAG, Log.DEBUG)) {
+                            Log.d(MACRO_SUGGEST_LOG_TAG, "af=$af distance=$distance min=${suggester!!.minFocusDiopters} on=$on")
+                        }
+                        publish(on)
                     }
                 }
             }
@@ -3883,6 +3885,7 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         private const val COLOR_MATCH_ITEM = "__color_match__"
         const val KEY_SHOT_CHECK = "shot_check"
         const val KEY_MACRO_SUGGEST = "macro_suggest"
+        private const val MACRO_SUGGEST_LOG_TAG = "MacroSuggest"
         private const val MACRO_SUGGEST_POLL_MS = 100L
         private const val SMART_FALLBACK_SECONDS = 3
         private const val SMART_PALM_SECONDS = 2
