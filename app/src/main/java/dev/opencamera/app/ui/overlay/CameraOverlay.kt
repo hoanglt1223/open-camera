@@ -284,6 +284,12 @@ fun CameraOverlay(state: CameraUiState, actions: CameraUiActions, ui: OverlayUiS
                     ShotWarning(state.shotWarning, state.shotWarningId, actions)
                 }
                 AnimatedVisibility(
+                    !recording && state.macroSuggested && state.uiMode == UiMode.PHOTO,
+                    enter = fadeIn(s.medium()), exit = fadeOut(s.medium()),
+                ) {
+                    MacroChip(actions)
+                }
+                AnimatedVisibility(
                     ui.looksOpen && state.cameraMode == CameraMode.PHOTO,
                     enter = s.enter(), exit = s.exit(),
                 ) {
@@ -864,6 +870,7 @@ private fun modeLabel(mode: UiMode) = stringResource(
         UiMode.PHOTO -> R.string.camera_mode_photo
         UiMode.VIDEO -> R.string.camera_mode_video
         UiMode.PRO -> R.string.ui_mode_pro
+        UiMode.MACRO -> R.string.ui_mode_macro
         UiMode.QR -> R.string.camera_mode_qr
     }
 )
@@ -1336,6 +1343,31 @@ private fun valueOf(s: PhotoStyle, axis: StyleAxis) = when (axis) {
 }
 
 /** "Photo looks blurred / eyes closed" with a retake button; hides itself after a few seconds. */
+@Composable
+private fun MacroChip(actions: CameraUiActions) {
+    val view = LocalView.current
+    Box(
+        Modifier
+            .padding(vertical = 8.dp)
+            .heightIn(min = 48.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color.Black.copy(alpha = 0.6f))
+            .clickable(role = Role.Button) {
+                Haptics.segment(view)
+                actions.macroSuggestion()
+            }
+            .padding(horizontal = 18.dp)
+            .testTag("macro_suggestion")
+            .semantics { liveRegion = LiveRegionMode.Polite },
+        contentAlignment = Alignment.Center,
+    ) {
+        BasicText(
+            stringResource(R.string.macro_suggestion),
+            style = TextStyle(color = skin.accent, fontSize = 14.sp, fontWeight = FontWeight.SemiBold),
+        )
+    }
+}
+
 @Composable
 private fun ShotWarning(message: Int, id: Long, actions: CameraUiActions) {
     if (message == 0) return

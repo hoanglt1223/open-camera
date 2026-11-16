@@ -18,6 +18,7 @@ import dev.opencamera.profiles.CameraSpec
 import dev.opencamera.profiles.Capability
 import dev.opencamera.profiles.DeviceProfile
 import dev.opencamera.profiles.Facing
+import dev.opencamera.profiles.MacroDetector
 import dev.opencamera.profiles.ProfileFactory
 import dev.opencamera.profiles.ProfileJson
 import dev.opencamera.profiles.ProfileResolver
@@ -162,7 +163,27 @@ class DeviceProfileRepository(private val context: Context) {
             capabilities = capabilities,
             physicalIds = physicalIds,
             hidden = hidden,
+            monoColorFilter = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                c.get(CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT) in MONO_FILTERS,
         )
+    }
+
+    @Volatile
+    private var macroId: Result<String?>? = null
+
+    /**
+     * Back macro camera id ([MacroDetector]) among the ids the framework lists, or null. Never
+     * throws: a failed scan means no macro mode.
+     */
+    suspend fun macroCameraId(): String? = withContext(Dispatchers.Default) {
+        macroId?.let { return@withContext it.getOrNull() }
+        runCatching {
+            val profile = profile()
+            val listed = context.getSystemService(CameraManager::class.java).cameraIdList.toSet()
+            MacroDetector.pick(profile, scan().filter { it.id in listed })
+        }.onFailure { Log.w(LOG_TAG, "Macro detection failed", it) }
+            .also { macroId = it; Log.i(LOG_TAG, "Macro camera: ${it.getOrNull()}") }
+            .getOrNull()
     }
 
     private fun capabilityOf(value: Int): Capability? = when (value) {
@@ -179,6 +200,10 @@ class DeviceProfileRepository(private val context: Context) {
     companion object {
         private val LOG_TAG = DeviceProfileRepository::class.simpleName!!
         private const val HIDDEN_ID_PROBE_LIMIT = 16
+        private val MONO_FILTERS = setOf(
+            CameraMetadata.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_MONO,
+            CameraMetadata.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_NIR,
+        )
         private const val BUNDLE_ASSET = "profiles.bundle.json"
         const val OVERRIDE_FILE_NAME = "device-profile-override.json"
         const val PINNED_PROFILE_KEY = "device_profile"

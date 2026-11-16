@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Open Camera contributors
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="ui_mode_macro">Macro</string>
+    <string name="macro_suggestion">Macro</string>
+    <string name="macro_unavailable">Không dùng được camera macro, chuyển về camera chính</string>
+    <string name="macro_suggest_title">Gợi ý Macro khi chụp gần</string>
+    <string name="macro_suggest_summary">Đề xuất camera macro khi vật ở quá gần để camera chính lấy nét</string>
+</resources>

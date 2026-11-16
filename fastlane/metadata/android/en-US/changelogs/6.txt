@@ -1,0 +1,2 @@
+- Macro mode on phones with a macro camera: full-size shots, tap-to-focus, torch, looks and styles; falls back to the main camera if it fails.
+- Photo suggests Macro when the subject is closer than the main lens can focus (can be turned off in Settings).

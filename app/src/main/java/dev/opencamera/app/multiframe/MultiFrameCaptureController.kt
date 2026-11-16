@@ -626,6 +626,19 @@ class MultiFrameCaptureController(
     }
 
     companion object {
+        private const val FULL_RES_MIN_PIXELS = 6_000_000L
+
+        /**
+         * A YUV stream counts as full resolution at 6 MP, or at the camera's own largest YUV size
+         * when the sensor is smaller (a 2 MP macro module); some HALs shrink it below both.
+         */
+        fun isFullResStream(width: Int, height: Int, largestYuvPixels: Long?): Boolean {
+            val pixels = width.toLong() * height
+            val needed = largestYuvPixels?.takeIf { it > 0 }?.let { minOf(it, FULL_RES_MIN_PIXELS) }
+                ?: FULL_RES_MIN_PIXELS
+            return pixels >= needed
+        }
+
         private const val CONTROL_TIMEOUT_MS = 1000L
         private const val SLOW_FRAME_MS = 500L
         private const val LOG_TAG = "MultiFrame"
