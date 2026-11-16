@@ -2082,7 +2082,11 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                         viewModel.multiFrame.analyzer.frameSize
                     }
                     Log.i(LOG_TAG, "Full-resolution YUV stream: $size")
-                    size != null && size.width.toLong() * size.height >= FULL_RES_MIN_PIXELS
+                    val largest = Camera2CameraInfo.from(info)
+                        .getCameraCharacteristic(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+                        ?.getOutputSizes(ImageFormat.YUV_420_888)
+                        ?.maxOfOrNull { it.width.toLong() * it.height }
+                    size != null && MultiFrameCaptureController.isFullResStream(size.width, size.height, largest)
                 }
             } ?: false
             if (ok && viewModel.multiFrame.streamConfig == config) {
@@ -3896,7 +3900,6 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         private const val FULL_RES_STREAM_TIMEOUT_MS = 4000L
         private const val SHARED_SIZE_TIMEOUT_MS = 2000L
         private const val CAPTURE_RESULT_WAIT_MS = 800L
-        private const val FULL_RES_MIN_PIXELS = 6_000_000L
         private val METERING_STREAM_SIZE = Size(1280, 960)
 
         private const val VENDOR_TAG_TIMEOUT_MS = 3000L
