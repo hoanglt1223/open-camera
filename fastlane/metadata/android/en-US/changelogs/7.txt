@@ -1,0 +1,1 @@
+- Macro mode hides the main-lens zoom chips.
